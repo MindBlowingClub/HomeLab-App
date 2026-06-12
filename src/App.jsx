@@ -56,6 +56,7 @@ const IconCloud = ({ connected }) => (
   </svg>
 );
 
+// eslint-disable-next-line no-unused-vars
 const getStatoColor = (stato) => {
   switch (stato) {
     case 'Disponibile': return 'bg-[#34C759] text-white';
@@ -66,6 +67,7 @@ const getStatoColor = (stato) => {
   }
 };
 
+// eslint-disable-next-line no-unused-vars
 const getMandatoColor = (mandato) => {
   switch (mandato) {
     case 'Si': return 'bg-[#34C759] text-white';
@@ -132,156 +134,11 @@ const INITIAL_CONTATTI = [
 const INITIAL_IMMOBILI = [
   {
     id: 101,
-    nome_immobile: "#0001-ESCLUSIVA PROPRIETÀ VISTA LAGO A CADEMARIO",
-    codice_immobile: "#1",
-    stato: "Disponibile",
-    immobile_in: "Vendita",
-    mandato_firmato: "Si",
-    tipo_di_mandato: "In Esclusiva",
-    prezzo_vendita: 3450000,
-    prezzo_affitto: 0,
-    indirizzo: "Via Cantonale 45",
-    comune: "Cademario",
-    npa: "6936",
-    nazione: "Svizzera",
-    categoria: "Villa",
-    tipo: "Moderno",
-    superficie_abitabile: 320,
-    superficie_sul: 380,
-    locali: "6.5",
-    bagni: "4",
-    anno: 2018,
-    rinnovo: 2024,
-    garage: true,
-    parcheggio: true,
-    mappale: "1024",
-    lafe: true, // Vendibile a stranieri
-    rasi: true,
-    radon: false,
-    descrizione: "Stupenda villa minimalista con piscina a sfioro riscaldata, esposizione solare ottimale e vista mozzafiato a 180 gradi sul Lago di Lugano.",
-    proprietario_id: 2,
-    agente_id: 1,
-    // Nuovi campi dal CSV
-    tipo_residenza: "Secondaria",
-    estratto_registro_fondiario: "RF-Cademario-1024.pdf",
-    descrittivo_tecnico: "DT-Cademario-Completo.pdf",
-    regolamento_condominiale: "", // Campo vuoto per testare il trattino (-)
-    spese_condominiali: 0,
-    assicurazione_stabile: "ECA Ticino - CHF 1'200/anno",
-    verbale_ultima_assemblea: "",
-    fondo_rinnovamento: 0,
-    valore_di_stima: 3100000,
-    piano_assegnazioni: "Piano_Posteggi_Cademario.pdf",
-    fotografie: "https://homelab.ch/foto-cademario",
-    link_cartella_doc: "https://dropbox.com/homelab/cademario",
-    note_interne: "Trattativa riservata. Verificare disponibilità LAFE prima di procedere.",
-    creato_da: "OLGA HONCHAR",
-    ultima_modifica_il: "2026-05-26",
-    ultima_modifica_fatta_da: "MASSIMILIANO BOLDI",
-    immagine_di_riferimento: null,
-    mandato: null
+    nome_immobile: "Villa Vista Lago Bissone"
   },
   {
     id: 102,
-    nome_immobile: "#0006-PRESTIGIOSO 3.5 LOCALI CON FINITURE DI ALTO STANDING",
-    codice_immobile: "#6",
-    stato: "Disponibile",
-    immobile_in: "Affitto",
-    mandato_firmato: "Si",
-    tipo_di_mandato: "Non in Esclusiva",
-    prezzo_vendita: 0,
-    prezzo_affitto: 3100,
-    indirizzo: "Via San Salvatore 12",
-    comune: "Paradiso",
-    npa: "6900",
-    nazione: "Svizzera",
-    categoria: "Appartamento",
-    tipo: "Moderno",
-    superficie_abitabile: 110,
-    superficie_sul: 125,
-    locali: "3.5",
-    bagni: "2",
-    anno: 2021,
-    rinnovo: 0,
-    garage: true,
-    parcheggio: false,
-    mappale: "411",
-    lafe: true,
-    rasi: true,
-    radon: true,
-    descrizione: "Elegante appartamento situato a pochi passi dal lungolago. Dotato di domotica integrata, riscaldamento a pavimento e cantina vinicola privata.",
-    proprietario_id: 2,
-    agente_id: 1,
-    // Nuovi campi dal CSV
-    tipo_residenza: "Primaria",
-    estratto_registro_fondiario: "RF-Paradiso-411.pdf",
-    descrittivo_tecnico: "",
-    regolamento_condominiale: "Regolamento_Condo_Paradiso_2021.pdf",
-    spese_condominiali: 450,
-    assicurazione_stabile: "Assicurazione Stabile Allianz",
-    verbale_ultima_assemblea: "Verbale_Assemblea_Paradiso_2025.pdf",
-    fondo_rinnovamento: 15000,
-    valore_di_stima: 0,
-    piano_assegnazioni: "",
-    fotografie: "https://homelab.ch/foto-paradiso",
-    link_cartella_doc: "https://dropbox.com/homelab/paradiso",
-    note_interne: "Inquilino attuale lascia a fine settembre 2026. Preavviso visite 48h.",
-    creato_da: "OLGA HONCHAR",
-    ultima_modifica_il: "2026-05-12",
-    ultima_modifica_fatta_da: "OLGA HONCHAR",
-    immagine_di_riferimento: null,
-    mandato: null
-  },
-  {
-    id: 103,
-    nome_immobile: "#0007-ESCLUSIVO APPARTAMENTO CON PISCINA E GIARDINO VISTA LAGO",
-    codice_immobile: "#7",
-    stato: "In Trattativa",
-    immobile_in: "Vendita",
-    mandato_firmato: "Si",
-    tipo_di_mandato: "In Esclusiva",
-    prezzo_vendita: 2850000,
-    prezzo_affitto: 0,
-    indirizzo: "Via Riviera 8",
-    comune: "Bissone",
-    npa: "6816",
-    nazione: "Svizzera",
-    categoria: "Appartamento",
-    tipo: "Duplex",
-    superficie_abitabile: 240,
-    superficie_sul: 325,
-    locali: "5.5",
-    bagni: "4",
-    anno: 2015,
-    rinnovo: 2023,
-    garage: true,
-    parcheggio: true,
-    mappale: "902",
-    lafe: false,
-    rasi: true,
-    radon: false,
-    descrizione: "Meravigliosa proprietà bilivello con giardino privato pianeggiante, terrazza panoramica e accesso directo alla darsena condominiale.",
-    proprietario_id: 2,
-    agente_id: 1,
-    // Nuovi campi dal CSV
-    tipo_residenza: "Secondaria",
-    estratto_registro_fondiario: "RF-Bissone-902.pdf",
-    descrittivo_tecnico: "Descrittivo_Bissone_2015.pdf",
-    regolamento_condominiale: "Regolamento_Bissone.pdf",
-    spese_condominiali: 800,
-    assicurazione_stabile: "Generali Stabili",
-    verbale_ultima_assemblea: "Verbale_2025_Bissone.pdf",
-    fondo_rinnovamento: 45000,
-    valore_di_stima: 2600000,
-    piano_assegnazioni: "Assegnazione_Posti_Auto_Darsena.pdf",
-    fotografie: "https://homelab.ch/foto-bissone",
-    link_cartella_doc: "https://dropbox.com/homelab/bissone",
-    note_interne: "Offerta in corso a CHF 2'700'000 da parte di cliente estero.",
-    creato_da: "MASSIMILIANO BOLDI",
-    ultima_modifica_il: "2026-05-20",
-    ultima_modifica_fatta_da: "OLGA HONCHAR",
-    immagine_di_riferimento: null,
-    mandato: null
+    nome_immobile: "Attico Prestigioso Lugano"
   }
 ];
 
@@ -289,35 +146,13 @@ const INITIAL_VISITE = [
   {
     id: 30,
     immobile_id: 102,
-    data_ora: "2026-05-12T10:00",
-    tipo_visita: "Shooting Fotografico",
-    esito: "NEUTRO",
-    feedback: "Realizzazione dello shooting fotografico d'interni ed esterni completata con successo.",
-    cliente_id: 4, // Stefano Cau (Fotografo)
-    partecipanti: "Olga Honchar, Massimiliano Boldi, Stefano Cau",
-    creato_da: "MASSIMILIANO BOLDI"
-  },
-  {
-    id: 31,
-    immobile_id: 103,
-    data_ora: "2026-05-12T13:00",
-    tipo_visita: "Shooting Fotografico",
-    esito: "NEUTRO",
-    feedback: "Foto aeree tramite drone per valorizzare la vista lago e la terrazza rooftop.",
-    cliente_id: 4,
-    partecipanti: "Olga Honchar, Stefano Cau",
-    creato_da: "MASSIMILIANO BOLDI"
-  },
-  {
-    id: 32,
-    immobile_id: 101,
-    data_ora: "2026-06-18T15:30",
+    data_ora: "2026-06-18T10:00",
     tipo_visita: "Visita Cliente",
-    esito: "POSITIVO",
-    feedback: "Il cliente è rimasto entusiasta della zona giorno e della vista. Ha richiesto planimetria e rasi.",
-    cliente_id: 5, // Julio Kogan
-    partecipanti: "Olga Honchar, Julio Kogan Amaro",
-    creato_da: "OLGA HONCHAR"
+    esito: "NEUTRO",
+    feedback: "Primo incontro conoscitivo sull'immobile.",
+    cliente_id: 3,
+    partecipanti: "Massimiliano Boldi, Andrea Iannone",
+    creato_da: "MASSIMILIANO BOLDI"
   }
 ];
 
@@ -329,16 +164,7 @@ export default function App() {
   const [contatti, setContatti] = useState(INITIAL_CONTATTI);
   const [visite, setVisite] = useState(INITIAL_VISITE);
 
-  // States for form multi-select fields
-  const [formImmobileIn, setFormImmobileIn] = useState([]);
-  const [formTipi, setFormTipi] = useState([]);
-  const [formResidenze, setFormResidenze] = useState([]);
-
-  // States for file uploads and previews
-  const [selectedImmagineFile, setSelectedImmagineFile] = useState(null);
-  const [selectedMandatoFile, setSelectedMandatoFile] = useState(null);
-  const [immaginePreviewUrl, setImmaginePreviewUrl] = useState(null);
-  const [mandatoPreviewUrl, setMandatoPreviewUrl] = useState(null);
+  // States representing upload status
   const [isUploading, setIsUploading] = useState(false);
 
   async function fetchData() {
@@ -394,6 +220,7 @@ export default function App() {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   
   // Active Tab within the Immobile Detail Inspector (macOS-style)
+  // eslint-disable-next-line no-unused-vars
   const [activeDetailTab, setActiveDetailTab] = useState('generale');
 
   // Viewing Contact Detail modal state (Contatti)
@@ -419,6 +246,7 @@ export default function App() {
   }
 
   // --- MOCKUP VALUE RENDERER WITH TRATTINO (-) FALLBACK ---
+  // eslint-disable-next-line no-unused-vars
   const formatField = (value, unit = "", isCurrency = false) => {
     if (value === undefined || value === null || value === "" || value === 0 || value === "0" || value === false) {
       return <span className="text-gray-400 font-normal italic">-</span>;
@@ -438,95 +266,12 @@ export default function App() {
     const formData = new FormData(e.target);
     const idVal = formData.get('id');
     const id = idVal ? parseInt(idVal) : null;
-    
-    let rawCodice = formData.get('codice_immobile') || '';
-    if (rawCodice && !rawCodice.toString().startsWith('#')) {
-      rawCodice = '#' + rawCodice;
-    }
-    const codice_immobile = rawCodice || (id ? `#${String(id).slice(-3)}` : `#${String(Date.now()).slice(-3)}`);
 
     setIsUploading(true);
 
     try {
-      let finalImmagineUrl = currentImmobile ? currentImmobile.immagine_di_riferimento : null;
-      let finalMandatoUrl = currentImmobile ? currentImmobile.mandato : null;
-
-      // 1. Upload immagine_di_riferimento if selected
-      if (selectedImmagineFile) {
-        if (isRealSupabase) {
-          const fileName = `${Date.now()}_img_${selectedImmagineFile.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
-          finalImmagineUrl = await uploadFileToSupabase(selectedImmagineFile, 'immobili-files', fileName);
-        } else {
-          // Local simulate
-          finalImmagineUrl = URL.createObjectURL(selectedImmagineFile);
-        }
-      } else if (immaginePreviewUrl === null) {
-        finalImmagineUrl = null;
-      }
-
-      // 2. Upload mandato if selected
-      if (selectedMandatoFile) {
-        if (isRealSupabase) {
-          const fileName = `${Date.now()}_doc_${selectedMandatoFile.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
-          finalMandatoUrl = await uploadFileToSupabase(selectedMandatoFile, 'immobili-files', fileName);
-        } else {
-          // Local simulate
-          finalMandatoUrl = URL.createObjectURL(selectedMandatoFile);
-        }
-      } else if (mandatoPreviewUrl === null) {
-        finalMandatoUrl = null;
-      }
-
       const fields = {
         nome_immobile: formData.get('nome_immobile'),
-        codice_immobile,
-        stato: formData.get('stato'),
-        immobile_in: formImmobileIn.join(', '),
-        mandato_firmato: formData.get('mandato_firmato') || 'No',
-        tipo_di_mandato: formData.get('tipo_di_mandato') || "Non in Esclusiva",
-        prezzo_vendita: Number(formData.get('prezzo_vendita')) || 0,
-        prezzo_affitto: Number(formData.get('prezzo_affitto')) || 0,
-        indirizzo: formData.get('indirizzo'),
-        comune: formData.get('comune'),
-        npa: formData.get('npa'),
-        nazione: formData.get('nazione') || "Svizzera",
-        categoria: formData.get('categoria'),
-        tipo: formTipi.join(', '),
-        superficie_abitabile: Number(formData.get('superficie_abitabile')) || 0,
-        superficie_sul: Number(formData.get('superficie_sul')) || 0,
-        locali: formData.get('locali') || "",
-        bagni: formData.get('bagni') || "",
-        anno: Number(formData.get('anno')) || 0,
-        rinnovo: Number(formData.get('rinnovo')) || 0,
-        garage: formData.get('garage') === 'on',
-        parcheggio: formData.get('parcheggio') === 'on',
-        mappale: formData.get('mappale') || "",
-        lafe: formData.get('lafe') === 'on',
-        rasi: formData.get('rasi') === 'on',
-        radon: formData.get('radon') === 'on',
-        descrizione: formData.get('descrizione') || "",
-        proprietario_id: formData.get('proprietario_id') ? Number(formData.get('proprietario_id')) : null,
-        agente_id: formData.get('agente_id') ? Number(formData.get('agente_id')) : null,
-        
-        tipo_residenza: formResidenze.join(', '),
-        estratto_registro_fondiario: formData.get('estratto_registro_fondiario') || "",
-        descrittivo_tecnico: formData.get('descrittivo_tecnico') || "",
-        regolamento_condominiale: formData.get('regolamento_condominiale') || "",
-        spese_condominiali: Number(formData.get('spese_condominiali')) || 0,
-        assicurazione_stabile: formData.get('assicurazione_stabile') || "",
-        verbale_ultima_assemblea: formData.get('verbale_ultima_assemblea') || "",
-        fondo_rinnovamento: Number(formData.get('fondo_rinnovamento')) || 0,
-        valore_di_stima: Number(formData.get('valore_di_stima')) || 0,
-        piano_assegnazioni: formData.get('piano_assegnazioni') || "",
-        fotografie: formData.get('fotografie') || "",
-        link_cartella_doc: formData.get('link_cartella_doc') || "",
-        note_interne: formData.get('note_interne') || "",
-        planimetria: formData.get('planimetria') || "",
-        creato_da: formData.get('creato_da') || "OLGA HONCHAR",
-        ultima_modifica_il: new Date().toISOString().split('T')[0],
-        ultima_modifica_fatta_da: "UTENTE CRM",
-        immagine_di_riferimento: finalImmagineUrl,
-        mandato: finalMandatoUrl
       };
 
       if (isRealSupabase) {
@@ -576,36 +321,9 @@ export default function App() {
     }
   };
 
-  const uploadFileToSupabase = async (file, bucketName, pathName) => {
-    const { error } = await supabase.storage
-      .from(bucketName)
-      .upload(pathName, file, { cacheControl: '3600', upsert: true });
-    
-    if (error) {
-      console.error(`Errore di upload per ${file.name}:`, error);
-      throw new Error(`Errore durante l'upload del file: ${error.message}`);
-    }
-
-    const { data: { publicUrl } } = supabase.storage
-      .from(bucketName)
-      .getPublicUrl(pathName);
-
-    return publicUrl;
-  };
-
   const handleOpenImmobileModal = (item = null) => {
     setCurrentImmobile(item);
-    setFormImmobileIn(item ? (item.immobile_in ? item.immobile_in.split(', ') : []) : ['Vendita']);
-    setFormTipi(item ? (item.tipo ? item.tipo.split(', ') : []) : []);
-    setFormResidenze(item ? (item.tipo_residenza ? item.tipo_residenza.split(', ') : []) : []);
-    
-    // Reset file states
-    setSelectedImmagineFile(null);
-    setSelectedMandatoFile(null);
-    setImmaginePreviewUrl(item ? item.immagine_di_riferimento : null);
-    setMandatoPreviewUrl(item ? item.mandato : null);
     setIsUploading(false);
-    
     setIsImmobileModalOpen(true);
   };
 
@@ -838,16 +556,19 @@ export default function App() {
   };
 
   // Helpers to get related data easily
+  // eslint-disable-next-line no-unused-vars
   const getContactName = (id) => {
     const contact = contatti.find(c => c.id === id);
     return contact ? `${contact.nome} ${contact.cognome}` : 'Non assegnato';
   };
 
+  // eslint-disable-next-line no-unused-vars
   const getContactPhone = (id) => {
     const contact = contatti.find(c => c.id === id);
     return contact ? contact.telefono : '';
   };
 
+  // eslint-disable-next-line no-unused-vars
   const getContactEmail = (id) => {
     const contact = contatti.find(c => c.id === id);
     return contact ? contact.mail : '';
@@ -1002,7 +723,7 @@ export default function App() {
                 <span className="text-xs font-semibold text-[#86868B] uppercase tracking-wider">Portafoglio Stimato</span>
                 <div className="my-2">
                   <span className="text-2xl font-bold tracking-tight text-[#1D1D1F]">
-                    CHF {(immobili.reduce((acc, curr) => acc + curr.prezzo_vendita, 0) / 1000000).toFixed(2)}M
+                    CHF {(immobili.reduce((acc, curr) => acc + (curr.prezzo_vendita || 0), 0) / 1000000).toFixed(2)}M
                   </span>
                 </div>
                 <span className="text-xs text-[#86868B]">Valore degli immobili in vendita</span>
@@ -1150,126 +871,53 @@ export default function App() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {immobili
                 .filter(item => {
-                  const matchSearch = (item.nome_immobile || '').toLowerCase().includes(searchProperty.toLowerCase()) || (item.comune || '').toLowerCase().includes(searchProperty.toLowerCase());
-                  const matchType = filterPropertyType === 'Tutti' || (item.immobile_in && item.immobile_in.split(', ').includes(filterPropertyType));
-                  return matchSearch && matchType;
+                  const matchSearch = (item.nome_immobile || '').toLowerCase().includes(searchProperty.toLowerCase());
+                  return matchSearch;
                 })
                 .map((item) => (
                   <div 
                     key={item.id} 
                     onClick={() => handleViewImmobile(item)}
-                    className="bg-white rounded-2xl border border-[#E5E5EA] shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col justify-between cursor-pointer group"
+                    className="bg-white rounded-2xl border border-[#E5E5EA] shadow-sm hover:shadow-md transition-all p-5 cursor-pointer group flex flex-col justify-between space-y-4"
                   >
-                    
-                    {/* Header Card Photo / PlaceHolder */}
-                    <div className="h-44 relative flex items-center justify-center overflow-hidden bg-gradient-to-br from-[#E5E5EA] to-[#D2D2D7]">
-                      {item.immagine_di_riferimento ? (
-                        <img 
-                          src={item.immagine_di_riferimento} 
-                          alt={item.nome_immobile} 
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                      ) : (
-                        <div className="text-center text-[#86868B] select-none p-4">
-                          <svg className="w-12 h-12 mx-auto text-[#86868B]/60 mb-1 group-hover:scale-105 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                          </svg>
-                          <span className="text-xs font-semibold block">{item.comune}, {item.nazione}</span>
-                        </div>
-                      )}
-
-                      <div className="absolute top-3 left-3 flex space-x-2">
-                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase shadow-sm ${getStatoColor(item.stato)}`}>
-                          {item.stato}
-                        </span>
-                        <span className="bg-black/40 backdrop-blur-md text-white px-2.5 py-1 rounded-full text-[10px] font-semibold tracking-wide shadow-sm">
-                          {item.categoria}
+                    <div>
+                      <div className="flex justify-between items-start">
+                        <span className="text-[10px] uppercase font-bold tracking-widest text-[#86868B]">
+                          ID: #{item.id}
                         </span>
                       </div>
-                      
-                      {/* Pill indicating Sale / Rent */}
-                      <span className="absolute bottom-3 right-3 bg-[#0071E3] text-white text-[11px] font-bold px-3 py-1 rounded-full shadow-sm">
-                        In {item.immobile_in}
-                      </span>
+                      <h3 className="font-bold text-base tracking-tight text-[#1D1D1F] mt-1.5 group-hover:text-[#0071E3] transition-colors leading-tight">
+                        {item.nome_immobile}
+                      </h3>
                     </div>
 
-                    {/* Property details */}
-                    <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
-                      <div>
-                        <h3 className="font-bold text-base tracking-tight text-[#1D1D1F] line-clamp-2 leading-tight group-hover:text-[#0071E3] transition-colors">
-                          {item.nome_immobile}
-                        </h3>
-                        <p className="text-xs text-[#86868B] mt-1.5 leading-relaxed line-clamp-3">
-                          {item.descrizione}
-                        </p>
-                      </div>
-
-                      {/* Technical Spec Metrics */}
-                      <div className="grid grid-cols-3 gap-2 border-t border-b border-[#F5F5F7] py-3 text-center">
-                        <div>
-                          <span className="block text-[10px] font-medium text-[#86868B] uppercase tracking-wider">Locali</span>
-                          <span className="text-xs font-semibold text-[#1D1D1F]">{item.locali}</span>
-                        </div>
-                        <div>
-                          <span className="block text-[10px] font-medium text-[#86868B] uppercase tracking-wider">Sup. SUL</span>
-                          <span className="text-xs font-semibold text-[#1D1D1F]">{item.superficie_sul} $m^2$</span>
-                        </div>
-                        <div>
-                          <span className="block text-[10px] font-medium text-[#86868B] uppercase tracking-wider">Mappale</span>
-                          <span className="text-xs font-semibold text-[#1D1D1F]">{item.mappale || 'N/D'}</span>
-                        </div>
-                      </div>
-
-                      {/* Price and Action Buttons */}
-                      <div className="flex items-center justify-between pt-1">
-                        <div>
-                          <span className="block text-[10px] text-[#86868B] uppercase font-semibold">Prezzo</span>
-                          <span className="text-lg font-extrabold tracking-tight text-[#1D1D1F] block leading-tight">
-                            {item.immobile_in?.includes('Vendita') && item.prezzo_vendita > 0 && (
-                              <div className="text-sm font-extrabold text-[#1D1D1F]">
-                                Vendita: CHF {item.prezzo_vendita.toLocaleString('it-CH')}
-                              </div>
-                            )}
-                            {item.immobile_in?.includes('Affitto') && item.prezzo_affitto > 0 && (
-                              <div className="text-[11px] font-semibold text-[#86868B]">
-                                Affitto: CHF {item.prezzo_affitto.toLocaleString('it-CH')}/mese
-                              </div>
-                            )}
-                            {(!item.immobile_in || (!item.immobile_in.includes('Vendita') && !item.immobile_in.includes('Affitto'))) && (
-                              <span className="text-[#86868B] text-sm font-semibold">-</span>
-                            )}
-                          </span>
-                        </div>
-                        
-                        <div className="flex items-center space-x-1.5">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation(); // Prevents opening the detail modal
-                              handleEditImmobile(item);
-                            }}
-                            className="p-2 bg-[#F5F5F7] hover:bg-[#E5E5EA] rounded-xl text-gray-700 transition-all"
-                            title="Modifica"
-                          >
-                            <IconEdit />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation(); // Prevents opening the detail modal
-                              handleDeleteImmobile(item.id);
-                            }}
-                            className="p-2 bg-red-50 hover:bg-red-100 rounded-xl text-red-600 transition-all"
-                            title="Elimina"
-                          >
-                            <IconTrash />
-                          </button>
-                        </div>
+                    <div className="flex items-center justify-end pt-3 border-t border-[#F5F5F7]">
+                      <div className="flex items-center space-x-1.5">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevents opening the detail modal
+                            handleEditImmobile(item);
+                          }}
+                          className="p-2 bg-[#F5F5F7] hover:bg-[#E5E5EA] rounded-xl text-gray-700 transition-all"
+                          title="Modifica"
+                        >
+                          <IconEdit />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevents opening the detail modal
+                            handleDeleteImmobile(item.id);
+                          }}
+                          className="p-2 bg-red-50 hover:bg-red-100 rounded-xl text-red-600 transition-all"
+                          title="Elimina"
+                        >
+                          <IconTrash />
+                        </button>
                       </div>
                     </div>
-
                   </div>
                 ))}
             </div>
-
           </div>
         )}
 
@@ -1537,20 +1185,17 @@ export default function App() {
         <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/20 backdrop-blur-sm transition-all">
           <div className="absolute inset-0 -z-10" onClick={() => setIsDetailModalOpen(false)}></div>
           
-          <div className="w-full max-w-2xl h-full bg-white shadow-2xl border-l border-[#E5E5EA] flex flex-col animate-slide-left overflow-hidden">
+          <div className="w-full max-w-md h-full bg-white shadow-2xl border-l border-[#E5E5EA] flex flex-col animate-slide-left overflow-hidden">
             
             {/* Header Banner */}
             <div className="bg-[#F5F5F7] p-6 border-b border-[#E5E5EA] flex justify-between items-start">
               <div className="space-y-1">
                 <span className="text-[10px] uppercase font-bold tracking-widest text-[#86868B]">
-                  ID Prodotto #{formatField(viewingImmobile.id)} • Number: {formatField(viewingImmobile.codice_immobile)}
+                  ID Prodotto #{viewingImmobile.id}
                 </span>
                 <h3 className="text-xl font-bold tracking-tight text-[#1D1D1F] leading-snug">
                   {viewingImmobile.nome_immobile}
                 </h3>
-                <p className="text-xs text-[#86868B] flex items-center">
-                  <span className="mr-1">🗺️</span> {formatField(viewingImmobile.indirizzo)}, {formatField(viewingImmobile.comune)} ({formatField(viewingImmobile.npa)}) • {formatField(viewingImmobile.nazione)}
-                </p>
               </div>
               <button 
                 onClick={() => setIsDetailModalOpen(false)}
@@ -1560,344 +1205,23 @@ export default function App() {
               </button>
             </div>
 
-            {viewingImmobile.immagine_di_riferimento && (
-              <div className="w-full h-56 relative overflow-hidden bg-gray-100 border-b border-[#E5E5EA]">
-                <img 
-                  src={viewingImmobile.immagine_di_riferimento} 
-                  alt={viewingImmobile.nome_immobile} 
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            )}
-
-            {/* Apple-Style Segmented Tab Bar inside Inspector */}
-            <div className="px-6 py-2 bg-white border-b border-[#E5E5EA] flex space-x-1 overflow-x-auto">
-              {[
-                { id: 'generale', label: 'Generale' },
-                { id: 'specifiche', label: 'Specifiche' },
-                { id: 'amministrazione', label: 'Amministrazione' },
-                { id: 'conformita', label: 'Conformità CH' },
-                { id: 'media', label: 'Media & Doc' }
-              ].map(tab => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveDetailTab(tab.id)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold tracking-tight whitespace-nowrap transition-all ${
-                    activeDetailTab === tab.id
-                      ? 'bg-[#0071E3] text-white shadow-sm'
-                      : 'text-[#86868B] hover:bg-[#F5F5F7] hover:text-[#1D1D1F]'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Content Drawer Scrollable with dynamic tabs */}
+            {/* Content Drawer Scrollable */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-white">
-              
-              {/* TAB 1: GENERALE */}
-              {activeDetailTab === 'generale' && (
-                <div className="space-y-6">
-                  {/* Status, Contract & Price */}
-                  <div className="bg-[#F5F5F7] p-5 rounded-2xl border border-[#E5E5EA] grid grid-cols-2 gap-4">
-                    <div>
-                      <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">Stato Prodotto</span>
-                      <span className={`inline-flex px-3 py-1 rounded-full text-[10px] font-bold uppercase shadow-sm ${getStatoColor(viewingImmobile.stato)}`}>
-                        {formatField(viewingImmobile.stato)}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">Tipo di Contratto</span>
-                      <span className="text-sm font-bold text-[#1D1D1F]">
-                        In {formatField(viewingImmobile.immobile_in)}
-                      </span>
-                    </div>
-                    <div className="border-t border-gray-200/60 pt-3">
-                      <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">Prezzo Vendita</span>
-                      <span className="text-base font-extrabold text-[#1D1D1F]">
-                        {formatField(viewingImmobile.prezzo_vendita, "", true)}
-                      </span>
-                    </div>
-                    <div className="border-t border-gray-200/60 pt-3">
-                      <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">Prezzo Affitto</span>
-                      <span className="text-base font-extrabold text-[#1D1D1F]">
-                        {formatField(viewingImmobile.prezzo_affitto, "/mese", true)}
-                      </span>
-                    </div>
+              <div className="space-y-4">
+                <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Informazioni</span>
+                <div className="bg-[#F5F5F7] p-5 rounded-2xl border border-[#E5E5EA] space-y-3">
+                  <div>
+                    <span className="block text-xs font-semibold text-[#86868B]">Nome Immobile</span>
+                    <span className="text-sm font-bold text-[#1D1D1F]">{viewingImmobile.nome_immobile}</span>
                   </div>
-
-                  {/* Descrizione */}
-                  <div className="space-y-1">
-                    <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Descrizione Commerciale</span>
-                    <p className="text-sm text-[#1D1D1F] leading-relaxed whitespace-pre-wrap bg-gray-50 p-4 rounded-xl border border-[#E5E5EA]">
-                      {viewingImmobile.descrizione || <span className="text-gray-400 italic">- Nessuna descrizione inserita</span>}
-                    </p>
-                  </div>
-
-                  {/* Referenti */}
-                  <div className="space-y-3">
-                    <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Anagrafiche Collegate</span>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Proprietario */}
-                      <div className="bg-white p-3.5 rounded-xl border border-[#E5E5EA]">
-                        <span className="block text-[9px] uppercase font-bold text-[#86868B]">Proprietario</span>
-                        <span className="font-bold text-sm text-[#1D1D1F] block mt-0.5">
-                          {getContactName(viewingImmobile.proprietario_id)}
-                        </span>
-                        {viewingImmobile.proprietario_id && (
-                          <div className="mt-2 text-xs text-[#86868B] space-y-0.5">
-                            <p>📞 {getContactPhone(viewingImmobile.proprietario_id)}</p>
-                            <p>✉️ {getContactEmail(viewingImmobile.proprietario_id)}</p>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Agente */}
-                      <div className="bg-white p-3.5 rounded-xl border border-[#E5E5EA]">
-                        <span className="block text-[9px] uppercase font-bold text-[#86868B]">Agente Responsabile</span>
-                        <span className="font-bold text-sm text-[#1D1D1F] block mt-0.5">
-                          {getContactName(viewingImmobile.agente_id)}
-                        </span>
-                        {viewingImmobile.agente_id && (
-                          <div className="mt-2 text-xs text-[#86868B] space-y-0.5">
-                            <p>📞 {getContactPhone(viewingImmobile.agente_id)}</p>
-                            <p>✉️ {getContactEmail(viewingImmobile.agente_id)}</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                  <div>
+                    <span className="block text-xs font-semibold text-[#86868B]">Creato il</span>
+                    <span className="text-xs text-[#1D1D1F]">
+                      {viewingImmobile.created_at ? new Date(viewingImmobile.created_at).toLocaleString('it-CH') : 'Non disponibile'}
+                    </span>
                   </div>
                 </div>
-              )}
-
-              {/* TAB 2: SPECIFICHE TECNICHE */}
-              {activeDetailTab === 'specifiche' && (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-2 gap-y-4 gap-x-6 text-sm">
-                    <div className="border-b pb-2">
-                      <span className="block text-xs text-[#86868B]">Categoria Catasto:</span>
-                      <span className="font-semibold text-[#1D1D1F]">{formatField(viewingImmobile.categoria)}</span>
-                    </div>
-                    <div className="border-b pb-2">
-                      <span className="block text-xs text-[#86868B]">Tipologia Struttura:</span>
-                      <span className="font-semibold text-[#1D1D1F]">{formatField(viewingImmobile.tipo)}</span>
-                    </div>
-                    <div className="border-b pb-2">
-                      <span className="block text-xs text-[#86868B]">Numero di Locali:</span>
-                      <span className="font-semibold text-[#1D1D1F]">{formatField(viewingImmobile.locali)}</span>
-                    </div>
-                    <div className="border-b pb-2">
-                      <span className="block text-xs text-[#86868B]">Numero Bagni:</span>
-                      <span className="font-semibold text-[#1D1D1F]">{formatField(viewingImmobile.bagni)}</span>
-                    </div>
-                    <div className="border-b pb-2">
-                      <span className="block text-xs text-[#86868B]">Superficie Abitabile:</span>
-                      <span className="font-semibold text-[#1D1D1F]">{formatField(viewingImmobile.superficie_abitabile, " $m^2$")}</span>
-                    </div>
-                    <div className="border-b pb-2">
-                      <span className="block text-xs text-[#86868B]">Superficie SUL (S. Utile Lorda):</span>
-                      <span className="font-semibold text-[#1D1D1F]">{formatField(viewingImmobile.superficie_sul, " $m^2$")}</span>
-                    </div>
-                    <div className="border-b pb-2">
-                      <span className="block text-xs text-[#86868B]">Anno di Costruzione:</span>
-                      <span className="font-semibold text-[#1D1D1F]">{formatField(viewingImmobile.anno)}</span>
-                    </div>
-                    <div className="border-b pb-2">
-                      <span className="block text-xs text-[#86868B]">Ultimo Rinnovo:</span>
-                      <span className="font-semibold text-[#1D1D1F]">{formatField(viewingImmobile.rinnovo)}</span>
-                    </div>
-                    <div className="border-b pb-2">
-                      <span className="block text-xs text-[#86868B]">Tipo di Residenza:</span>
-                      <span className="font-semibold text-[#1D1D1F]">{formatField(viewingImmobile.tipo_residenza)}</span>
-                    </div>
-                    <div className="border-b pb-2">
-                      <span className="block text-xs text-[#86868B]">Autorimessa / Garage:</span>
-                      <span className="font-semibold text-[#1D1D1F]">{formatField(viewingImmobile.garage)}</span>
-                    </div>
-                    <div className="border-b pb-2">
-                      <span className="block text-xs text-[#86868B]">Parcheggio Esterno:</span>
-                      <span className="font-semibold text-[#1D1D1F]">{formatField(viewingImmobile.parcheggio)}</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* TAB 3: AMMINISTRAZIONE E COSTI */}
-              {activeDetailTab === 'amministrazione' && (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-2 gap-y-4 gap-x-6 text-sm">
-                    <div className="border-b pb-2">
-                      <span className="block text-xs text-[#86868B]">Numero di Mappale:</span>
-                      <span className="font-semibold text-[#1D1D1F]">{formatField(viewingImmobile.mappale)}</span>
-                    </div>
-                    <div className="border-b pb-2">
-                      <span className="block text-xs text-[#86868B]">Spese Condominiali Annuali:</span>
-                      <span className="font-semibold text-[#1D1D1F]">{formatField(viewingImmobile.spese_condominiali, "", true)}</span>
-                    </div>
-                    <div className="border-b pb-2">
-                      <span className="block text-xs text-[#86868B]">Assicurazione Stabile:</span>
-                      <span className="font-semibold text-[#1D1D1F]">{formatField(viewingImmobile.assicurazione_stabile)}</span>
-                    </div>
-                    <div className="border-b pb-2">
-                      <span className="block text-xs text-[#86868B]">Fondo Rinnovamento Condominiale:</span>
-                      <span className="font-semibold text-[#1D1D1F]">{formatField(viewingImmobile.fondo_rinnovamento, "", true)}</span>
-                    </div>
-                    <div className="border-b pb-2 md:col-span-2">
-                      <span className="block text-xs text-[#86868B]">Valore di Stima Ufficiale:</span>
-                      <span className="font-semibold text-[#1D1D1F]">{formatField(viewingImmobile.valore_di_stima, "", true)}</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* TAB 4: CONFORMITÀ SVIZZERA */}
-              {activeDetailTab === 'conformita' && (
-                <div className="space-y-6">
-                  <div className="space-y-4">
-                    
-                    {/* RaSi Block */}
-                    <div className="flex items-start space-x-3 p-3 bg-gray-50 rounded-xl border border-[#E5E5EA]">
-                      <div className={`p-1.5 rounded-lg text-white ${viewingImmobile.rasi ? 'bg-[#34C759]' : 'bg-[#FF3B30]'}`}>
-                        {viewingImmobile.rasi ? '✓' : '✕'}
-                      </div>
-                      <div>
-                        <h5 className="text-xs font-bold text-[#1D1D1F]">Controllo Sicurezza Impianti Elettrici (RaSi)</h5>
-                        <p className="text-[11px] text-[#86868B] mt-0.5">Certificazione svizzera obbligatoria per legge.</p>
-                        <span className="text-xs font-semibold block mt-1">Stato: {formatField(viewingImmobile.rasi)}</span>
-                      </div>
-                    </div>
-
-                    {/* Certificato Radon Block */}
-                    <div className="flex items-start space-x-3 p-3 bg-gray-50 rounded-xl border border-[#E5E5EA]">
-                      <div className={`p-1.5 rounded-lg text-white ${viewingImmobile.radon ? 'bg-[#FF9500]' : 'bg-[#34C759]'}`}>
-                        {viewingImmobile.radon ? '⚠️' : '✓'}
-                      </div>
-                      <div>
-                        <h5 className="text-xs font-bold text-[#1D1D1F]">Certificato di Concentrazione Gas Radon</h5>
-                        <p className="text-[11px] text-[#86868B] mt-0.5">Misurazione dei livelli di sicurezza sanitaria nei locali.</p>
-                        <span className="text-xs font-semibold block mt-1">Stato: {formatField(viewingImmobile.radon)}</span>
-                      </div>
-                    </div>
-
-                    {/* LAFE Block */}
-                    <div className="flex items-start space-x-3 p-3 bg-gray-50 rounded-xl border border-[#E5E5EA]">
-                      <div className={`p-1.5 rounded-lg text-white ${viewingImmobile.lafe ? 'bg-[#34C759]' : 'bg-[#FF3B30]'}`}>
-                        📬
-                      </div>
-                      <div>
-                        <h5 className="text-xs font-bold text-[#1D1D1F]">Acquisto da parte di Persone all'Estero (LAFE)</h5>
-                        <p className="text-[11px] text-[#86868B] mt-0.5">Conformità con la legislazione svizzera per l'acquisto di immobili.</p>
-                        <span className="text-xs font-semibold block mt-1">Vendibile a stranieri: {formatField(viewingImmobile.lafe)}</span>
-                      </div>
-                    </div>
-
-                    {/* Mandato di Vendita Block */}
-                    <div className="flex items-start space-x-3 p-3 bg-gray-50 rounded-xl border border-[#E5E5EA]">
-                      <div className={`p-1.5 rounded-lg text-white ${getMandatoColor(viewingImmobile.mandato_firmato)}`}>
-                        ✍️
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h5 className="text-xs font-bold text-[#1D1D1F]">Mandato Firmato & Tipo Mandato</h5>
-                        <p className="text-[11px] text-[#86868B] mt-0.5">Accordo scritto per l'attività di intermediazione.</p>
-                        <div className="grid grid-cols-2 gap-x-4 mt-2 text-xs">
-                          <div>
-                            <span className="text-[#86868B]">Firmato:</span> <span className="font-semibold">{viewingImmobile.mandato_firmato === 'Si' ? 'Sì' : formatField(viewingImmobile.mandato_firmato)}</span>
-                          </div>
-                          <div>
-                            <span className="text-[#86868B]">Tipo:</span> <span className="font-semibold">{formatField(viewingImmobile.tipo_di_mandato)}</span>
-                          </div>
-                        </div>
-                        {viewingImmobile.mandato && (
-                          <div className="mt-2.5 pt-2 border-t border-gray-200/60">
-                            <a 
-                              href={viewingImmobile.mandato} 
-                              target="_blank" 
-                              rel="noreferrer" 
-                              className="inline-flex items-center space-x-1 text-xs font-semibold text-[#0071E3] hover:underline"
-                            >
-                              <span>📄</span> <span>Visualizza / Scarica documento Mandato</span>
-                            </a>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                  </div>
-                </div>
-              )}
-
-              {/* TAB 5: MEDIA E DOCUMENTAZIONE (PLANIMETRIA, FOTO, CARTELLA) */}
-              {activeDetailTab === 'media' && (
-                <div className="space-y-6">
-                  
-                  {/* Digital Files Registry */}
-                  <div className="space-y-3">
-                    <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Documenti di Archivio</span>
-                    
-                    <div className="space-y-2 text-xs">
-                      {[
-                        { label: 'Planimetria Immobile', val: viewingImmobile.planimetria },
-                        { label: 'Estratto Registro Fondiario', val: viewingImmobile.estratto_registro_fondiario },
-                        { label: 'Descrittivo Tecnico', val: viewingImmobile.descrittivo_tecnico },
-                        { label: 'Regolamento Condominiale', val: viewingImmobile.regolamento_condominiale },
-                        { label: 'Verbale Ultima Assemblea', val: viewingImmobile.verbale_ultima_assemblea },
-                        { label: 'Piano Assegnazioni Parti Comuni', val: viewingImmobile.piano_assegnazioni },
-                      ].map((doc, idx) => (
-                        <div key={idx} className="flex justify-between items-center p-2.5 bg-gray-50 rounded-lg border border-[#E5E5EA]">
-                          <span className="font-semibold text-gray-700">{doc.label}</span>
-                          <span className="text-right text-[#1D1D1F]">
-                            {doc.val ? (
-                              <span className="text-[#0071E3] font-medium underline cursor-pointer">{doc.val}</span>
-                            ) : (
-                              formatField(null)
-                            )}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Links & Cloud Storage folders */}
-                  <div className="space-y-3">
-                    <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Link Esterni & Servizi Cloud</span>
-                    
-                    <div className="space-y-2 text-xs">
-                      <div className="p-3 bg-[#0071E3]/5 rounded-xl border border-[#0071E3]/15">
-                        <span className="font-bold text-[#0071E3] block mb-1">📁 Cartella Documentazione Cloud</span>
-                        <div className="flex justify-between items-center">
-                          <span className="text-[#86868B] truncate max-w-[320px]">{formatField(viewingImmobile.link_cartella_doc)}</span>
-                          {viewingImmobile.link_cartella_doc && (
-                            <a href={viewingImmobile.link_cartella_doc} target="_blank" rel="noreferrer" className="text-xs bg-[#0071E3] text-white px-3 py-1 rounded-full font-semibold">Apri Dropbox</a>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="p-3 bg-[#34C759]/5 rounded-xl border border-[#34C759]/15">
-                        <span className="font-bold text-[#34C759] block mb-1">📸 Archivio Fotografico (Fotografie)</span>
-                        <div className="flex justify-between items-center">
-                          <span className="text-[#86868B] truncate max-w-[320px]">{formatField(viewingImmobile.fotografie)}</span>
-                          {viewingImmobile.fotografie && (
-                            <a href={viewingImmobile.fotografie} target="_blank" rel="noreferrer" className="text-xs bg-[#34C759] text-white px-3 py-1 rounded-full font-semibold">Apri Foto</a>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Metadata and history logs */}
-                  <div className="bg-gray-100 p-3.5 rounded-xl text-[11px] text-[#86868B] space-y-1">
-                    <span className="block font-bold text-gray-500 uppercase tracking-wide text-[9px] mb-1">Log Sincronizzazione CRM</span>
-                    <p>Creato da: <span className="font-semibold text-gray-700">{formatField(viewingImmobile.creato_da)}</span></p>
-                    <p>Ultimo aggiornamento il: <span className="font-semibold text-gray-700">{formatField(viewingImmobile.ultima_modifica_il)}</span></p>
-                    <p>Modificato da: <span className="font-semibold text-gray-700">{formatField(viewingImmobile.ultima_modifica_fatta_da)}</span></p>
-                    <p className="mt-2 text-[10px] text-gray-400">Note Interne Segrete: <span className="font-semibold text-gray-600 block bg-white p-2 rounded border border-gray-200 mt-1">{formatField(viewingImmobile.note_interne)}</span></p>
-                  </div>
-
-                </div>
-              )}
-
+              </div>
             </div>
 
             {/* Footer Actions */}
@@ -1909,13 +1233,13 @@ export default function App() {
                 }}
                 className="flex-1 bg-[#0071E3] hover:bg-[#0077ED] text-white py-3 rounded-full font-bold text-sm transition-all text-center shadow-sm flex items-center justify-center space-x-1"
               >
-                <IconEdit /> <span>Modifica Scheda</span>
+                <IconEdit /> <span>Modifica</span>
               </button>
               <button 
                 onClick={() => setIsDetailModalOpen(false)}
                 className="flex-1 bg-white hover:bg-gray-100 border border-[#D2D2D7] text-[#1D1D1F] py-3 rounded-full font-semibold text-sm transition-all text-center"
               >
-                Chiudi Inspector
+                Chiudi
               </button>
             </div>
 
@@ -2022,7 +1346,7 @@ export default function App() {
                           <span className="font-bold text-sm text-[#1D1D1F] group-hover:text-[#0071E3] transition-all">
                             {imm.nome_immobile}
                           </span>
-                          <p className="text-xs text-[#86868B]">{imm.comune} • CHF {imm.prezzo_vendita > 0 ? imm.prezzo_vendita.toLocaleString('it-CH') : imm.prezzo_affitto.toLocaleString('it-CH')}</p>
+                          <p className="text-xs text-[#86868B]">ID: #{imm.id}</p>
                         </div>
                         <span className="text-xs text-[#86868B] group-hover:text-[#0071E3] transition-all">􀄧</span>
                       </div>
@@ -2091,14 +1415,14 @@ export default function App() {
       {/* ========================================================= */}
       {isImmobileModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-white w-full max-w-3xl rounded-3xl shadow-2xl border border-[#E5E5EA] overflow-hidden my-8 max-h-[90vh] flex flex-col">
+          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl border border-[#E5E5EA] overflow-hidden flex flex-col">
             
             <div className="px-6 py-4 border-b border-[#E5E5EA] flex justify-between items-center bg-[#F5F5F7]">
               <div>
                 <h3 className="text-lg font-bold tracking-tight text-[#1D1D1F]">
-                  {currentImmobile ? 'Modifica Scheda Immobile' : 'Registra Nuovo Prodotto Immobile'}
+                  {currentImmobile ? 'Modifica Immobile' : 'Registra Immobile'}
                 </h3>
-                <p className="text-xs text-[#86868B]">Compila tutti i campi presenti nell'anagrafica d'importazione</p>
+                <p className="text-xs text-[#86868B]">Inserisci i dati essenziali dell'immobile</p>
               </div>
               <button 
                 onClick={() => setIsImmobileModalOpen(false)}
@@ -2108,618 +1432,19 @@ export default function App() {
               </button>
             </div>
 
-            <form onSubmit={handleSaveImmobile} className="flex-1 overflow-y-auto p-6 space-y-6">
+            <form onSubmit={handleSaveImmobile} className="p-6 space-y-4">
               {currentImmobile && <input type="hidden" name="id" value={currentImmobile.id} />}
 
-              {/* GENERALE & PREZZI */}
-              <div className="space-y-4">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-[#0071E3] border-b pb-1">1. Dati Identificativi & Commerciali</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Nome Immobile Completo *</label>
-                    <input 
-                      type="text" 
-                      name="nome_immobile" 
-                      required
-                      placeholder="es. Proprietà Vista Lago a Bissone"
-                      defaultValue={currentImmobile ? currentImmobile.nome_immobile : ''}
-                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all text-[#1D1D1F]"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Codice *</label>
-                    <div className="relative flex items-center">
-                      <span className="absolute left-3 text-sm font-semibold text-[#86868B]">#</span>
-                      <input 
-                        type="number" 
-                        name="codice_immobile" 
-                        required
-                        placeholder="0001"
-                        defaultValue={currentImmobile ? currentImmobile.codice_immobile?.replace('#', '') : ''}
-                        className="w-full pl-7 pr-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all text-[#1D1D1F]"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Immobile in (Selezione Multipla) *</label>
-                    <div className="flex space-x-6 py-2">
-                      <label className="flex items-center space-x-2 text-sm text-[#1D1D1F] cursor-pointer">
-                        <input 
-                          type="checkbox" 
-                          checked={formImmobileIn.includes('Vendita')}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setFormImmobileIn([...formImmobileIn, 'Vendita']);
-                            } else {
-                              setFormImmobileIn(formImmobileIn.filter(x => x !== 'Vendita'));
-                            }
-                          }}
-                          className="rounded text-[#0071E3] focus:ring-[#0071E3]"
-                        />
-                        <span>Vendita</span>
-                      </label>
-                      <label className="flex items-center space-x-2 text-sm text-[#1D1D1F] cursor-pointer">
-                        <input 
-                          type="checkbox" 
-                          checked={formImmobileIn.includes('Affitto')}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setFormImmobileIn([...formImmobileIn, 'Affitto']);
-                            } else {
-                              setFormImmobileIn(formImmobileIn.filter(x => x !== 'Affitto'));
-                            }
-                          }}
-                          className="rounded text-[#0071E3] focus:ring-[#0071E3]"
-                        />
-                        <span>Affitto</span>
-                      </label>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Stato Operativo *</label>
-                    <select 
-                      name="stato" 
-                      defaultValue={currentImmobile ? currentImmobile.stato : 'Disponibile'}
-                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F]"
-                    >
-                      <option value="Disponibile">Disponibile</option>
-                      <option value="In Trattativa">In Trattativa</option>
-                      <option value="Venduto">Venduto</option>
-                      <option value="Affittato">Affittato</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Prezzo di Vendita (CHF)</label>
-                    <input 
-                      type="number" 
-                      name="prezzo_vendita" 
-                      placeholder="es. 3450000"
-                      defaultValue={currentImmobile ? currentImmobile.prezzo_vendita : ''}
-                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Prezzo Affitto Mensile (CHF)</label>
-                    <input 
-                      type="number" 
-                      name="prezzo_affitto" 
-                      placeholder="es. 3100"
-                      defaultValue={currentImmobile ? currentImmobile.prezzo_affitto : ''}
-                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Mandato Firmato *</label>
-                    <select 
-                      name="mandato_firmato" 
-                      defaultValue={currentImmobile ? currentImmobile.mandato_firmato : 'No'}
-                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F]"
-                    >
-                      <option value="No">No</option>
-                      <option value="Stand By">Stand By</option>
-                      <option value="Si">Sì</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Tipo di Mandato *</label>
-                    <select 
-                      name="tipo_di_mandato" 
-                      defaultValue={currentImmobile ? currentImmobile.tipo_di_mandato : 'Non in Esclusiva'}
-                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F]"
-                    >
-                      <option value="Non in Esclusiva">Non in Esclusiva</option>
-                      <option value="In Esclusiva">In Esclusiva</option>
-                    </select>
-                  </div>
-
-                  {/* File Uploads for Immagine di Riferimento and Mandato Document */}
-                  <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                    <div>
-                      <label className="block text-xs font-semibold text-[#86868B] mb-1">Immagine di Riferimento (Upload)</label>
-                      <div className="flex flex-col space-y-2">
-                        {immaginePreviewUrl && (
-                          <div className="relative w-full h-32 rounded-xl overflow-hidden border border-[#E5E5EA]">
-                            <img src={immaginePreviewUrl} alt="Anteprima immagine" className="w-full h-full object-cover" />
-                            <button 
-                              type="button" 
-                              onClick={() => {
-                                setImmaginePreviewUrl(null);
-                                setSelectedImmagineFile(null);
-                              }}
-                              className="absolute top-2 right-2 bg-black/60 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-black/80"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        )}
-                        <input 
-                          type="file" 
-                          accept="image/*"
-                          onChange={(e) => {
-                            const file = e.target.files[0];
-                            if (file) {
-                              setSelectedImmagineFile(file);
-                              setImmaginePreviewUrl(URL.createObjectURL(file));
-                            }
-                          }}
-                          className="text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#0071E3]/10 file:text-[#0071E3] hover:file:bg-[#0071E3]/20"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-[#86868B] mb-1">Documento Mandato (PDF o Foto)</label>
-                      <div className="flex flex-col space-y-2">
-                        {mandatoPreviewUrl && (
-                          <div className="flex items-center justify-between p-2 bg-[#F5F5F7] rounded-xl border border-[#E5E5EA]">
-                            <span className="text-xs truncate text-[#1D1D1F] max-w-[180px]">
-                              {selectedMandatoFile ? selectedMandatoFile.name : (mandatoPreviewUrl.startsWith('blob:') ? 'Nuovo File' : 'Mandato Caricato')}
-                            </span>
-                            <div className="flex space-x-2">
-                              {!mandatoPreviewUrl.startsWith('blob:') && (
-                                <a href={mandatoPreviewUrl} target="_blank" rel="noreferrer" className="text-[10px] text-[#0071E3] hover:underline">
-                                  Vedi
-                                </a>
-                              )}
-                              <button 
-                                type="button" 
-                                onClick={() => {
-                                  setMandatoPreviewUrl(null);
-                                  setSelectedMandatoFile(null);
-                                }}
-                                className="text-red-500 text-xs font-semibold hover:underline"
-                              >
-                                Rimuovi
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                        <input 
-                          type="file" 
-                          accept="image/*,application/pdf"
-                          onChange={(e) => {
-                            const file = e.target.files[0];
-                            if (file) {
-                              setSelectedMandatoFile(file);
-                              setMandatoPreviewUrl(URL.createObjectURL(file));
-                            }
-                          }}
-                          className="text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#0071E3]/10 file:text-[#0071E3] hover:file:bg-[#0071E3]/20"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* SPECIFICHE FISICHE & LOCALIZZAZIONE */}
-              <div className="space-y-4">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-[#0071E3] border-b pb-1">2. Localizzazione & Caratteristiche</h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="md:col-span-2">
-                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Indirizzo *</label>
-                    <input 
-                      type="text" 
-                      name="indirizzo" 
-                      required
-                      placeholder="Via Cantonale 1"
-                      defaultValue={currentImmobile ? currentImmobile.indirizzo : ''}
-                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Comune *</label>
-                    <input 
-                      type="text" 
-                      name="comune" 
-                      required
-                      placeholder="Lugano"
-                      defaultValue={currentImmobile ? currentImmobile.comune : ''}
-                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-[#86868B] mb-1">NPA *</label>
-                    <input 
-                      type="number" 
-                      name="npa" 
-                      required
-                      placeholder="6900"
-                      defaultValue={currentImmobile ? currentImmobile.npa : ''}
-                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Nazione</label>
-                    <input 
-                      type="text" 
-                      name="nazione" 
-                      defaultValue={currentImmobile ? currentImmobile.nazione : 'Svizzera'}
-                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Categoria *</label>
-                    <select 
-                      name="categoria" 
-                      defaultValue={currentImmobile ? currentImmobile.categoria : 'Appartamento'}
-                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F]"
-                    >
-                      <option value="Appartamento">Appartamento</option>
-                      <option value="Casa">Casa</option>
-                      <option value="Locali di Servizio">Locali di Servizio</option>
-                      <option value="Terreno">Terreno</option>
-                      <option value="Parcheggio">Parcheggio</option>
-                      <option value="Box">Box</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Numero di Locali</label>
-                    <input 
-                      type="text" 
-                      name="locali" 
-                      placeholder="es. 3.5, 4.5"
-                      defaultValue={currentImmobile ? currentImmobile.locali : ''}
-                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Numero Bagni</label>
-                    <input 
-                      type="text" 
-                      name="bagni" 
-                      placeholder="es. 2, 3.5"
-                      defaultValue={currentImmobile ? currentImmobile.bagni : ''}
-                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Superficie Abitabile (m²)</label>
-                    <input 
-                      type="number" 
-                      name="superficie_abitabile" 
-                      defaultValue={currentImmobile ? currentImmobile.superficie_abitabile : ''}
-                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Superficie SUL (m²)</label>
-                    <input 
-                      type="number" 
-                      name="superficie_sul" 
-                      defaultValue={currentImmobile ? currentImmobile.superficie_sul : ''}
-                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                    />
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label className="block text-xs font-semibold text-[#86868B] mb-2">Tipo di Residenza (Selezione Multipla)</label>
-                    <div className="flex gap-2">
-                      {['Primaria', 'Secondaria'].map(r => {
-                        const selected = formResidenze.includes(r);
-                        return (
-                          <button
-                            key={r}
-                            type="button"
-                            onClick={() => {
-                              if (selected) {
-                                setFormResidenze(formResidenze.filter(x => x !== r));
-                              } else {
-                                setFormResidenze([...formResidenze, r]);
-                              }
-                            }}
-                            className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all border ${
-                              selected 
-                                ? 'bg-[#0071E3] text-white border-transparent shadow-sm' 
-                                : 'bg-[#F5F5F7] text-[#1D1D1F] border-[#D2D2D7] hover:bg-[#E5E5EA]'
-                            }`}
-                          >
-                            {r}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <div className="md:col-span-3">
-                    <label className="block text-xs font-semibold text-[#86868B] mb-2">Tipo (Selezione Multipla)</label>
-                    <div className="flex flex-wrap gap-2">
-                      {[
-                        'Appartamento', 'Attico', 'Villa', 'Duplex', 'Loft', 'Casa a Schiera', 
-                        'Casa Unifamiliare', 'Ufficio', 'Rustico', "Parcheggio all'Aperto", 
-                        'Parcheggio al Coperto', 'Garage', 'Terreno Commerciale', 'Terreno per Costruire'
-                      ].map(t => {
-                        const selected = formTipi.includes(t);
-                        return (
-                          <button
-                            key={t}
-                            type="button"
-                            onClick={() => {
-                              if (selected) {
-                                setFormTipi(formTipi.filter(x => x !== t));
-                              } else {
-                                setFormTipi([...formTipi, t]);
-                              }
-                            }}
-                            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${
-                              selected 
-                                ? 'bg-[#0071E3] text-white border-transparent shadow-sm' 
-                                : 'bg-[#F5F5F7] text-[#1D1D1F] border-[#D2D2D7] hover:bg-[#E5E5EA]'
-                            }`}
-                          >
-                            {t}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* AMMINISTRAZIONE SVIZZERA */}
-              <div className="space-y-4">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-[#0071E3] border-b pb-1">3. Amministrazione & Costi condominiali</h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Mappale</label>
-                    <input 
-                      type="text" 
-                      name="mappale" 
-                      placeholder="N. Mappale"
-                      defaultValue={currentImmobile ? currentImmobile.mappale : ''}
-                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Spese Condominiali (CHF/anno)</label>
-                    <input 
-                      type="number" 
-                      name="spese_condominiali" 
-                      defaultValue={currentImmobile ? currentImmobile.spese_condominiali : ''}
-                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Assicurazione Stabile</label>
-                    <input 
-                      type="text" 
-                      name="assicurazione_stabile" 
-                      defaultValue={currentImmobile ? currentImmobile.assicurazione_stabile : ''}
-                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Fondo di Rinnovamento</label>
-                    <input 
-                      type="number" 
-                      name="fondo_rinnovamento" 
-                      defaultValue={currentImmobile ? currentImmobile.fondo_rinnovamento : ''}
-                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Valore di Stima (CHF)</label>
-                    <input 
-                      type="number" 
-                      name="valore_di_stima" 
-                      defaultValue={currentImmobile ? currentImmobile.valore_di_stima : ''}
-                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* CONFORMITÀ SVIZZERA & DOCUMENTAZIONE */}
-              <div className="space-y-4">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-[#0071E3] border-b pb-1">4. Verifiche Tecniche, Legali & Documenti (CH)</h4>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                  <div className="flex items-center space-x-2">
-                    <input 
-                      type="checkbox" 
-                      name="lafe" 
-                      id="lafe"
-                      defaultChecked={currentImmobile ? currentImmobile.lafe : false}
-                      className="rounded text-[#0071E3]"
-                    />
-                    <label htmlFor="lafe" className="text-xs font-medium text-[#1D1D1F]">Vendibile LAFE</label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <input 
-                      type="checkbox" 
-                      name="rasi" 
-                      id="rasi"
-                      defaultChecked={currentImmobile ? currentImmobile.rasi : false}
-                      className="rounded text-[#0071E3]"
-                    />
-                    <label htmlFor="rasi" className="text-xs font-medium text-[#1D1D1F]">RaSi Ok</label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <input 
-                      type="checkbox" 
-                      name="radon" 
-                      id="radon"
-                      defaultChecked={currentImmobile ? currentImmobile.radon : false}
-                      className="rounded text-[#0071E3]"
-                    />
-                    <label htmlFor="radon" className="text-xs font-medium text-[#1D1D1F]">Radon Testato</label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <input 
-                      type="checkbox" 
-                      name="garage" 
-                      id="garage"
-                      defaultChecked={currentImmobile ? currentImmobile.garage : false}
-                      className="rounded text-[#0071E3]"
-                    />
-                    <label htmlFor="garage" className="text-xs font-medium text-[#1D1D1F]">Garage</label>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Nome Planimetria PDF</label>
-                    <input 
-                      type="text" 
-                      name="planimetria" 
-                      defaultValue={currentImmobile ? currentImmobile.planimetria : ''}
-                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Nome Estratto Registro Fondiario</label>
-                    <input 
-                      type="text" 
-                      name="estratto_registro_fondiario" 
-                      defaultValue={currentImmobile ? currentImmobile.estratto_registro_fondiario : ''}
-                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Nome Descrittivo Tecnico</label>
-                    <input 
-                      type="text" 
-                      name="descrittivo_tecnico" 
-                      defaultValue={currentImmobile ? currentImmobile.descrittivo_tecnico : ''}
-                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Nome Regolamento Condominiale</label>
-                    <input 
-                      type="text" 
-                      name="regolamento_condominiale" 
-                      defaultValue={currentImmobile ? currentImmobile.regolamento_condominiale : ''}
-                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Nome Verbale Ultima Assemblea</label>
-                    <input 
-                      type="text" 
-                      name="verbale_ultima_assemblea" 
-                      defaultValue={currentImmobile ? currentImmobile.verbale_ultima_assemblea : ''}
-                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Nome Piano Assegnazioni</label>
-                    <input 
-                      type="text" 
-                      name="piano_assegnazioni" 
-                      defaultValue={currentImmobile ? currentImmobile.piano_assegnazioni : ''}
-                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* ASSEGNAZIONE & LINK ESTERNI */}
-              <div className="space-y-4">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-[#0071E3] border-b pb-1">5. Link, Relazioni & Note Segrete</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Proprietario *</label>
-                    <select 
-                      name="proprietario_id"
-                      defaultValue={currentImmobile ? currentImmobile.proprietario_id : ''}
-                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                    >
-                      <option value="">Nessuno (Seleziona contatto)</option>
-                      {contatti
-                        .filter(c => c.ruolo.includes('Proprietario') || c.ruolo.includes('Locatore'))
-                        .map(c => (
-                          <option key={c.id} value={c.id}>{c.cognome} {c.nome} ({c.ruolo})</option>
-                        ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Agente Responsabile</label>
-                    <select 
-                      name="agente_id"
-                      defaultValue={currentImmobile ? currentImmobile.agente_id : ''}
-                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                    >
-                      <option value="">Nessuno</option>
-                      {contatti
-                        .filter(c => c.ruolo.includes('Agente'))
-                        .map(c => (
-                          <option key={c.id} value={c.id}>{c.cognome} {c.nome}</option>
-                        ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Cartella Cloud URL (Dropbox/Drive)</label>
-                    <input 
-                      type="text" 
-                      name="link_cartella_doc" 
-                      defaultValue={currentImmobile ? currentImmobile.link_cartella_doc : ''}
-                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Cartella Fotografica URL</label>
-                    <input 
-                      type="text" 
-                      name="fotografie" 
-                      defaultValue={currentImmobile ? currentImmobile.fotografie : ''}
-                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Descrittivo dell'immobile (Pubblico)</label>
-                    <textarea 
-                      name="descrizione" 
-                      rows="3"
-                      defaultValue={currentImmobile ? currentImmobile.descrizione : ''}
-                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Note Interne Operative (Segrete)</label>
-                    <textarea 
-                      name="note_interne" 
-                      rows="3"
-                      defaultValue={currentImmobile ? currentImmobile.note_interne : ''}
-                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                    />
-                  </div>
-                </div>
+              <div>
+                <label className="block text-xs font-semibold text-[#86868B] mb-1">Nome Immobile Completo *</label>
+                <input 
+                  type="text" 
+                  name="nome_immobile" 
+                  required
+                  placeholder="es. Villa Vista Lago Bissone"
+                  defaultValue={currentImmobile ? currentImmobile.nome_immobile : ''}
+                  className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all text-[#1D1D1F]"
+                />
               </div>
 
               {/* Action Buttons */}
@@ -2731,7 +1456,7 @@ export default function App() {
                 >
                   Annulla
                 </button>
-                 <button 
+                <button 
                   type="submit" 
                   disabled={isUploading}
                   className="px-5 py-2 bg-[#0071E3] hover:bg-[#0077ED] disabled:bg-[#0071E3]/50 text-white rounded-full text-sm font-semibold transition-all shadow-sm flex items-center space-x-1.5"
@@ -2742,10 +1467,10 @@ export default function App() {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                       </svg>
-                      <span>Salvataggio in corso...</span>
+                      <span>Salvataggio...</span>
                     </>
                   ) : (
-                    <span>Salva Scheda</span>
+                    <span>Salva</span>
                   )}
                 </button>
               </div>

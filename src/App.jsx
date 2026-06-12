@@ -1,5 +1,5 @@
 import { supabase, isRealSupabase } from './supabaseClient';
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 
 // --- INLINE BEAUTIFUL SVG ICONS (Apple Style) ---
 const IconDashboard = () => (
@@ -55,6 +55,25 @@ const IconCloud = ({ connected }) => (
     <path strokeLinecap="round" strokeLinejoin="round" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
   </svg>
 );
+
+const getStatoColor = (stato) => {
+  switch (stato) {
+    case 'Disponibile': return 'bg-[#34C759] text-white';
+    case 'In Trattativa': return 'bg-[#FF9500] text-white';
+    case 'Venduto': return 'bg-[#FF3B30] text-white';
+    case 'Affittato': return 'bg-[#0071E3] text-white';
+    default: return 'bg-[#86868B] text-white';
+  }
+};
+
+const getMandatoColor = (mandato) => {
+  switch (mandato) {
+    case 'Si': return 'bg-[#34C759] text-white';
+    case 'Stand By': return 'bg-[#FF9500] text-white';
+    case 'No': return 'bg-[#FF3B30] text-white';
+    default: return 'bg-[#86868B] text-white';
+  }
+};
 
 // --- INITIAL MOCK DATA FROM REAL CSVs ---
 const INITIAL_CONTATTI = [
@@ -114,11 +133,11 @@ const INITIAL_IMMOBILI = [
   {
     id: 101,
     nome: "#0001-ESCLUSIVA PROPRIETÀ VISTA LAGO A CADEMARIO",
-    codice: "1",
-    stato: "Attivo",
+    codice: "#1",
+    stato: "Disponibile",
     immobile_in: "Vendita",
-    mandato_firmato: true,
-    tipo_mandato: "Esclusiva",
+    mandato_firmato: "Si",
+    tipo_mandato: "In Esclusiva",
     prezzo_vendita: 3450000,
     prezzo_affitto: 0,
     indirizzo: "Via Cantonale 45",
@@ -143,7 +162,7 @@ const INITIAL_IMMOBILI = [
     proprietario_id: 2,
     agente_id: 1,
     // Nuovi campi dal CSV
-    tipo_residenza: "Secondaria ammessa",
+    tipo_residenza: "Secondaria",
     estratto_registro_fondiario: "RF-Cademario-1024.pdf",
     descrittivo_tecnico: "DT-Cademario-Completo.pdf",
     regolamento_condominiale: "", // Campo vuoto per testare il trattino (-)
@@ -163,11 +182,11 @@ const INITIAL_IMMOBILI = [
   {
     id: 102,
     nome: "#0006-PRESTIGIOSO 3.5 LOCALI CON FINITURE DI ALTO STANDING",
-    codice: "6",
-    stato: "Attivo",
+    codice: "#6",
+    stato: "Disponibile",
     immobile_in: "Affitto",
-    mandato_firmato: true,
-    tipo_mandato: "Semi-Esclusiva",
+    mandato_firmato: "Si",
+    tipo_mandato: "Non in Esclusiva",
     prezzo_vendita: 0,
     prezzo_affitto: 3100,
     indirizzo: "Via San Salvatore 12",
@@ -192,7 +211,7 @@ const INITIAL_IMMOBILI = [
     proprietario_id: 2,
     agente_id: 1,
     // Nuovi campi dal CSV
-    tipo_residenza: "Solo Primaria",
+    tipo_residenza: "Primaria",
     estratto_registro_fondiario: "RF-Paradiso-411.pdf",
     descrittivo_tecnico: "",
     regolamento_condominiale: "Regolamento_Condo_Paradiso_2021.pdf",
@@ -212,11 +231,11 @@ const INITIAL_IMMOBILI = [
   {
     id: 103,
     nome: "#0007-ESCLUSIVO APPARTAMENTO CON PISCINA E GIARDINO VISTA LAGO",
-    codice: "7",
-    stato: "In trattativa",
+    codice: "#7",
+    stato: "In Trattativa",
     immobile_in: "Vendita",
-    mandato_firmato: true,
-    tipo_mandato: "Esclusiva",
+    mandato_firmato: "Si",
+    tipo_mandato: "In Esclusiva",
     prezzo_vendita: 2850000,
     prezzo_affitto: 0,
     indirizzo: "Via Riviera 8",
@@ -241,7 +260,7 @@ const INITIAL_IMMOBILI = [
     proprietario_id: 2,
     agente_id: 1,
     // Nuovi campi dal CSV
-    tipo_residenza: "Secondaria ammessa",
+    tipo_residenza: "Secondaria",
     estratto_registro_fondiario: "RF-Bissone-902.pdf",
     descrittivo_tecnico: "Descrittivo_Bissone_2015.pdf",
     regolamento_condominiale: "Regolamento_Bissone.pdf",
@@ -304,13 +323,12 @@ export default function App() {
   const [contatti, setContatti] = useState(INITIAL_CONTATTI);
   const [visite, setVisite] = useState(INITIAL_VISITE);
 
-  useEffect(() => {
-    if (isRealSupabase) {
-      fetchData();
-    }
-  }, []);
+  // States for form multi-select fields
+  const [formImmobileIn, setFormImmobileIn] = useState([]);
+  const [formTipi, setFormTipi] = useState([]);
+  const [formResidenze, setFormResidenze] = useState([]);
 
-  const fetchData = async () => {
+  async function fetchData() {
     try {
       const { data: contattiData, error: contattiError } = await supabase
         .from('contatti')
@@ -338,7 +356,14 @@ export default function App() {
       console.error("Errore di sincronizzazione Supabase:", error);
       triggerToast("Errore di connessione Supabase. Uso dati locali.", "error");
     }
-  };
+  }
+
+  useEffect(() => {
+    if (isRealSupabase) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      fetchData();
+    }
+  }, []);
 
   // Search & Filter states
   const [searchProperty, setSearchProperty] = useState('');
@@ -373,12 +398,12 @@ export default function App() {
 
 
 
-  const triggerToast = (message, type = "success") => {
+  function triggerToast(message, type = "success") {
     setToast({ message, type });
     setTimeout(() => {
       setToast(null);
     }, 3500);
-  };
+  }
 
   // --- MOCKUP VALUE RENDERER WITH TRATTINO (-) FALLBACK ---
   const formatField = (value, unit = "", isCurrency = false) => {
@@ -401,13 +426,19 @@ export default function App() {
     const idVal = formData.get('id');
     const id = idVal ? parseInt(idVal) : null;
     
+    let rawCodice = formData.get('codice') || '';
+    if (rawCodice && !rawCodice.toString().startsWith('#')) {
+      rawCodice = '#' + rawCodice;
+    }
+    const codice = rawCodice || (id ? `#${String(id).slice(-3)}` : `#${String(Date.now()).slice(-3)}`);
+
     const fields = {
       nome: formData.get('nome'),
-      codice: formData.get('codice') || (id ? String(id).slice(-3) : String(Date.now()).slice(-3)),
+      codice,
       stato: formData.get('stato'),
-      immobile_in: formData.get('immobile_in'),
-      mandato_firmato: formData.get('mandato_firmato') === 'on',
-      tipo_mandato: formData.get('tipo_mandato') || "",
+      immobile_in: formImmobileIn.join(', '),
+      mandato_firmato: formData.get('mandato_firmato') || 'No',
+      tipo_mandato: formData.get('tipo_mandato') || "Non in Esclusiva",
       prezzo_vendita: Number(formData.get('prezzo_vendita')) || 0,
       prezzo_affitto: Number(formData.get('prezzo_affitto')) || 0,
       indirizzo: formData.get('indirizzo'),
@@ -415,7 +446,7 @@ export default function App() {
       npa: formData.get('npa'),
       nazione: formData.get('nazione') || "Svizzera",
       categoria: formData.get('categoria'),
-      tipo: formData.get('tipo') || "",
+      tipo: formTipi.join(', '),
       superficie_abitabile: Number(formData.get('superficie_abitabile')) || 0,
       superficie_sul: Number(formData.get('superficie_sul')) || 0,
       locali: formData.get('locali') || "",
@@ -432,7 +463,7 @@ export default function App() {
       proprietario_id: formData.get('proprietario_id') ? Number(formData.get('proprietario_id')) : null,
       agente_id: formData.get('agente_id') ? Number(formData.get('agente_id')) : null,
       
-      tipo_residenza: formData.get('tipo_residenza') || "",
+      tipo_residenza: formResidenze.join(', '),
       estratto_registro_fondiario: formData.get('estratto_registro_fondiario') || "",
       descrittivo_tecnico: formData.get('descrittivo_tecnico') || "",
       regolamento_condominiale: formData.get('regolamento_condominiale') || "",
@@ -499,6 +530,9 @@ export default function App() {
 
   const handleEditImmobile = (item) => {
     setCurrentImmobile(item);
+    setFormImmobileIn(item.immobile_in ? item.immobile_in.split(', ') : []);
+    setFormTipi(item.tipo ? item.tipo.split(', ') : []);
+    setFormResidenze(item.tipo_residenza ? item.tipo_residenza.split(', ') : []);
     setIsImmobileModalOpen(true);
   };
 
@@ -923,7 +957,13 @@ export default function App() {
               <h3 className="text-lg font-semibold tracking-tight text-[#1D1D1F] mb-4">Azioni Rapide</h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <button
-                  onClick={() => { setIsImmobileModalOpen(true); setCurrentImmobile(null); }}
+                  onClick={() => { 
+                    setFormImmobileIn(['Vendita']);
+                    setFormTipi([]);
+                    setFormResidenze([]);
+                    setCurrentImmobile(null); 
+                    setIsImmobileModalOpen(true); 
+                  }}
                   className="bg-[#0071E3] hover:bg-[#0077ED] text-white p-4 rounded-2xl font-medium text-sm transition-all flex items-center justify-center space-x-2 shadow-sm"
                 >
                   <IconPlus /> <span>Registra Nuovo Immobile</span>
@@ -994,7 +1034,13 @@ export default function App() {
                 <h2 className="text-3xl font-bold tracking-tight text-[#1D1D1F]">Immobili</h2>
               </div>
               <button
-                onClick={() => { setIsImmobileModalOpen(true); setCurrentImmobile(null); }}
+                onClick={() => { 
+                  setFormImmobileIn(['Vendita']);
+                  setFormTipi([]);
+                  setFormResidenze([]);
+                  setCurrentImmobile(null); 
+                  setIsImmobileModalOpen(true); 
+                }}
                 className="bg-[#0071E3] hover:bg-[#0077ED] text-white px-4 py-2 rounded-full text-sm font-medium transition-all shadow-sm flex items-center self-start"
               >
                 <IconPlus /> Nuovo Immobile
@@ -1040,7 +1086,7 @@ export default function App() {
               {immobili
                 .filter(item => {
                   const matchSearch = item.nome.toLowerCase().includes(searchProperty.toLowerCase()) || item.comune.toLowerCase().includes(searchProperty.toLowerCase());
-                  const matchType = filterPropertyType === 'Tutti' || item.immobile_in === filterPropertyType;
+                  const matchType = filterPropertyType === 'Tutti' || (item.immobile_in && item.immobile_in.split(', ').includes(filterPropertyType));
                   return matchSearch && matchType;
                 })
                 .map((item) => (
@@ -1053,9 +1099,7 @@ export default function App() {
                     {/* Header Card Photo / PlaceHolder */}
                     <div className="h-44 bg-gradient-to-br from-[#E5E5EA] to-[#D2D2D7] relative flex items-center justify-center p-4">
                       <div className="absolute top-3 left-3 flex space-x-2">
-                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase shadow-sm ${
-                          item.stato === 'Attivo' ? 'bg-[#34C759] text-white' : 'bg-[#FF9500] text-white'
-                        }`}>
+                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase shadow-sm ${getStatoColor(item.stato)}`}>
                           {item.stato}
                         </span>
                         <span className="bg-black/40 backdrop-blur-md text-white px-2.5 py-1 rounded-full text-[10px] font-semibold tracking-wide shadow-sm">
@@ -1108,11 +1152,20 @@ export default function App() {
                       <div className="flex items-center justify-between pt-1">
                         <div>
                           <span className="block text-[10px] text-[#86868B] uppercase font-semibold">Prezzo</span>
-                          <span className="text-lg font-extrabold tracking-tight text-[#1D1D1F]">
-                            {item.immobile_in === 'Vendita' 
-                              ? `CHF ${item.prezzo_vendita.toLocaleString('it-CH')}`
-                              : `CHF ${item.prezzo_affitto.toLocaleString('it-CH')}/mese`
-                            }
+                          <span className="text-lg font-extrabold tracking-tight text-[#1D1D1F] block leading-tight">
+                            {item.immobile_in?.includes('Vendita') && item.prezzo_vendita > 0 && (
+                              <div className="text-sm font-extrabold text-[#1D1D1F]">
+                                Vendita: CHF {item.prezzo_vendita.toLocaleString('it-CH')}
+                              </div>
+                            )}
+                            {item.immobile_in?.includes('Affitto') && item.prezzo_affitto > 0 && (
+                              <div className="text-[11px] font-semibold text-[#86868B]">
+                                Affitto: CHF {item.prezzo_affitto.toLocaleString('it-CH')}/mese
+                              </div>
+                            )}
+                            {(!item.immobile_in || (!item.immobile_in.includes('Vendita') && !item.immobile_in.includes('Affitto'))) && (
+                              <span className="text-[#86868B] text-sm font-semibold">-</span>
+                            )}
                           </span>
                         </div>
                         
@@ -1468,9 +1521,7 @@ export default function App() {
                   <div className="bg-[#F5F5F7] p-5 rounded-2xl border border-[#E5E5EA] grid grid-cols-2 gap-4">
                     <div>
                       <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">Stato Prodotto</span>
-                      <span className={`inline-flex px-3 py-1 rounded-full text-xs font-bold uppercase shadow-sm ${
-                        viewingImmobile.stato === 'Attivo' ? 'bg-[#34C759] text-white' : 'bg-[#FF9500] text-white'
-                      }`}>
+                      <span className={`inline-flex px-3 py-1 rounded-full text-[10px] font-bold uppercase shadow-sm ${getStatoColor(viewingImmobile.stato)}`}>
                         {formatField(viewingImmobile.stato)}
                       </span>
                     </div>
@@ -1662,7 +1713,7 @@ export default function App() {
 
                     {/* Mandato di Vendita Block */}
                     <div className="flex items-start space-x-3 p-3 bg-gray-50 rounded-xl border border-[#E5E5EA]">
-                      <div className={`p-1.5 rounded-lg text-white ${viewingImmobile.mandato_firmato ? 'bg-[#0071E3]' : 'bg-[#FF3B30]'}`}>
+                      <div className={`p-1.5 rounded-lg text-white ${getMandatoColor(viewingImmobile.mandato_firmato)}`}>
                         ✍️
                       </div>
                       <div>
@@ -1670,7 +1721,7 @@ export default function App() {
                         <p className="text-[11px] text-[#86868B] mt-0.5">Accordo scritto per l'attività di intermediazione.</p>
                         <div className="grid grid-cols-2 gap-x-4 mt-2 text-xs">
                           <div>
-                            <span className="text-[#86868B]">Firmato:</span> <span className="font-semibold">{formatField(viewingImmobile.mandato_firmato)}</span>
+                            <span className="text-[#86868B]">Firmato:</span> <span className="font-semibold">{viewingImmobile.mandato_firmato === 'Si' ? 'Sì' : formatField(viewingImmobile.mandato_firmato)}</span>
                           </div>
                           <div>
                             <span className="text-[#86868B]">Tipo:</span> <span className="font-semibold">{formatField(viewingImmobile.tipo_mandato)}</span>
@@ -1970,41 +2021,80 @@ export default function App() {
               <div className="space-y-4">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-[#0071E3] border-b pb-1">1. Dati Identificativi & Commerciali</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="md:col-span-2">
+                  <div>
                     <label className="block text-xs font-semibold text-[#86868B] mb-1">Nome Immobile Completo *</label>
                     <input 
                       type="text" 
                       name="nome" 
                       required
-                      placeholder="es. #0001-ESCLUSIVA PROPRIETÀ VISTA LAGO A CADEMARIO"
+                      placeholder="es. Proprietà Vista Lago a Bissone"
                       defaultValue={currentImmobile ? currentImmobile.nome : ''}
                       className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all text-[#1D1D1F]"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Immobile in *</label>
-                    <select 
-                      name="immobile_in" 
-                      defaultValue={currentImmobile ? currentImmobile.immobile_in : 'Vendita'}
-                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                    >
-                      <option value="Vendita">Vendita</option>
-                      <option value="Affitto">Affitto</option>
-                    </select>
+                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Codice *</label>
+                    <div className="relative flex items-center">
+                      <span className="absolute left-3 text-sm font-semibold text-[#86868B]">#</span>
+                      <input 
+                        type="number" 
+                        name="codice" 
+                        required
+                        placeholder="0001"
+                        defaultValue={currentImmobile ? currentImmobile.codice?.replace('#', '') : ''}
+                        className="w-full pl-7 pr-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all text-[#1D1D1F]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Immobile in (Selezione Multipla) *</label>
+                    <div className="flex space-x-6 py-2">
+                      <label className="flex items-center space-x-2 text-sm text-[#1D1D1F] cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          checked={formImmobileIn.includes('Vendita')}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setFormImmobileIn([...formImmobileIn, 'Vendita']);
+                            } else {
+                              setFormImmobileIn(formImmobileIn.filter(x => x !== 'Vendita'));
+                            }
+                          }}
+                          className="rounded text-[#0071E3] focus:ring-[#0071E3]"
+                        />
+                        <span>Vendita</span>
+                      </label>
+                      <label className="flex items-center space-x-2 text-sm text-[#1D1D1F] cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          checked={formImmobileIn.includes('Affitto')}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setFormImmobileIn([...formImmobileIn, 'Affitto']);
+                            } else {
+                              setFormImmobileIn(formImmobileIn.filter(x => x !== 'Affitto'));
+                            }
+                          }}
+                          className="rounded text-[#0071E3] focus:ring-[#0071E3]"
+                        />
+                        <span>Affitto</span>
+                      </label>
+                    </div>
                   </div>
 
                   <div>
                     <label className="block text-xs font-semibold text-[#86868B] mb-1">Stato Operativo *</label>
                     <select 
                       name="stato" 
-                      defaultValue={currentImmobile ? currentImmobile.stato : 'Attivo'}
-                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
+                      defaultValue={currentImmobile ? currentImmobile.stato : 'Disponibile'}
+                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F]"
                     >
-                      <option value="Attivo">Attivo</option>
-                      <option value="In trattativa">In trattativa</option>
-                      <option value="Sospeso">Sospeso</option>
+                      <option value="Disponibile">Disponibile</option>
+                      <option value="In Trattativa">In Trattativa</option>
                       <option value="Venduto">Venduto</option>
+                      <option value="Affittato">Affittato</option>
                     </select>
                   </div>
 
@@ -2031,25 +2121,28 @@ export default function App() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Tipo Mandato</label>
-                    <input 
-                      type="text" 
-                      name="tipo_mandato" 
-                      placeholder="es. Esclusiva, Semi-Esclusiva"
-                      defaultValue={currentImmobile ? currentImmobile.tipo_mandato : ''}
-                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                    />
+                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Mandato Firmato *</label>
+                    <select 
+                      name="mandato_firmato" 
+                      defaultValue={currentImmobile ? currentImmobile.mandato_firmato : 'No'}
+                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F]"
+                    >
+                      <option value="No">No</option>
+                      <option value="Stand By">Stand By</option>
+                      <option value="Si">Sì</option>
+                    </select>
                   </div>
 
-                  <div className="flex items-center space-x-2 pt-6">
-                    <input 
-                      type="checkbox" 
-                      name="mandato_firmato" 
-                      id="mandato_firmato"
-                      defaultChecked={currentImmobile ? currentImmobile.mandato_firmato : false}
-                      className="rounded text-[#0071E3] focus:ring-[#0071E3]"
-                    />
-                    <label htmlFor="mandato_firmato" className="text-xs font-semibold text-[#1D1D1F]">Mandato Firmato</label>
+                  <div>
+                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Tipo di Mandato *</label>
+                    <select 
+                      name="tipo_mandato" 
+                      defaultValue={currentImmobile ? currentImmobile.tipo_mandato : 'Non in Esclusiva'}
+                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F]"
+                    >
+                      <option value="Non in Esclusiva">Non in Esclusiva</option>
+                      <option value="In Esclusiva">In Esclusiva</option>
+                    </select>
                   </div>
                 </div>
               </div>
@@ -2084,12 +2177,12 @@ export default function App() {
                   <div>
                     <label className="block text-xs font-semibold text-[#86868B] mb-1">NPA *</label>
                     <input 
-                      type="text" 
+                      type="number" 
                       name="npa" 
                       required
                       placeholder="6900"
                       defaultValue={currentImmobile ? currentImmobile.npa : ''}
-                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
+                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F]"
                     />
                   </div>
                   <div>
@@ -2098,33 +2191,25 @@ export default function App() {
                       type="text" 
                       name="nazione" 
                       defaultValue={currentImmobile ? currentImmobile.nazione : 'Svizzera'}
-                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
+                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F]"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Categoria</label>
+                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Categoria *</label>
                     <select 
                       name="categoria" 
                       defaultValue={currentImmobile ? currentImmobile.categoria : 'Appartamento'}
-                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
+                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F]"
                     >
                       <option value="Appartamento">Appartamento</option>
-                      <option value="Villa">Villa</option>
+                      <option value="Casa">Casa</option>
+                      <option value="Locali di Servizio">Locali di Servizio</option>
                       <option value="Terreno">Terreno</option>
-                      <option value="Stabile">Stabile</option>
+                      <option value="Parcheggio">Parcheggio</option>
+                      <option value="Box">Box</option>
                     </select>
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Tipo di Struttura</label>
-                    <input 
-                      type="text" 
-                      name="tipo" 
-                      placeholder="es. Duplex, Attico, Rustico"
-                      defaultValue={currentImmobile ? currentImmobile.tipo : ''}
-                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                    />
-                  </div>
                   <div>
                     <label className="block text-xs font-semibold text-[#86868B] mb-1">Numero di Locali</label>
                     <input 
@@ -2145,7 +2230,6 @@ export default function App() {
                       className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
                     />
                   </div>
-
                   <div>
                     <label className="block text-xs font-semibold text-[#86868B] mb-1">Superficie Abitabile (m²)</label>
                     <input 
@@ -2155,6 +2239,7 @@ export default function App() {
                       className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
                     />
                   </div>
+
                   <div>
                     <label className="block text-xs font-semibold text-[#86868B] mb-1">Superficie SUL (m²)</label>
                     <input 
@@ -2164,15 +2249,67 @@ export default function App() {
                       className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
                     />
                   </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Tipo di Residenza</label>
-                    <input 
-                      type="text" 
-                      name="tipo_residenza" 
-                      placeholder="es. Primaria / Secondaria ammessa"
-                      defaultValue={currentImmobile ? currentImmobile.tipo_residenza : ''}
-                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                    />
+
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-semibold text-[#86868B] mb-2">Tipo di Residenza (Selezione Multipla)</label>
+                    <div className="flex gap-2">
+                      {['Primaria', 'Secondaria'].map(r => {
+                        const selected = formResidenze.includes(r);
+                        return (
+                          <button
+                            key={r}
+                            type="button"
+                            onClick={() => {
+                              if (selected) {
+                                setFormResidenze(formResidenze.filter(x => x !== r));
+                              } else {
+                                setFormResidenze([...formResidenze, r]);
+                              }
+                            }}
+                            className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all border ${
+                              selected 
+                                ? 'bg-[#0071E3] text-white border-transparent shadow-sm' 
+                                : 'bg-[#F5F5F7] text-[#1D1D1F] border-[#D2D2D7] hover:bg-[#E5E5EA]'
+                            }`}
+                          >
+                            {r}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="md:col-span-3">
+                    <label className="block text-xs font-semibold text-[#86868B] mb-2">Tipo (Selezione Multipla)</label>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        'Appartamento', 'Attico', 'Villa', 'Duplex', 'Loft', 'Casa a Schiera', 
+                        'Casa Unifamiliare', 'Ufficio', 'Rustico', "Parcheggio all'Aperto", 
+                        'Parcheggio al Coperto', 'Garage', 'Terreno Commerciale', 'Terreno per Costruire'
+                      ].map(t => {
+                        const selected = formTipi.includes(t);
+                        return (
+                          <button
+                            key={t}
+                            type="button"
+                            onClick={() => {
+                              if (selected) {
+                                setFormTipi(formTipi.filter(x => x !== t));
+                              } else {
+                                setFormTipi([...formTipi, t]);
+                              }
+                            }}
+                            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${
+                              selected 
+                                ? 'bg-[#0071E3] text-white border-transparent shadow-sm' 
+                                : 'bg-[#F5F5F7] text-[#1D1D1F] border-[#D2D2D7] hover:bg-[#E5E5EA]'
+                            }`}
+                          >
+                            {t}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               </div>

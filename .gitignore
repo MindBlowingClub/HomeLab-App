@@ -90,3 +90,4 @@ out/
 
 # Vite
 src/vite-env.d.ts
+.vercel

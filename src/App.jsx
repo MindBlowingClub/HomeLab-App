@@ -3362,16 +3362,7 @@ export default function App() {
                         />
                       </div>
 
-                      <div>
-                        <label className="block text-xs font-semibold text-[#86868B] mb-1">numero_di_mappale</label>
-                        <input
-                          type="text"
-                          name="numero_di_mappale"
-                          placeholder="es. 1234"
-                          defaultValue={currentImmobile ? currentImmobile.numero_di_mappale : ''}
-                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all text-[#1D1D1F]"
-                        />
-                      </div>
+
 
                       <div>
                         <label className="block text-xs font-semibold text-[#86868B] mb-1">immagine_di_riferimento</label>
@@ -3684,6 +3675,17 @@ export default function App() {
                             <option value="No">No</option>
                             <option value="Si">Si</option>
                           </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-semibold text-[#86868B] mb-1">numero_di_mappale</label>
+                          <input
+                            type="text"
+                            name="numero_di_mappale"
+                            placeholder="es. 1234"
+                            defaultValue={currentImmobile ? currentImmobile.numero_di_mappale : ''}
+                            className="w-full px-3.5 py-2 bg-white border border-[#E5E5EA] rounded-xl text-sm focus:outline-none focus:border-[#0071E3] text-[#1D1D1F]"
+                          />
                         </div>
                       </div>
                     </div>

@@ -793,12 +793,15 @@ export default function App() {
   // Helper to format ultimo_rinnovo (YYYYMM -> MM/YYYY)
   const formatUltimoRinnovo = (val) => {
     if (!val) return '-';
-    const year = Math.floor(val / 100);
-    const month = val % 100;
-    if (year && month) {
-      return `${String(month).padStart(2, '0')}/${year}`;
+    const num = Number(val);
+    if (num > 100000) {
+      const year = Math.floor(num / 100);
+      const month = num % 100;
+      if (year && month) {
+        return `${String(month).padStart(2, '0')}/${year}`;
+      }
     }
-    return val;
+    return String(val);
   };
 
   // --- HANDLERS FOR IMMOBILI ---
@@ -3360,6 +3363,17 @@ export default function App() {
                       </div>
 
                       <div>
+                        <label className="block text-xs font-semibold text-[#86868B] mb-1">numero_di_mappale</label>
+                        <input
+                          type="text"
+                          name="numero_di_mappale"
+                          placeholder="es. 1234"
+                          defaultValue={currentImmobile ? currentImmobile.numero_di_mappale : ''}
+                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all text-[#1D1D1F]"
+                        />
+                      </div>
+
+                      <div>
                         <label className="block text-xs font-semibold text-[#86868B] mb-1">immagine_di_riferimento</label>
                         <input
                           type="file"
@@ -3521,16 +3535,7 @@ export default function App() {
                           </select>
                         </div>
 
-                        <div>
-                          <label className="block text-xs font-semibold text-[#86868B] mb-1">numero_di_mappale</label>
-                          <input
-                            type="text"
-                            name="numero_di_mappale"
-                            placeholder="es. 1234"
-                            defaultValue={currentImmobile ? currentImmobile.numero_di_mappale : ''}
-                            className="w-full px-3.5 py-2 bg-white border border-[#E5E5EA] rounded-xl text-sm focus:outline-none focus:border-[#0071E3] text-[#1D1D1F]"
-                          />
-                        </div>
+
 
                         <div className="md:col-span-2">
                           <label className="block text-xs font-semibold text-[#86868B] mb-2">tipo</label>
@@ -3635,11 +3640,16 @@ export default function App() {
                             type="month"
                             name="ultimo_rinnovo_input"
                             defaultValue={currentImmobile ? (() => {
-                              if (!currentImmobile.ultimo_rinnovo) return "";
-                              const year = Math.floor(currentImmobile.ultimo_rinnovo / 100);
-                              const month = currentImmobile.ultimo_rinnovo % 100;
-                              if (year && month) {
-                                return `${year}-${String(month).padStart(2, '0')}`;
+                              const val = currentImmobile.ultimo_rinnovo;
+                              if (!val) return "";
+                              if (val > 100000) {
+                                const year = Math.floor(val / 100);
+                                const month = val % 100;
+                                if (year && month) {
+                                  return `${year}-${String(month).padStart(2, '0')}`;
+                                }
+                              } else if (val >= 1800 && val <= 2100) {
+                                return `${val}-01`;
                               }
                               return "";
                             })() : ''}

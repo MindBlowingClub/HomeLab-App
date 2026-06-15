@@ -390,6 +390,7 @@ export default function App() {
   const [filterPostiAutoMin, setFilterPostiAutoMin] = useState('');
   const [filterBagniMin, setFilterBagniMin] = useState('Tutti');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [sortProperty, setSortProperty] = useState('default');
 
   const [searchContact, setSearchContact] = useState('');
   const [filterContactRuolo, setFilterContactRuolo] = useState('Tutti');
@@ -1908,6 +1909,22 @@ export default function App() {
                         <span className={`w-2 h-2 rounded-full ${showAdvancedFilters ? 'bg-white' : 'bg-[#0071E3]'}`}></span>
                       )}
                     </button>
+
+                    <select
+                      value={sortProperty}
+                      onChange={(e) => setSortProperty(e.target.value)}
+                      className="px-3 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs font-semibold focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] cursor-pointer shrink-0 transition-all"
+                    >
+                      <option value="default">Ordina per...</option>
+                      <option value="prezzo-asc">Prezzo Crescente</option>
+                      <option value="prezzo-desc">Prezzo decrescente</option>
+                      <option value="superficie-asc">Superficie Crescente</option>
+                      <option value="superficie-desc">Superficie Decrescente</option>
+                      <option value="creazione-asc">Creazione Crescente</option>
+                      <option value="creazione-desc">Creazione Decrescente</option>
+                      <option value="modifica-asc">Modifica Crescente</option>
+                      <option value="modifica-desc">Modifica Decrescente</option>
+                    </select>
                   </div>
 
                   {/* Segmented filter */}
@@ -2242,6 +2259,53 @@ export default function App() {
                                matchVendibileStranieri && matchResidenza && matchMandatoFirmato && matchAgenteId &&
                                matchPrezzoMin && matchPrezzoMax && matchLocali && matchBagni && matchSuperficie &&
                                matchGarage && matchPostiAuto;
+                      })
+                      .sort((a, b) => {
+                        if (sortProperty === 'prezzo-asc') {
+                          const aIsRent = a.immobile_in && a.immobile_in.includes('Affitto');
+                          const bIsRent = b.immobile_in && b.immobile_in.includes('Affitto');
+                          const aPrice = aIsRent ? Number(a.prezzo_di_affitto || 0) : Number(a.prezzo_di_vendita || 0);
+                          const bPrice = bIsRent ? Number(b.prezzo_di_affitto || 0) : Number(b.prezzo_di_vendita || 0);
+                          return aPrice - bPrice;
+                        }
+                        if (sortProperty === 'prezzo-desc') {
+                          const aIsRent = a.immobile_in && a.immobile_in.includes('Affitto');
+                          const bIsRent = b.immobile_in && b.immobile_in.includes('Affitto');
+                          const aPrice = aIsRent ? Number(a.prezzo_di_affitto || 0) : Number(a.prezzo_di_vendita || 0);
+                          const bPrice = bIsRent ? Number(b.prezzo_di_affitto || 0) : Number(b.prezzo_di_vendita || 0);
+                          return bPrice - aPrice;
+                        }
+                        if (sortProperty === 'superficie-asc') {
+                          const aSup = Number(a.superficie_abitabile || a.superficie_sul || 0);
+                          const bSup = Number(b.superficie_abitabile || b.superficie_sul || 0);
+                          return aSup - bSup;
+                        }
+                        if (sortProperty === 'superficie-desc') {
+                          const aSup = Number(a.superficie_abitabile || a.superficie_sul || 0);
+                          const bSup = Number(b.superficie_abitabile || b.superficie_sul || 0);
+                          return bSup - aSup;
+                        }
+                        if (sortProperty === 'creazione-asc') {
+                          const aTime = a.created_at ? new Date(a.created_at).getTime() : 0;
+                          const bTime = b.created_at ? new Date(b.created_at).getTime() : 0;
+                          return aTime - bTime;
+                        }
+                        if (sortProperty === 'creazione-desc') {
+                          const aTime = a.created_at ? new Date(a.created_at).getTime() : 0;
+                          const bTime = b.created_at ? new Date(b.created_at).getTime() : 0;
+                          return bTime - aTime;
+                        }
+                        if (sortProperty === 'modifica-asc') {
+                          const aTime = a.ultima_modifica_il ? new Date(a.ultima_modifica_il).getTime() : 0;
+                          const bTime = b.ultima_modifica_il ? new Date(b.ultima_modifica_il).getTime() : 0;
+                          return aTime - bTime;
+                        }
+                        if (sortProperty === 'modifica-desc') {
+                          const aTime = a.ultima_modifica_il ? new Date(a.ultima_modifica_il).getTime() : 0;
+                          const bTime = b.ultima_modifica_il ? new Date(b.ultima_modifica_il).getTime() : 0;
+                          return bTime - aTime;
+                        }
+                        return 0;
                       })
                       .map((item) => (
                         <div

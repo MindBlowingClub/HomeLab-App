@@ -65,6 +65,7 @@ CREATE TABLE public.immobili (
     parcheggio integer DEFAULT 0,
     descrizione_immobile text,
     planimetria text,
+    link_a_cartella_condivisa text,
     numero_di_mappale text,
     tipo_di_residenza text[],
     vendibile_a_stranieri text,

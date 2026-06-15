@@ -146,6 +146,7 @@ const INITIAL_IMMOBILI = [
     ultima_modifica_il: "2026-05-26",
     ultima_modifica_fatta_da: "MASSIMILIANO BOLDI",
     planimetria: "planimetria-cademario.pdf",
+    link_a_cartella_condivisa: "https://drive.google.com/drive/folders/12345",
     numero_di_mappale: "1234",
     tipo_di_residenza: ["Primaria", "Secondaria"],
     vendibile_a_stranieri: "Si",
@@ -206,6 +207,7 @@ const INITIAL_IMMOBILI = [
     ultima_modifica_il: "2026-05-12",
     ultima_modifica_fatta_da: "OLGA HONCHAR",
     planimetria: "planimetria-paradiso.pdf",
+    link_a_cartella_condivisa: "",
     numero_di_mappale: "5678",
     tipo_di_residenza: ["Primaria"],
     vendibile_a_stranieri: "Si",
@@ -266,6 +268,7 @@ const INITIAL_IMMOBILI = [
     ultima_modifica_il: "2026-05-20",
     ultima_modifica_fatta_da: "OLGA HONCHAR",
     planimetria: "planimetria-bissone.pdf",
+    link_a_cartella_condivisa: "https://drive.google.com/drive/folders/67890",
     numero_di_mappale: "9012",
     tipo_di_residenza: ["Secondaria"],
     vendibile_a_stranieri: "No",
@@ -346,7 +349,7 @@ export default function App() {
 
   // --- CRM APP STATES ---
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [immobili, setImmobili] = useState([]);
+  const [immobili, setImmobili] = useState(isRealSupabase ? [] : INITIAL_IMMOBILI);
   const [contatti, setContatti] = useState(isRealSupabase ? [] : INITIAL_CONTATTI);
   const [visite, setVisite] = useState(isRealSupabase ? [] : INITIAL_VISITE);
 
@@ -909,6 +912,7 @@ export default function App() {
       proprietario_id: Number(formData.get('proprietario_id')) || null,
       agente_id: Number(formData.get('agente_id')) || null,
       planimetria,
+      link_a_cartella_condivisa: formData.get('link_a_cartella_condivisa') || "",
       numero_di_mappale: formData.get('numero_di_mappale') || "",
       tipo_di_residenza,
       vendibile_a_stranieri: formData.get('vendibile_a_stranieri') || "No",
@@ -2794,6 +2798,29 @@ export default function App() {
                           <span className="text-xs text-[#86868B] font-medium bg-gray-200 px-3 py-1 rounded-full">Assente</span>
                         )}
                       </div>
+
+                      {/* Cartella Condivisa */}
+                      <div className="bg-[#F5F5F7] p-5 rounded-2xl border border-[#E5E5EA] flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <span className="text-2xl">📂</span>
+                          <div>
+                            <span className="font-bold text-sm block">link_a_cartella_condivisa</span>
+                            <span className="text-[10px] text-[#86868B] block mt-0.5">cartella_condivisa_url</span>
+                          </div>
+                        </div>
+                        {viewingImmobile.link_a_cartella_condivisa ? (
+                          <a
+                            href={viewingImmobile.link_a_cartella_condivisa}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-xs bg-[#0071E3] hover:bg-[#0077ED] text-white px-4 py-1.5 rounded-full font-semibold transition-all shadow-sm"
+                          >
+                            Apri Cartella
+                          </a>
+                        ) : (
+                          <span className="text-xs text-[#86868B] font-medium bg-gray-200 px-3 py-1 rounded-full">Assente</span>
+                        )}
+                      </div>
                     </div>
                   )}
 
@@ -3707,6 +3734,17 @@ export default function App() {
                             <a href={currentImmobile.planimetria} target="_blank" rel="noreferrer" className="text-[10px] text-[#0071E3] underline truncate max-w-[240px]">{currentImmobile.planimetria.split('/').pop()}</a>
                           </div>
                         )}
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-semibold text-[#86868B] mb-1">link_a_cartella_condivisa</label>
+                        <input
+                          type="url"
+                          name="link_a_cartella_condivisa"
+                          placeholder="es. https://drive.google.com/drive/folders/..."
+                          defaultValue={currentImmobile ? currentImmobile.link_a_cartella_condivisa : ''}
+                          className="w-full px-3.5 py-2 bg-white border border-[#E5E5EA] rounded-xl text-sm focus:outline-none focus:border-[#0071E3] text-[#1D1D1F]"
+                        />
                       </div>
                     </div>
                   </div>

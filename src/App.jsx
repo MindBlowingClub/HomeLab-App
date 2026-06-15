@@ -756,9 +756,9 @@ export default function App() {
       rasi_doc,
       certificato_radon: formData.get('certificato_radon') || "No",
       certificato_radon_doc,
-      creato_da: existing ? existing.creato_da : (profile ? `${profile.nome} ${profile.cognome}`.toUpperCase() : "UTENTE CRM"),
+      creato_da: existing ? existing.creato_da : (currentSession?.user?.email ? currentSession.user.email.toUpperCase() : "UTENTE CRM"),
       ultima_modifica_il: new Date().toISOString(),
-      ultima_modifica_fatta_da: profile ? `${profile.nome} ${profile.cognome}`.toUpperCase() : "UTENTE CRM"
+      ultima_modifica_fatta_da: currentSession?.user?.email ? currentSession.user.email.toUpperCase() : "UTENTE CRM"
     };
 
     if (isRealSupabase) {
@@ -2465,7 +2465,15 @@ export default function App() {
                         </div>
                         <div className="border-t border-gray-200/60 pt-2">
                           <span className="block text-xs text-[#86868B] mb-0.5">ultima_modifica_il</span>
-                          <span className="font-semibold text-gray-700">{formatField(viewingImmobile.ultima_modifica_il)}</span>
+                          <span className="font-semibold text-gray-700">
+                            {viewingImmobile.ultima_modifica_il ? new Date(viewingImmobile.ultima_modifica_il).toLocaleString('it-CH', {
+                              year: 'numeric',
+                              month: '2-digit',
+                              day: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            }) : '-'}
+                          </span>
                         </div>
                         <div className="border-t border-gray-200/60 pt-2">
                           <span className="block text-xs text-[#86868B] mb-0.5">ultima_modifica_fatta_da</span>
@@ -3245,7 +3253,13 @@ export default function App() {
                           <input
                             type="text"
                             disabled
-                            value={currentImmobile.ultima_modifica_il || '-'}
+                            value={currentImmobile.ultima_modifica_il ? new Date(currentImmobile.ultima_modifica_il).toLocaleString('it-CH', {
+                              year: 'numeric',
+                              month: '2-digit',
+                              day: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            }) : '-'}
                             className="w-full px-3.5 py-2 bg-gray-100 border border-transparent rounded-xl text-sm text-gray-500 cursor-not-allowed"
                           />
                         </div>

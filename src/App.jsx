@@ -433,6 +433,109 @@ export default function App() {
     }
   }, []);
 
+  // --- SUPABASE REALTIME SUBSCRIPTIONS ---
+  useEffect(() => {
+    if (!isRealSupabase || !supabase) return;
+
+    const channel = supabase
+      .channel('crm-realtime-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'immobili' },
+        (payload) => {
+          console.log('Realtime change received for immobili:', payload);
+          if (payload.eventType === 'INSERT') {
+            setImmobili(prev => {
+              if (prev.some(item => item.id === payload.new.id)) return prev;
+              return [...prev, payload.new];
+            });
+            triggerToast("Nuovo immobile registrato da un collega", "success");
+          } else if (payload.eventType === 'UPDATE') {
+            setImmobili(prev => prev.map(item => item.id === payload.new.id ? payload.new : item));
+            
+            setViewingImmobile(current => {
+              if (current && current.id === payload.new.id) {
+                triggerToast("Scheda immobile aggiornata in tempo reale da un altro utente", "info");
+                return payload.new;
+              }
+              return current;
+            });
+            
+            setCurrentImmobile(current => {
+              if (current && current.id === payload.new.id) {
+                triggerToast("Attenzione: questo immobile è stato appena modificato e salvato da un altro utente!", "warning");
+              }
+              return current;
+            });
+          } else if (payload.eventType === 'DELETE') {
+            setImmobili(prev => prev.filter(item => item.id !== payload.old.id));
+            triggerToast("Un immobile è stato rimosso in tempo reale", "info");
+            setViewingImmobile(current => current && current.id === payload.old.id ? null : current);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'contatti' },
+        (payload) => {
+          console.log('Realtime change received for contatti:', payload);
+          if (payload.eventType === 'INSERT') {
+            setContatti(prev => {
+              if (prev.some(item => item.id === payload.new.id)) return prev;
+              return [...prev, payload.new];
+            });
+            triggerToast("Nuovo contatto registrato in tempo reale", "success");
+          } else if (payload.eventType === 'UPDATE') {
+            setContatti(prev => prev.map(item => item.id === payload.new.id ? payload.new : item));
+            
+            setViewingContatto(current => {
+              if (current && current.id === payload.new.id) {
+                triggerToast("Anagrafica contatto aggiornata in tempo reale", "info");
+                return payload.new;
+              }
+              return current;
+            });
+            
+            setCurrentContatto(current => {
+              if (current && current.id === payload.new.id) {
+                triggerToast("Attenzione: questa anagrafica contatto è stata modificata da un altro utente!", "warning");
+              }
+              return current;
+            });
+          } else if (payload.eventType === 'DELETE') {
+            setContatti(prev => prev.filter(item => item.id !== payload.old.id));
+            triggerToast("Un contatto è stato rimosso in tempo reale", "info");
+            setViewingContatto(current => current && current.id === payload.old.id ? null : current);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'visite' },
+        (payload) => {
+          console.log('Realtime change received for visite:', payload);
+          if (payload.eventType === 'INSERT') {
+            setVisite(prev => {
+              if (prev.some(item => item.id === payload.new.id)) return prev;
+              return [...prev, payload.new];
+            });
+            triggerToast("Nuovo appuntamento pianificato in tempo reale", "success");
+          } else if (payload.eventType === 'UPDATE') {
+            setVisite(prev => prev.map(item => item.id === payload.new.id ? payload.new : item));
+            triggerToast("Pianificazione appuntamenti aggiornata da un altro utente", "info");
+          } else if (payload.eventType === 'DELETE') {
+            setVisite(prev => prev.filter(item => item.id !== payload.old.id));
+            triggerToast("Un appuntamento è stato rimosso in tempo reale", "info");
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isRealSupabase]);
+
   const fetchProfile = async (userId) => {
     try {
       const { data, error } = await supabase

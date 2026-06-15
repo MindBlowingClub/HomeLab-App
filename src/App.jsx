@@ -997,6 +997,10 @@ export default function App() {
     if (existing) {
       const compareFields = [
         { key: 'nome_immobile', label: 'Nome' },
+        { key: 'immobile_in', label: 'Contratto (Affitto/Vendita)' },
+        { key: 'stato', label: 'Stato' },
+        { key: 'mandato_firmato', label: 'Mandato Firmato' },
+        { key: 'tipo_di_mandato', label: 'Tipo di Mandato' },
         { key: 'prezzo_di_vendita', label: 'Prezzo Vendita' },
         { key: 'prezzo_di_affitto', label: 'Prezzo Affitto' },
         { key: 'spese_condominiali', label: 'Spese Condominiali' },
@@ -1006,6 +1010,7 @@ export default function App() {
         { key: 'npa', label: 'NPA' },
         { key: 'nazione', label: 'Nazione' },
         { key: 'categoria', label: 'Categoria' },
+        { key: 'tipo', label: 'Tipologia' },
         { key: 'superficie_abitabile', label: 'Superficie Abitabile' },
         { key: 'superficie_sul', label: 'Superficie SUL' },
         { key: 'numero_di_locali', label: 'Locali' },
@@ -1016,9 +1021,22 @@ export default function App() {
         { key: 'parcheggio', label: 'Parcheggio' },
         { key: 'descrizione_immobile', label: 'Descrizione' },
         { key: 'numero_di_mappale', label: 'Mappale' },
+        { key: 'tipo_di_residenza', label: 'Residenza' },
         { key: 'vendibile_a_stranieri', label: 'Stranieri' },
         { key: 'link_a_cartella_condivisa', label: 'Link Cartella' },
         { key: 'note_interne', label: 'Note Interne' },
+        { key: 'proprietario_id', label: 'ID Proprietario' },
+        { key: 'agente_id', label: 'ID Agente' },
+        { key: 'estratto_registro_fondiario', label: 'Estratto RF' },
+        { key: 'descrittivo_tecnico', label: 'Descrittivo Tecnico' },
+        { key: 'regolamento_condominiale', label: 'Regolamento Condominiale' },
+        { key: 'assicurazione_stabile', label: 'Assicurazione Stabile' },
+        { key: 'verbale_ultima_assemblea', label: 'Verbale Ultima Assemblea' },
+        { key: 'fondo_rinnovamento', label: 'Fondo Rinnovamento' },
+        { key: 'valore_di_stima', label: 'Valore di Stima' },
+        { key: 'piano_assegnazioni_parti_comuni', label: 'Piano Assegnazioni Parti Comuni' },
+        { key: 'rasi', label: 'Rasi' },
+        { key: 'certificato_radon', label: 'Certificato Radon' },
       ];
       compareFields.forEach(f => {
         let oldVal = existing[f.key];

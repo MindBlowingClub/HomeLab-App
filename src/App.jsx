@@ -361,6 +361,7 @@ export default function App() {
   const [currentImmobile, setCurrentImmobile] = useState(null);
   const [isImmobileModalOpen, setIsImmobileModalOpen] = useState(false);
   const [activeFormTab, setActiveFormTab] = useState('principale');
+  const [isUserSettingsModalOpen, setIsUserSettingsModalOpen] = useState(false);
 
   // Detail inspector (Immobili)
   const [viewingImmobile, setViewingImmobile] = useState(null);
@@ -425,8 +426,9 @@ export default function App() {
 
       if (error) throw error;
 
+      const localFoto = localStorage.getItem(`homelab_user_foto_${userId}`);
       if (data) {
-        setProfile(data);
+        setProfile({ ...data, foto: localFoto || data.foto || '' });
       } else {
         // Profilo non ancora creato (trigger non eseguito): inseriscilo ora
         const { data: inserted, error: insertError } = await supabase
@@ -434,12 +436,13 @@ export default function App() {
           .insert([{ id: userId, nome: 'Utente', cognome: 'HomeLab', ruolo: 'User' }])
           .select()
           .maybeSingle();
-        setProfile(inserted || { nome: 'Utente', cognome: 'HomeLab', ruolo: 'User' });
+        setProfile((inserted ? { ...inserted, foto: localFoto || inserted.foto || '' } : null) || { nome: 'Utente', cognome: 'HomeLab', ruolo: 'User', foto: localFoto || '' });
         if (insertError) console.warn("Impossibile creare profilo automatico:", insertError.message);
       }
     } catch (err) {
       console.warn("Profilo non trovato o errore:", err.message);
-      setProfile({ nome: 'Utente', cognome: 'HomeLab', ruolo: 'User' });
+      const localFoto = localStorage.getItem(`homelab_user_foto_${userId}`);
+      setProfile({ nome: 'Utente', cognome: 'HomeLab', ruolo: 'User', foto: localFoto || '' });
     }
   };
 
@@ -498,7 +501,8 @@ export default function App() {
           setSimulatedSession({
             user: { email, id: 'simulated-uuid-12345' },
           });
-          setProfile({ nome: 'Massimiliano', cognome: 'Boldi', ruolo: 'Admin (Demo)' });
+          const localFoto = localStorage.getItem('homelab_user_foto_simulated-uuid-12345');
+          setProfile({ nome: 'Massimiliano', cognome: 'Boldi', ruolo: 'Admin (Demo)', foto: localFoto || '' });
           setSuccessMsg('Accesso simulato effettuato!');
           triggerToast("Benvenuto in HomeLab CRM (Demo)", "success");
         } else {
@@ -537,6 +541,55 @@ export default function App() {
     setSuccessMsg('Sei uscito correttamente.');
     setEmail('');
     setPassword('');
+    setIsUserSettingsModalOpen(false);
+  };
+
+  const handleSaveUserSettings = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const nome = formData.get('nome');
+    const cognome = formData.get('cognome');
+    const fotoFile = formData.get('foto_file');
+
+    setLoading(true);
+    try {
+      const userId = currentSession?.user?.id || 'simulated-uuid-12345';
+      let fotoUrl = profile?.foto || '';
+
+      if (fotoFile && fotoFile.size > 0) {
+        if (isRealSupabase) {
+          const uploadedUrl = await uploadToSupabase(fotoFile, 'immobili-media');
+          if (uploadedUrl) {
+            fotoUrl = uploadedUrl;
+          }
+        } else {
+          fotoUrl = await readAsBase64(fotoFile);
+        }
+      }
+
+      // Salva nel localStorage
+      localStorage.setItem(`homelab_user_foto_${userId}`, fotoUrl);
+
+      if (isRealSupabase && supabase) {
+        const { error } = await supabase
+          .from('profiles')
+          .update({ nome, cognome })
+          .eq('id', userId);
+        if (error) throw error;
+        // prova ad aggiornare anche la colonna foto nel DB
+        try {
+          await supabase.from('profiles').update({ foto: fotoUrl }).eq('id', userId);
+        } catch (_) {}
+      }
+
+      setProfile(prev => ({ ...prev, nome, cognome, foto: fotoUrl }));
+      triggerToast("Impostazioni utente aggiornate!");
+      setIsUserSettingsModalOpen(false);
+    } catch (err) {
+      triggerToast("Errore durante l'aggiornamento: " + err.message, "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const currentSession = isRealSupabase ? session : simulatedSession;
@@ -1294,45 +1347,37 @@ export default function App() {
               </nav>
             </div>
 
-            {/* Bottom Panel (Supabase Profile & Logout) */}
-            <div className="space-y-3">
+             {/* Bottom Panel (Profile Settings Trigger) */}
+             <div className="space-y-3">
 
-              {/* Profile card */}
-              <div className="bg-white/80 p-3 rounded-2xl border border-[#E5E5EA] shadow-sm flex items-center space-x-3">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-pink-500 text-white flex items-center justify-center font-bold text-xs">
-                  {profile?.nome?.[0] || 'U'}{profile?.cognome?.[0] || ''}
-                </div>
-                <div className="overflow-hidden">
-                  <span className="font-bold text-xs text-[#1D1D1F] block truncate">
-                    {profile?.nome || 'Utente'} {profile?.cognome || ''}
-                  </span>
-                  <span className="text-[10px] text-[#86868B] block truncate uppercase tracking-wider font-semibold">
-                    {profile?.ruolo || 'User'}
-                  </span>
-                </div>
-              </div>
+               {/* Profile card */}
+               <div
+                 onClick={() => setIsUserSettingsModalOpen(true)}
+                 className="bg-white/80 hover:bg-white p-3 rounded-2xl border border-[#E5E5EA] shadow-sm flex items-center space-x-3 cursor-pointer hover:scale-[1.01] transition-all"
+                 title="Impostazioni Profilo"
+               >
+                 {profile?.foto ? (
+                   <img
+                     src={profile.foto}
+                     alt="Profile"
+                     className="w-8 h-8 rounded-full object-cover shrink-0"
+                   />
+                 ) : (
+                   <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-pink-500 text-white flex items-center justify-center font-bold text-xs shrink-0">
+                     {profile?.nome?.[0] || 'U'}{profile?.cognome?.[0] || ''}
+                   </div>
+                 )}
+                 <div className="overflow-hidden">
+                   <span className="font-bold text-xs text-[#1D1D1F] block truncate">
+                     {profile?.nome || 'Utente'} {profile?.cognome || ''}
+                   </span>
+                   <span className="text-[10px] text-[#86868B] block truncate uppercase tracking-wider font-semibold">
+                     {profile?.ruolo || 'User'}
+                   </span>
+                 </div>
+               </div>
 
-              {/* Supabase connection details */}
-              <div className="bg-white/60 p-3 rounded-2xl border border-[#E5E5EA] text-[11px] text-[#86868B] space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold uppercase tracking-wide text-[9px]">Supabase Status</span>
-                  <IconCloud connected={isRealSupabase} />
-                </div>
-                <p className="leading-tight">
-                  {isRealSupabase
-                    ? 'Connesso a Postgres Cloud.'
-                    : 'Modalità Demo. Dati salvati in locale.'
-                  }
-                </p>
-                <button
-                  onClick={handleLogout}
-                  className="w-full mt-1.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-xs font-semibold transition-all text-center"
-                >
-                  Logout
-                </button>
-              </div>
-
-            </div>
+             </div>
           </aside>
 
           {/* MAIN WORKSPACE AREA */}
@@ -2661,6 +2706,128 @@ export default function App() {
                   </button>
                 </div>
 
+              </div>
+            </div>
+          )}
+
+          {/* MODALE IMPOSTAZIONI UTENTE (Apple style) */}
+          {isUserSettingsModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4 overflow-y-auto">
+              <div className="glass-modal w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col text-[#1D1D1F]">
+                
+                {/* Header */}
+                <div className="px-6 py-4 border-b border-[#E5E5EA] flex justify-between items-center bg-[#F5F5F7]">
+                  <div>
+                    <h3 className="text-base font-bold tracking-tight text-[#1D1D1F]">
+                      Impostazioni Profilo
+                    </h3>
+                    <p className="text-[10px] text-[#86868B]">Gestisci i tuoi dettagli anagrafici e la foto profilo</p>
+                  </div>
+                  <button
+                    onClick={() => setIsUserSettingsModalOpen(false)}
+                    className="w-6 h-6 bg-white rounded-full border border-[#D2D2D7] flex items-center justify-center font-bold text-xs text-[#86868B] hover:text-[#1D1D1F] transition-all shadow-sm"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {/* Form */}
+                <form onSubmit={handleSaveUserSettings} className="p-6 space-y-6">
+                  {/* Photo Section */}
+                  <div className="flex flex-col items-center space-y-3">
+                    <div className="relative group">
+                      {profile?.foto ? (
+                        <img
+                          src={profile.foto}
+                          alt="Avatar"
+                          className="w-20 h-20 rounded-full object-cover border border-white/50 shadow-md"
+                        />
+                      ) : (
+                        <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-indigo-500 to-pink-500 text-white flex items-center justify-center font-bold text-2xl shadow-md border border-white/50">
+                          {profile?.nome?.[0] || 'U'}{profile?.cognome?.[0] || ''}
+                        </div>
+                      )}
+                      <label className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center text-white text-[10px] font-semibold opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                        Carica Foto
+                        <input
+                          type="file"
+                          name="foto_file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            if (e.target.files && e.target.files[0]) {
+                              triggerToast("Nuova immagine selezionata", "success");
+                            }
+                          }}
+                        />
+                      </label>
+                    </div>
+                    <span className="text-[10px] text-[#86868B]">Clicca sull'avatar per caricare una nuova foto</span>
+                  </div>
+
+                  {/* Name and Surname Inputs */}
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-[#86868B] mb-1">Nome</label>
+                      <input
+                        type="text"
+                        name="nome"
+                        required
+                        defaultValue={profile?.nome || ''}
+                        className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none focus:bg-white text-[#1D1D1F]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-[#86868B] mb-1">Cognome</label>
+                      <input
+                        type="text"
+                        name="cognome"
+                        required
+                        defaultValue={profile?.cognome || ''}
+                        className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none focus:bg-white text-[#1D1D1F]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-[#86868B] mb-1">Ruolo</label>
+                      <input
+                        type="text"
+                        disabled
+                        value={profile?.ruolo || 'User'}
+                        className="w-full px-3.5 py-2 bg-gray-100/70 border border-transparent rounded-xl text-sm text-gray-500 cursor-not-allowed"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Logout Button */}
+                  <div className="pt-2 border-t border-[#E5E5EA]">
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="w-full py-2.5 bg-red-50 hover:bg-red-100 active:scale-[0.98] text-red-600 rounded-xl text-xs font-semibold transition-all text-center flex items-center justify-center space-x-1 border border-red-100"
+                    >
+                      <span>Logout Account</span>
+                    </button>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="pt-4 border-t border-[#E5E5EA] flex justify-end space-x-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsUserSettingsModalOpen(false)}
+                      className="px-4 py-2 bg-[#F5F5F7] hover:bg-[#E5E5EA] rounded-full text-xs font-semibold transition-all"
+                    >
+                      Annulla
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="px-5 py-2 btn-glossy text-white rounded-full text-xs font-semibold transition-all shadow-sm"
+                    >
+                      Salva Impostazioni
+                    </button>
+                  </div>
+
+                </form>
               </div>
             </div>
           )}

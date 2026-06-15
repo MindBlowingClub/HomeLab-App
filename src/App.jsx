@@ -795,11 +795,7 @@ export default function App() {
     if (!val) return '-';
     const num = Number(val);
     if (num > 100000) {
-      const year = Math.floor(num / 100);
-      const month = num % 100;
-      if (year && month) {
-        return `${String(month).padStart(2, '0')}/${year}`;
-      }
+      return String(Math.floor(num / 100));
     }
     return String(val);
   };
@@ -873,14 +869,14 @@ export default function App() {
       codice_immobile = '#' + codice_immobile;
     }
 
-    const rinnovoVal = formData.get('ultimo_rinnovo_input');
+    const rinnovoVal = formData.get('ultimo_rinnovo');
     let ultimo_rinnovo = 0;
-    if (rinnovoVal) {
-      const [y, m] = rinnovoVal.split('-');
-      ultimo_rinnovo = parseInt(y) * 100 + parseInt(m);
+    if (rinnovoVal !== null && rinnovoVal !== undefined) {
+      ultimo_rinnovo = Number(rinnovoVal) || 0;
     } else if (existing) {
       ultimo_rinnovo = existing.ultimo_rinnovo || 0;
     }
+    console.log("ultimo_rinnovo debug (year-only):", { rinnovoVal, ultimo_rinnovo });
 
     const fields = {
       nome_immobile: formData.get('nome_immobile'),
@@ -3628,21 +3624,16 @@ export default function App() {
                         <div>
                           <label className="block text-xs font-semibold text-[#86868B] mb-1">ultimo_rinnovo</label>
                           <input
-                            type="month"
-                            name="ultimo_rinnovo_input"
+                            type="number"
+                            name="ultimo_rinnovo"
+                            placeholder="es. 2020"
                             defaultValue={currentImmobile ? (() => {
                               const val = currentImmobile.ultimo_rinnovo;
                               if (!val) return "";
                               if (val > 100000) {
-                                const year = Math.floor(val / 100);
-                                const month = val % 100;
-                                if (year && month) {
-                                  return `${year}-${String(month).padStart(2, '0')}`;
-                                }
-                              } else if (val >= 1800 && val <= 2100) {
-                                return `${val}-01`;
+                                return Math.floor(val / 100);
                               }
-                              return "";
+                              return val;
                             })() : ''}
                             className="w-full px-3.5 py-2 bg-white border border-[#E5E5EA] rounded-xl text-sm focus:outline-none focus:border-[#0071E3] text-[#1D1D1F]"
                           />

@@ -757,7 +757,7 @@ export default function App() {
       certificato_radon: formData.get('certificato_radon') || "No",
       certificato_radon_doc,
       creato_da: existing ? existing.creato_da : (profile ? `${profile.nome} ${profile.cognome}`.toUpperCase() : "UTENTE CRM"),
-      ultima_modifica_il: new Date().toISOString().split('T')[0],
+      ultima_modifica_il: new Date().toISOString(),
       ultima_modifica_fatta_da: profile ? `${profile.nome} ${profile.cognome}`.toUpperCase() : "UTENTE CRM"
     };
 

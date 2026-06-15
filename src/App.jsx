@@ -1244,10 +1244,32 @@ export default function App() {
         /* ========================================================= */
         /* Protezione superata: Dashboard CRM Completa */
         /* ========================================================= */
-        <div className="flex h-screen bg-transparent text-[#1D1D1F] antialiased overflow-hidden relative z-10">
+        <div className="flex flex-col md:flex-row h-screen bg-transparent text-[#1D1D1F] antialiased overflow-hidden relative z-10 w-full">
+
+          {/* MOBILE TOP HEADER */}
+          <header className="flex md:hidden items-center justify-between px-4 py-3 bg-white/60 backdrop-blur-lg border-b border-white/20 z-30 shrink-0">
+            <div className="flex items-center space-x-2.5">
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-[#0071E3] to-[#5AC8FA] flex items-center justify-center text-white font-semibold text-sm shadow-sm">
+                H
+              </div>
+              <h1 className="text-sm font-bold tracking-tight text-[#1D1D1F]">HomeLab CRM</h1>
+            </div>
+            
+            {/* Clickable Avatar to open settings */}
+            <div 
+              onClick={() => { setIsUserSettingsModalOpen(true); setTempProfileFotoUrl(null); }}
+              className="w-7 h-7 rounded-full bg-gradient-to-tr from-indigo-500 to-pink-500 text-white flex items-center justify-center font-bold text-[10px] cursor-pointer hover:scale-105 transition-transform"
+            >
+              {profile?.foto ? (
+                <img src={profile.foto} alt="Profile" className="w-full h-full rounded-full object-cover" />
+              ) : (
+                <span>{(profile?.nome || 'U')[0]}{(profile?.cognome || '')[0]}</span>
+              )}
+            </div>
+          </header>
 
           {/* LATERAL SIDEBAR (macOS / iPadOS style) */}
-          <aside className="w-64 glass-sidebar flex flex-col justify-between py-6 px-4 shrink-0 z-20">
+          <aside className="w-64 glass-sidebar hidden md:flex flex-col justify-between py-6 px-4 shrink-0 z-20">
             <div>
               {/* Brand Header */}
               <div className="flex items-center space-x-3 px-3 mb-8">
@@ -1382,7 +1404,7 @@ export default function App() {
           </aside>
 
           {/* MAIN WORKSPACE AREA */}
-          <main className="flex-1 overflow-y-auto bg-transparent p-8">
+          <main className="flex-1 overflow-y-auto bg-transparent p-4 md:p-8 pb-24 md:pb-8">
 
             {/* TAB 1: DASHBOARD */}
             {activeTab === 'dashboard' && (
@@ -2713,8 +2735,8 @@ export default function App() {
 
           {/* MODALE IMPOSTAZIONI UTENTE (Apple style) */}
           {isUserSettingsModalOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4 overflow-y-auto">
-              <div className="glass-modal w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col text-[#1D1D1F]">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-0 md:p-4">
+              <div className="glass-modal w-full max-w-md rounded-none md:rounded-3xl shadow-2xl overflow-hidden h-full md:h-auto md:max-h-[90vh] flex flex-col text-[#1D1D1F]">
                 
                 {/* Header */}
                 <div className="px-6 py-4 border-b border-[#E5E5EA] flex justify-between items-center bg-[#F5F5F7]">
@@ -2733,8 +2755,9 @@ export default function App() {
                 </div>
 
                 {/* Form */}
-                <form onSubmit={handleSaveUserSettings} className="p-6 space-y-6">
-                  {/* Photo Section */}
+                <form onSubmit={handleSaveUserSettings} className="flex-1 flex flex-col overflow-hidden">
+                  <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                    {/* Photo Section */}
                   <div className="flex flex-col items-center space-y-3">
                     <div className="relative group">
                       {tempProfileFotoUrl || profile?.foto ? (
@@ -2812,21 +2835,23 @@ export default function App() {
                     </button>
                   </div>
 
+                  </div>
+
                   {/* Actions */}
-                  <div className="pt-4 border-t border-[#E5E5EA] flex justify-end space-x-2">
-                    <button
-                      type="button"
-                      onClick={() => { setIsUserSettingsModalOpen(false); setTempProfileFotoUrl(null); }}
-                      className="px-4 py-2 bg-[#F5F5F7] hover:bg-[#E5E5EA] rounded-full text-xs font-semibold transition-all"
-                    >
-                      Annulla
-                    </button>
+                  <div className="p-6 border-t border-[#E5E5EA] bg-[#F5F5F7] flex space-x-2">
                     <button
                       type="submit"
                       disabled={loading}
-                      className="px-5 py-2 btn-glossy text-white rounded-full text-xs font-semibold transition-all shadow-sm"
+                      className="flex-1 btn-glossy text-white py-3 rounded-full font-bold text-sm transition-all text-center shadow-sm"
                     >
                       Salva Impostazioni
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setIsUserSettingsModalOpen(false); setTempProfileFotoUrl(null); }}
+                      className="flex-1 bg-white hover:bg-gray-100 border border-[#D2D2D7] text-[#1D1D1F] py-3 rounded-full font-semibold text-sm transition-all text-center"
+                    >
+                      Annulla
                     </button>
                   </div>
 
@@ -2837,8 +2862,8 @@ export default function App() {
 
           {/* 1. MODALE IMMOBILI (FORM COMPLETO PER CREAZIONE/MODIFICA) */}
           {isImmobileModalOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4 overflow-y-auto">
-              <div className="glass-modal w-full max-w-3xl rounded-3xl shadow-2xl overflow-hidden my-8 h-[680px] max-h-[90vh] flex flex-col text-[#1D1D1F]">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-0 md:p-4">
+              <div className="glass-modal w-full max-w-3xl rounded-none md:rounded-3xl shadow-2xl overflow-hidden my-0 md:my-8 h-full md:h-[680px] flex flex-col text-[#1D1D1F]">
 
                 <div className="px-6 py-4 border-b border-[#E5E5EA] flex justify-between items-center bg-[#F5F5F7]">
                   <div>
@@ -2880,8 +2905,9 @@ export default function App() {
                   ))}
                 </div>
 
-                <form onSubmit={handleSaveImmobile} className="flex-1 overflow-y-auto p-6 space-y-6">
-                  {currentImmobile && <input type="hidden" name="id" value={currentImmobile.id} />}
+                <form onSubmit={handleSaveImmobile} className="flex-1 flex flex-col overflow-hidden">
+                  <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                    {currentImmobile && <input type="hidden" name="id" value={currentImmobile.id} />}
 
                   {/* ========= SEZIONE 1: INFORMAZIONI PRINCIPALI ========= */}
                   <div className={activeFormTab === 'principale' ? 'space-y-4' : 'hidden'}>
@@ -3473,20 +3499,22 @@ export default function App() {
                     </div>
                   )}
 
+                  </div>
+
                   {/* Buttons */}
-                  <div className="pt-4 border-t border-[#E5E5EA] flex justify-end space-x-2">
+                  <div className="p-6 border-t border-[#E5E5EA] bg-[#F5F5F7] flex space-x-2">
+                    <button
+                      type="submit"
+                      className="flex-1 bg-[#0071E3] hover:bg-[#0077ED] text-white py-3 rounded-full font-bold text-sm transition-all text-center shadow-sm"
+                    >
+                      Salva Scheda
+                    </button>
                     <button
                       type="button"
                       onClick={() => setIsImmobileModalOpen(false)}
-                      className="px-4 py-2 bg-[#F5F5F7] hover:bg-[#E5E5EA] rounded-full text-sm font-semibold transition-all"
+                      className="flex-1 bg-white hover:bg-gray-100 border border-[#D2D2D7] text-[#1D1D1F] py-3 rounded-full font-semibold text-sm transition-all text-center"
                     >
                       Annulla
-                    </button>
-                    <button
-                      type="submit"
-                      className="px-5 py-2 bg-[#0071E3] hover:bg-[#0077ED] text-white rounded-full text-sm font-semibold transition-all shadow-sm"
-                    >
-                      Salva Scheda
                     </button>
                   </div>
 
@@ -3497,8 +3525,8 @@ export default function App() {
 
           {/* 2. MODALE CONTATTI (CREAZIONE E MODIFICA) */}
           {isContattoModalOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4 overflow-y-auto">
-              <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl border border-[#E5E5EA] overflow-hidden text-[#1D1D1F]">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-0 md:p-4">
+              <div className="bg-white w-full max-w-lg rounded-none md:rounded-3xl shadow-2xl border border-[#E5E5EA] overflow-hidden h-full md:h-[600px] flex flex-col text-[#1D1D1F]">
 
                 <div className="px-6 py-4 border-b border-[#E5E5EA] flex justify-between items-center bg-[#F5F5F7]">
                   <h3 className="text-lg font-bold tracking-tight">
@@ -3512,8 +3540,9 @@ export default function App() {
                   </button>
                 </div>
 
-                <form onSubmit={handleSaveContatto} className="p-6 space-y-4">
-                  {currentContatto && <input type="hidden" name="id" value={currentContatto.id} />}
+                <form onSubmit={handleSaveContatto} className="flex-1 flex flex-col overflow-hidden">
+                  <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                    {currentContatto && <input type="hidden" name="id" value={currentContatto.id} />}
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -3604,19 +3633,21 @@ export default function App() {
                     />
                   </div>
 
-                  <div className="pt-4 border-t border-[#E5E5EA] flex justify-end space-x-2">
+                  </div>
+
+                  <div className="p-6 border-t border-[#E5E5EA] bg-[#F5F5F7] flex space-x-2">
+                    <button
+                      type="submit"
+                      className="flex-1 bg-[#0071E3] hover:bg-[#0077ED] text-white py-3 rounded-full font-bold text-sm transition-all text-center shadow-sm"
+                    >
+                      Salva Contatto
+                    </button>
                     <button
                       type="button"
                       onClick={() => setIsContattoModalOpen(false)}
-                      className="px-4 py-2 bg-[#F5F5F7] hover:bg-[#E5E5EA] rounded-full text-sm font-semibold"
+                      className="flex-1 bg-white hover:bg-gray-100 border border-[#D2D2D7] text-[#1D1D1F] py-3 rounded-full font-semibold text-sm transition-all text-center"
                     >
                       Annulla
-                    </button>
-                    <button
-                      type="submit"
-                      className="px-5 py-2 bg-[#0071E3] hover:bg-[#0077ED] text-white rounded-full text-sm font-semibold shadow-sm"
-                    >
-                      Salva Contatto
                     </button>
                   </div>
                 </form>
@@ -3627,8 +3658,8 @@ export default function App() {
 
           {/* 3. MODALE VISITE E APPUNTAMENTI (CALENDARIO) */}
           {isVisitaModalOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4 overflow-y-auto">
-              <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl border border-[#E5E5EA] overflow-hidden text-[#1D1D1F]">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-0 md:p-4">
+              <div className="bg-white w-full max-w-lg rounded-none md:rounded-3xl shadow-2xl border border-[#E5E5EA] overflow-hidden h-full md:h-[600px] flex flex-col text-[#1D1D1F]">
 
                 <div className="px-6 py-4 border-b border-[#E5E5EA] flex justify-between items-center bg-[#F5F5F7]">
                   <h3 className="text-lg font-bold tracking-tight">
@@ -3642,8 +3673,9 @@ export default function App() {
                   </button>
                 </div>
 
-                <form onSubmit={handleSaveVisita} className="p-6 space-y-4">
-                  {currentVisita && <input type="hidden" name="id" value={currentVisita.id} />}
+                <form onSubmit={handleSaveVisita} className="flex-1 flex flex-col overflow-hidden">
+                  <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                    {currentVisita && <input type="hidden" name="id" value={currentVisita.id} />}
 
                   <div>
                     <label className="block text-xs font-semibold text-[#86868B] mb-1">Immobile Visitato / Target *</label>
@@ -3749,19 +3781,21 @@ export default function App() {
                     />
                   </div>
 
-                  <div className="pt-4 border-t border-[#E5E5EA] flex justify-end space-x-2">
+                  </div>
+
+                  <div className="p-6 border-t border-[#E5E5EA] bg-[#F5F5F7] flex space-x-2">
+                    <button
+                      type="submit"
+                      className="flex-1 bg-[#0071E3] hover:bg-[#0077ED] text-white py-3 rounded-full font-bold text-sm transition-all text-center shadow-sm"
+                    >
+                      Salva Appuntamento
+                    </button>
                     <button
                       type="button"
                       onClick={() => setIsVisitaModalOpen(false)}
-                      className="px-4 py-2 bg-[#F5F5F7] hover:bg-[#E5E5EA] rounded-full text-sm font-semibold"
+                      className="flex-1 bg-white hover:bg-gray-100 border border-[#D2D2D7] text-[#1D1D1F] py-3 rounded-full font-semibold text-sm transition-all text-center"
                     >
                       Annulla
-                    </button>
-                    <button
-                      type="submit"
-                      className="px-5 py-2 bg-[#0071E3] hover:bg-[#0077ED] text-white rounded-full text-sm font-semibold shadow-sm"
-                    >
-                      Salva Appuntamento
                     </button>
                   </div>
                 </form>
@@ -3769,6 +3803,30 @@ export default function App() {
               </div>
             </div>
           )}
+
+          {/* MOBILE BOTTOM TAB BAR */}
+          <nav className="flex md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/75 backdrop-blur-xl border-t border-white/30 justify-around items-center z-30 px-2 shadow-lg">
+            {[
+              { id: 'dashboard', label: 'Dashboard', icon: <IconDashboard /> },
+              { id: 'immobili', label: 'Immobili', icon: <IconImmobili /> },
+              { id: 'contatti', label: 'Contatti', icon: <IconContatti /> },
+              { id: 'visite', label: 'Visite', icon: <IconCalendario /> },
+            ].map(tab => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex flex-col items-center justify-center flex-1 py-1 transition-all ${
+                  activeTab === tab.id ? 'text-[#0071E3] font-semibold scale-105' : 'text-[#86868B]'
+                }`}
+              >
+                <div className="w-5 h-5 mb-0.5 flex items-center justify-center">
+                  {tab.icon}
+                </div>
+                <span className="text-[10px] tracking-tight">{tab.label}</span>
+              </button>
+            ))}
+          </nav>
 
         </div>
       )}

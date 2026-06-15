@@ -362,6 +362,7 @@ export default function App() {
   const [isImmobileModalOpen, setIsImmobileModalOpen] = useState(false);
   const [activeFormTab, setActiveFormTab] = useState('principale');
   const [isUserSettingsModalOpen, setIsUserSettingsModalOpen] = useState(false);
+  const [tempProfileFotoUrl, setTempProfileFotoUrl] = useState(null);
 
   // Detail inspector (Immobili)
   const [viewingImmobile, setViewingImmobile] = useState(null);
@@ -1352,7 +1353,7 @@ export default function App() {
 
                {/* Profile card */}
                <div
-                 onClick={() => setIsUserSettingsModalOpen(true)}
+                 onClick={() => { setIsUserSettingsModalOpen(true); setTempProfileFotoUrl(null); }}
                  className="bg-white/80 hover:bg-white p-3 rounded-2xl border border-[#E5E5EA] shadow-sm flex items-center space-x-3 cursor-pointer hover:scale-[1.01] transition-all"
                  title="Impostazioni Profilo"
                >
@@ -2724,7 +2725,7 @@ export default function App() {
                     <p className="text-[10px] text-[#86868B]">Gestisci i tuoi dettagli anagrafici e la foto profilo</p>
                   </div>
                   <button
-                    onClick={() => setIsUserSettingsModalOpen(false)}
+                    onClick={() => { setIsUserSettingsModalOpen(false); setTempProfileFotoUrl(null); }}
                     className="w-6 h-6 bg-white rounded-full border border-[#D2D2D7] flex items-center justify-center font-bold text-xs text-[#86868B] hover:text-[#1D1D1F] transition-all shadow-sm"
                   >
                     ✕
@@ -2736,9 +2737,9 @@ export default function App() {
                   {/* Photo Section */}
                   <div className="flex flex-col items-center space-y-3">
                     <div className="relative group">
-                      {profile?.foto ? (
+                      {tempProfileFotoUrl || profile?.foto ? (
                         <img
-                          src={profile.foto}
+                          src={tempProfileFotoUrl || profile.foto}
                           alt="Avatar"
                           className="w-20 h-20 rounded-full object-cover border border-white/50 shadow-md"
                         />
@@ -2756,6 +2757,8 @@ export default function App() {
                           className="hidden"
                           onChange={(e) => {
                             if (e.target.files && e.target.files[0]) {
+                              const file = e.target.files[0];
+                              setTempProfileFotoUrl(URL.createObjectURL(file));
                               triggerToast("Nuova immagine selezionata", "success");
                             }
                           }}
@@ -2813,7 +2816,7 @@ export default function App() {
                   <div className="pt-4 border-t border-[#E5E5EA] flex justify-end space-x-2">
                     <button
                       type="button"
-                      onClick={() => setIsUserSettingsModalOpen(false)}
+                      onClick={() => { setIsUserSettingsModalOpen(false); setTempProfileFotoUrl(null); }}
                       className="px-4 py-2 bg-[#F5F5F7] hover:bg-[#E5E5EA] rounded-full text-xs font-semibold transition-all"
                     >
                       Annulla

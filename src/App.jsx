@@ -353,13 +353,20 @@ export default function App() {
   // Search & Filter states
   const [searchProperty, setSearchProperty] = useState('');
   const [filterPropertyType, setFilterPropertyType] = useState('Tutti');
-  const [filterCategoria, setFilterCategoria] = useState('Tutti');
+  const [filterTipo, setFilterTipo] = useState('Tutti');
   const [filterStato, setFilterStato] = useState('Tutti');
   const [filterPrezzoMin, setFilterPrezzoMin] = useState('');
   const [filterPrezzoMax, setFilterPrezzoMax] = useState('');
   const [filterLocaliMin, setFilterLocaliMin] = useState('Tutti');
   const [filterSuperficieMin, setFilterSuperficieMin] = useState('');
   const [filterComune, setFilterComune] = useState('Tutti');
+  const [filterVendibileStranieri, setFilterVendibileStranieri] = useState('Tutti');
+  const [filterResidenza, setFilterResidenza] = useState('Tutti');
+  const [filterMandatoFirmato, setFilterMandatoFirmato] = useState('Tutti');
+  const [filterAgenteId, setFilterAgenteId] = useState('Tutti');
+  const [filterGarageMin, setFilterGarageMin] = useState('');
+  const [filterPostiAutoMin, setFilterPostiAutoMin] = useState('');
+  const [filterBagniMin, setFilterBagniMin] = useState('Tutti');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   const [searchContact, setSearchContact] = useState('');
@@ -1645,7 +1652,7 @@ export default function App() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
                       </svg>
                       <span>Filtri</span>
-                      {(filterCategoria !== 'Tutti' || filterStato !== 'Tutti' || filterComune !== 'Tutti' || filterPrezzoMin || filterPrezzoMax || filterLocaliMin !== 'Tutti' || filterSuperficieMin) && (
+                      {(filterTipo !== 'Tutti' || filterStato !== 'Tutti' || filterComune !== 'Tutti' || filterPrezzoMin || filterPrezzoMax || filterLocaliMin !== 'Tutti' || filterSuperficieMin || filterVendibileStranieri !== 'Tutti' || filterResidenza !== 'Tutti' || filterMandatoFirmato !== 'Tutti' || filterAgenteId !== 'Tutti' || filterGarageMin || filterPostiAutoMin || filterBagniMin !== 'Tutti') && (
                         <span className={`w-2 h-2 rounded-full ${showAdvancedFilters ? 'bg-white' : 'bg-[#0071E3]'}`}></span>
                       )}
                     </button>
@@ -1672,19 +1679,22 @@ export default function App() {
                 {showAdvancedFilters && (
                   <div className="bg-white p-5 rounded-2xl border border-[#E5E5EA] shadow-sm animate-fade-in space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                      {/* Categoria */}
+                      {/* Tipo */}
                       <div>
-                        <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868B] mb-1">Categoria</label>
+                        <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868B] mb-1">Tipo Immobile</label>
                         <select
-                          value={filterCategoria}
-                          onChange={(e) => setFilterCategoria(e.target.value)}
+                          value={filterTipo}
+                          onChange={(e) => setFilterTipo(e.target.value)}
                           className="w-full px-3 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] transition-all"
                         >
-                          <option value="Tutti">Tutte le categorie</option>
-                          <option value="Casa">Casa / Villa</option>
-                          <option value="Appartamento">Appartamento</option>
-                          <option value="Ufficio">Ufficio / Commerciale</option>
-                          <option value="Terreno">Terreno</option>
+                          <option value="Tutti">Tutti i tipi</option>
+                          {[
+                            "Appartamento", "Attico", "Villa", "Duplex", "Loft", "Casa a Schiera",
+                            "Casa Unifamiliare", "Ufficio", "Rustico", "Parcheggio all'Aperto",
+                            "Parcheggio al Coperto", "Garage", "Terreno Commerciale", "Terreno per Costruire"
+                          ].map(t => (
+                            <option key={t} value={t}>{t}</option>
+                          ))}
                         </select>
                       </div>
 
@@ -1718,7 +1728,65 @@ export default function App() {
                         </select>
                       </div>
 
-                      {/* Locali */}
+                      {/* Agente Referente */}
+                      <div>
+                        <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868B] mb-1">Agente Referente</label>
+                        <select
+                          value={filterAgenteId}
+                          onChange={(e) => setFilterAgenteId(e.target.value)}
+                          className="w-full px-3 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] transition-all"
+                        >
+                          <option value="Tutti">Tutti gli agenti</option>
+                          {contatti.filter(c => (c.ruolo || '').includes('Agente')).map(ag => (
+                            <option key={ag.id} value={ag.id}>{ag.cognome} {ag.nome}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Vendibile a stranieri */}
+                      <div>
+                        <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868B] mb-1">Vendibile a Stranieri</label>
+                        <select
+                          value={filterVendibileStranieri}
+                          onChange={(e) => setFilterVendibileStranieri(e.target.value)}
+                          className="w-full px-3 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none text-[#1D1D1F] transition-all"
+                        >
+                          <option value="Tutti">Tutti</option>
+                          <option value="Si">Sì</option>
+                          <option value="No">No</option>
+                        </select>
+                      </div>
+
+                      {/* Tipo di Residenza */}
+                      <div>
+                        <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868B] mb-1">Tipo Residenza</label>
+                        <select
+                          value={filterResidenza}
+                          onChange={(e) => setFilterResidenza(e.target.value)}
+                          className="w-full px-3 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none text-[#1D1D1F] transition-all"
+                        >
+                          <option value="Tutti">Tutte</option>
+                          <option value="Primaria">Primaria</option>
+                          <option value="Secondaria">Secondaria</option>
+                        </select>
+                      </div>
+
+                      {/* Mandato Firmato */}
+                      <div>
+                        <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868B] mb-1">Mandato Firmato</label>
+                        <select
+                          value={filterMandatoFirmato}
+                          onChange={(e) => setFilterMandatoFirmato(e.target.value)}
+                          className="w-full px-3 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none text-[#1D1D1F] transition-all"
+                        >
+                          <option value="Tutti">Tutti</option>
+                          <option value="Si">Sì</option>
+                          <option value="No">No</option>
+                          <option value="Stand By">Stand By</option>
+                        </select>
+                      </div>
+
+                      {/* Locali Minimo */}
                       <div>
                         <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868B] mb-1">Locali (minimo)</label>
                         <select
@@ -1732,6 +1800,22 @@ export default function App() {
                           <option value="3">3+ locali</option>
                           <option value="4">4+ locali</option>
                           <option value="5">5+ locali</option>
+                        </select>
+                      </div>
+
+                      {/* Bagni Minimo */}
+                      <div>
+                        <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868B] mb-1">Bagni (minimo)</label>
+                        <select
+                          value={filterBagniMin}
+                          onChange={(e) => setFilterBagniMin(e.target.value)}
+                          className="w-full px-3 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] transition-all"
+                        >
+                          <option value="Tutti">Qualsiasi</option>
+                          <option value="1">1+ bagni</option>
+                          <option value="2">2+ bagni</option>
+                          <option value="3">3+ bagni</option>
+                          <option value="4">4+ bagni</option>
                         </select>
                       </div>
 
@@ -1780,20 +1864,58 @@ export default function App() {
                         </div>
                       </div>
 
-                      {/* Actions / Reset */}
-                      <div className="flex items-end">
+                      {/* Garage Min */}
+                      <div>
+                        <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868B] mb-1">Box / Garage (min)</label>
+                        <input
+                          type="number"
+                          placeholder="es. 1"
+                          value={filterGarageMin}
+                          onChange={(e) => setFilterGarageMin(e.target.value)}
+                          className="w-full px-3 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none text-[#1D1D1F] transition-all"
+                        />
+                      </div>
+
+                      {/* Posti Auto Min */}
+                      <div>
+                        <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868B] mb-1">Posti Auto est. (min)</label>
+                        <input
+                          type="number"
+                          placeholder="es. 1"
+                          value={filterPostiAutoMin}
+                          onChange={(e) => setFilterPostiAutoMin(e.target.value)}
+                          className="w-full px-3 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none text-[#1D1D1F] transition-all"
+                        />
+                      </div>
+
+                      {/* Actions / Reset / Apply */}
+                      <div className="flex items-end md:col-span-2 space-x-2">
+                        <button
+                          type="button"
+                          onClick={() => setShowAdvancedFilters(false)}
+                          className="flex-1 py-2 bg-[#0071E3] hover:bg-[#0077ED] text-white text-xs font-semibold rounded-xl transition-all text-center flex items-center justify-center shadow-sm"
+                        >
+                          Applica Filtri
+                        </button>
                         <button
                           type="button"
                           onClick={() => {
-                            setFilterCategoria('Tutti');
+                            setFilterTipo('Tutti');
                             setFilterStato('Tutti');
                             setFilterComune('Tutti');
                             setFilterPrezzoMin('');
                             setFilterPrezzoMax('');
                             setFilterLocaliMin('Tutti');
                             setFilterSuperficieMin('');
+                            setFilterVendibileStranieri('Tutti');
+                            setFilterResidenza('Tutti');
+                            setFilterMandatoFirmato('Tutti');
+                            setFilterAgenteId('Tutti');
+                            setFilterGarageMin('');
+                            setFilterPostiAutoMin('');
+                            setFilterBagniMin('Tutti');
                           }}
-                          className="w-full py-2 bg-white hover:bg-gray-100 border border-[#D2D2D7] text-[#1D1D1F] text-xs font-semibold rounded-xl transition-all text-center flex items-center justify-center space-x-1"
+                          className="flex-1 py-2 bg-white hover:bg-gray-100 border border-[#D2D2D7] text-[#1D1D1F] text-xs font-semibold rounded-xl transition-all text-center flex items-center justify-center"
                         >
                           Reset Filtri
                         </button>
@@ -1837,11 +1959,19 @@ export default function App() {
                         
                         const matchType = filterPropertyType === 'Tutti' || (item.immobile_in && item.immobile_in.includes(filterPropertyType));
                         
-                        const matchCategoria = filterCategoria === 'Tutti' || (item.categoria && item.categoria.toLowerCase() === filterCategoria.toLowerCase());
+                        const matchTipo = filterTipo === 'Tutti' || (item.tipo && item.tipo.some(t => t.toLowerCase() === filterTipo.toLowerCase()));
                         
                         const matchStato = filterStato === 'Tutti' || (item.stato && item.stato.toLowerCase() === filterStato.toLowerCase());
                         
                         const matchComune = filterComune === 'Tutti' || (item.comune && item.comune.toLowerCase() === filterComune.toLowerCase());
+                        
+                        const matchVendibileStranieri = filterVendibileStranieri === 'Tutti' || (item.vendibile_a_stranieri && item.vendibile_a_stranieri.toLowerCase() === filterVendibileStranieri.toLowerCase());
+                        
+                        const matchResidenza = filterResidenza === 'Tutti' || (item.tipo_di_residenza && item.tipo_di_residenza.some(r => r.toLowerCase() === filterResidenza.toLowerCase()));
+                        
+                        const matchMandatoFirmato = filterMandatoFirmato === 'Tutti' || (item.mandato_firmato && item.mandato_firmato.toLowerCase() === filterMandatoFirmato.toLowerCase());
+                        
+                        const matchAgenteId = filterAgenteId === 'Tutti' || String(item.agente_id) === String(filterAgenteId);
                         
                         const isRent = item.immobile_in && item.immobile_in.includes('Affitto');
                         const price = isRent ? Number(item.prezzo_di_affitto || 0) : Number(item.prezzo_di_vendita || 0);
@@ -1849,10 +1979,17 @@ export default function App() {
                         const matchPrezzoMax = !filterPrezzoMax || price <= Number(filterPrezzoMax);
                         
                         const matchLocali = filterLocaliMin === 'Tutti' || Number(item.numero_di_locali || 0) >= Number(filterLocaliMin);
+                        const matchBagni = filterBagniMin === 'Tutti' || Number(item.numero_bagni || 0) >= Number(filterBagniMin);
                         
                         const matchSuperficie = !filterSuperficieMin || Number(item.superficie_abitabile || item.superficie_sul || 0) >= Number(filterSuperficieMin);
                         
-                        return matchSearch && matchType && matchCategoria && matchStato && matchComune && matchPrezzoMin && matchPrezzoMax && matchLocali && matchSuperficie;
+                        const matchGarage = !filterGarageMin || Number(item.garage || 0) >= Number(filterGarageMin);
+                        const matchPostiAuto = !filterPostiAutoMin || Number(item.parcheggio || 0) >= Number(filterPostiAutoMin);
+                        
+                        return matchSearch && matchType && matchTipo && matchStato && matchComune && 
+                               matchVendibileStranieri && matchResidenza && matchMandatoFirmato && matchAgenteId &&
+                               matchPrezzoMin && matchPrezzoMax && matchLocali && matchBagni && matchSuperficie &&
+                               matchGarage && matchPostiAuto;
                       })
                       .map((item) => (
                         <div

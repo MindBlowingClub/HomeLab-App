@@ -1027,24 +1027,54 @@ export default function App() {
         { key: 'note_interne', label: 'Note Interne' },
         { key: 'proprietario_id', label: 'ID Proprietario' },
         { key: 'agente_id', label: 'ID Agente' },
+        { key: 'immagine_di_riferimento', label: 'Foto Principale' },
+        { key: 'mandato', label: 'File Mandato' },
+        { key: 'planimetria', label: 'File Planimetria' },
         { key: 'estratto_registro_fondiario', label: 'Estratto RF' },
+        { key: 'estratto_registro_fondiario_doc', label: 'File Estratto RF' },
         { key: 'descrittivo_tecnico', label: 'Descrittivo Tecnico' },
+        { key: 'descrittivo_tecnico_doc', label: 'File Descrittivo Tecnico' },
         { key: 'regolamento_condominiale', label: 'Regolamento Condominiale' },
+        { key: 'regolamento_condominiale_doc', label: 'File Regolamento Condominiale' },
+        { key: 'spese_condominiali_doc', label: 'File Spese Condominiali' },
         { key: 'assicurazione_stabile', label: 'Assicurazione Stabile' },
+        { key: 'assicurazione_stabile_doc', label: 'File Assicurazione Stabile' },
         { key: 'verbale_ultima_assemblea', label: 'Verbale Ultima Assemblea' },
+        { key: 'verbale_ultima_assemblea_doc', label: 'File Verbale Assemblea' },
         { key: 'fondo_rinnovamento', label: 'Fondo Rinnovamento' },
+        { key: 'fondo_rinnovamento_doc', label: 'File Fondo Rinnovamento' },
         { key: 'valore_di_stima', label: 'Valore di Stima' },
+        { key: 'valore_di_stima_doc', label: 'File Valore di Stima' },
         { key: 'piano_assegnazioni_parti_comuni', label: 'Piano Assegnazioni Parti Comuni' },
+        { key: 'piano_assegnazioni_parti_comuni_doc', label: 'File Piano Assegnazioni' },
         { key: 'rasi', label: 'Rasi' },
+        { key: 'rasi_doc', label: 'File Rasi' },
         { key: 'certificato_radon', label: 'Certificato Radon' },
+        { key: 'certificato_radon_doc', label: 'File Certificato Radon' },
       ];
+
+      const formatLogValue = (val) => {
+        if (!val) return '-';
+        const str = String(val);
+        if (str.startsWith('data:')) {
+          const match = str.match(/^data:([^;]+);/);
+          return match ? `[Nuovo File: ${match[1]}]` : '[Nuovo File]';
+        }
+        if (str.includes('/') && (str.endsWith('.pdf') || str.endsWith('.png') || str.endsWith('.jpg') || str.endsWith('.jpeg') || str.includes('supabase'))) {
+          return str.split('/').pop();
+        }
+        return str;
+      };
+
       compareFields.forEach(f => {
         let oldVal = existing[f.key];
         let newVal = fields[f.key];
         if (oldVal === undefined || oldVal === null) oldVal = "";
         if (newVal === undefined || newVal === null) newVal = "";
         if (String(oldVal) !== String(newVal)) {
-          changes.push(`${f.label}: "${oldVal || '-'}" ➔ "${newVal || '-'}"`);
+          const oldFormatted = formatLogValue(oldVal);
+          const newFormatted = formatLogValue(newVal);
+          changes.push(`${f.label}: "${oldFormatted}" ➔ "${newFormatted}"`);
         }
       });
     } else {

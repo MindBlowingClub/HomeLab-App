@@ -2668,7 +2668,7 @@ export default function App() {
           {/* 1. MODALE IMMOBILI (FORM COMPLETO PER CREAZIONE/MODIFICA) */}
           {isImmobileModalOpen && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4 overflow-y-auto">
-              <div className="bg-white w-full max-w-3xl rounded-3xl shadow-2xl border border-[#E5E5EA] overflow-hidden my-8 max-h-[90vh] flex flex-col text-[#1D1D1F]">
+              <div className="bg-white w-full max-w-3xl rounded-3xl shadow-2xl border border-[#E5E5EA] overflow-hidden my-8 h-[680px] max-h-[90vh] flex flex-col text-[#1D1D1F]">
 
                 <div className="px-6 py-4 border-b border-[#E5E5EA] flex justify-between items-center bg-[#F5F5F7]">
                   <div>

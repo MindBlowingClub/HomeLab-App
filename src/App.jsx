@@ -2387,27 +2387,23 @@ export default function App() {
                             <div className="flex items-center justify-between pt-1">
                               <div>
                                 <span className="block text-[10px] text-[#86868B] uppercase font-semibold">Prezzo</span>
-                                <span className="text-xs font-extrabold tracking-tight text-[#1D1D1F] block truncate max-w-[140px]" title={(() => {
-                                  const prices = [];
-                                  if (item.immobile_in && item.immobile_in.includes('Vendita')) {
-                                    prices.push(`CHF ${(Number(item.prezzo_di_vendita) || 0).toLocaleString('it-CH')}`);
-                                  }
-                                  if (item.immobile_in && item.immobile_in.includes('Affitto')) {
-                                    prices.push(`CHF ${(Number(item.prezzo_di_affitto) || 0).toLocaleString('it-CH')}/m`);
-                                  }
-                                  return prices.join(' • ');
-                                })()}>
-                                  {(() => {
-                                    const prices = [];
-                                    if (item.immobile_in && item.immobile_in.includes('Vendita')) {
-                                      prices.push(`CHF ${(Number(item.prezzo_di_vendita) || 0).toLocaleString('it-CH')}`);
-                                    }
-                                    if (item.immobile_in && item.immobile_in.includes('Affitto')) {
-                                      prices.push(`CHF ${(Number(item.prezzo_di_affitto) || 0).toLocaleString('it-CH')}/m`);
-                                    }
-                                    return prices.length > 0 ? prices.join(' • ') : 'Trattativa Riservata';
-                                  })()}
-                                </span>
+                                <div className="space-y-0.5">
+                                  {Number(item.prezzo_di_vendita) > 0 && (
+                                    <div className="text-[11px] font-extrabold text-[#1D1D1F]">
+                                      <span className="text-[9px] text-[#86868B] font-semibold uppercase mr-1">Vendita:</span>
+                                      CHF {(Number(item.prezzo_di_vendita)).toLocaleString('it-CH')}
+                                    </div>
+                                  )}
+                                  {Number(item.prezzo_di_affitto) > 0 && (
+                                    <div className="text-[11px] font-extrabold text-[#1D1D1F]">
+                                      <span className="text-[9px] text-[#86868B] font-semibold uppercase mr-1">Affitto:</span>
+                                      CHF {(Number(item.prezzo_di_affitto)).toLocaleString('it-CH')}/mese
+                                    </div>
+                                  )}
+                                  {!(Number(item.prezzo_di_vendita) > 0) && !(Number(item.prezzo_di_affitto) > 0) && (
+                                    <span className="text-xs font-semibold text-gray-400 italic">Trattativa Riservata</span>
+                                  )}
+                                </div>
                               </div>
 
                               <div className="flex items-center space-x-1.5">

@@ -353,6 +353,15 @@ export default function App() {
   // Search & Filter states
   const [searchProperty, setSearchProperty] = useState('');
   const [filterPropertyType, setFilterPropertyType] = useState('Tutti');
+  const [filterCategoria, setFilterCategoria] = useState('Tutti');
+  const [filterStato, setFilterStato] = useState('Tutti');
+  const [filterPrezzoMin, setFilterPrezzoMin] = useState('');
+  const [filterPrezzoMax, setFilterPrezzoMax] = useState('');
+  const [filterLocaliMin, setFilterLocaliMin] = useState('Tutti');
+  const [filterSuperficieMin, setFilterSuperficieMin] = useState('');
+  const [filterComune, setFilterComune] = useState('Tutti');
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+
   const [searchContact, setSearchContact] = useState('');
   const [filterContactRuolo, setFilterContactRuolo] = useState('Tutti');
   const [searchVisit, setSearchVisit] = useState('');
@@ -594,6 +603,10 @@ export default function App() {
   };
 
   const currentSession = isRealSupabase ? session : simulatedSession;
+
+  const uniqueComuni = Array.from(
+    new Set(immobili.map(item => item.comune).filter(Boolean))
+  ).sort();
 
   // --- MOCKUP VALUE RENDERER WITH TRATTINO (-) FALLBACK ---
   const formatField = (value, unit = "", isCurrency = false) => {
@@ -1606,18 +1619,36 @@ export default function App() {
 
                 {/* Filters Bar */}
                 <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white p-4 rounded-2xl border border-[#E5E5EA] shadow-sm">
-                  {/* Search */}
-                  <div className="relative w-full sm:w-80">
-                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
-                      <IconSearch />
-                    </span>
-                    <input
-                      type="text"
-                      placeholder="Cerca per nome, comune..."
-                      value={searchProperty}
-                      onChange={(e) => setSearchProperty(e.target.value)}
-                      className="w-full pl-9 pr-4 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all"
-                    />
+                  {/* Search and Advanced Filters Button */}
+                  <div className="flex gap-2 w-full sm:w-auto flex-1 max-w-lg">
+                    <div className="relative flex-1">
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                        <IconSearch />
+                      </span>
+                      <input
+                        type="text"
+                        placeholder="Cerca per nome, comune..."
+                        value={searchProperty}
+                        onChange={(e) => setSearchProperty(e.target.value)}
+                        className="w-full pl-9 pr-4 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all text-[#1D1D1F]"
+                      />
+                    </div>
+                    <button
+                      onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                      className={`px-3 py-2 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all shrink-0 ${
+                        showAdvancedFilters
+                          ? 'bg-[#0071E3] text-white border-transparent'
+                          : 'bg-[#F5F5F7] hover:bg-[#E5E5EA]/50 border-transparent text-[#1D1D1F]'
+                      }`}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                      </svg>
+                      <span>Filtri</span>
+                      {(filterCategoria !== 'Tutti' || filterStato !== 'Tutti' || filterComune !== 'Tutti' || filterPrezzoMin || filterPrezzoMax || filterLocaliMin !== 'Tutti' || filterSuperficieMin) && (
+                        <span className={`w-2 h-2 rounded-full ${showAdvancedFilters ? 'bg-white' : 'bg-[#0071E3]'}`}></span>
+                      )}
+                    </button>
                   </div>
 
                   {/* Segmented filter */}
@@ -1636,6 +1667,140 @@ export default function App() {
                     ))}
                   </div>
                 </div>
+
+                {/* Advanced Filters Panel */}
+                {showAdvancedFilters && (
+                  <div className="bg-white p-5 rounded-2xl border border-[#E5E5EA] shadow-sm animate-fade-in space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                      {/* Categoria */}
+                      <div>
+                        <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868B] mb-1">Categoria</label>
+                        <select
+                          value={filterCategoria}
+                          onChange={(e) => setFilterCategoria(e.target.value)}
+                          className="w-full px-3 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] transition-all"
+                        >
+                          <option value="Tutti">Tutte le categorie</option>
+                          <option value="Casa">Casa / Villa</option>
+                          <option value="Appartamento">Appartamento</option>
+                          <option value="Ufficio">Ufficio / Commerciale</option>
+                          <option value="Terreno">Terreno</option>
+                        </select>
+                      </div>
+
+                      {/* Stato */}
+                      <div>
+                        <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868B] mb-1">Stato</label>
+                        <select
+                          value={filterStato}
+                          onChange={(e) => setFilterStato(e.target.value)}
+                          className="w-full px-3 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] transition-all"
+                        >
+                          <option value="Tutti">Tutti gli stati</option>
+                          <option value="Disponibile">Disponibile</option>
+                          <option value="In Trattativa">In Trattativa</option>
+                          <option value="Venduto">Venduto</option>
+                        </select>
+                      </div>
+
+                      {/* Comune */}
+                      <div>
+                        <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868B] mb-1">Comune</label>
+                        <select
+                          value={filterComune}
+                          onChange={(e) => setFilterComune(e.target.value)}
+                          className="w-full px-3 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] transition-all"
+                        >
+                          <option value="Tutti">Tutti i comuni</option>
+                          {uniqueComuni.map(c => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Locali */}
+                      <div>
+                        <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868B] mb-1">Locali (minimo)</label>
+                        <select
+                          value={filterLocaliMin}
+                          onChange={(e) => setFilterLocaliMin(e.target.value)}
+                          className="w-full px-3 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] transition-all"
+                        >
+                          <option value="Tutti">Qualsiasi</option>
+                          <option value="1">1+ locali</option>
+                          <option value="2">2+ locali</option>
+                          <option value="3">3+ locali</option>
+                          <option value="4">4+ locali</option>
+                          <option value="5">5+ locali</option>
+                        </select>
+                      </div>
+
+                      {/* Prezzo Min */}
+                      <div>
+                        <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868B] mb-1">Prezzo Minimo</label>
+                        <div className="relative">
+                          <input
+                            type="number"
+                            placeholder="es. 500000"
+                            value={filterPrezzoMin}
+                            onChange={(e) => setFilterPrezzoMin(e.target.value)}
+                            className="w-full pl-3 pr-7 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] transition-all"
+                          />
+                          <span className="absolute inset-y-0 right-3 flex items-center text-gray-400 text-xs pointer-events-none font-semibold">CHF</span>
+                        </div>
+                      </div>
+
+                      {/* Prezzo Max */}
+                      <div>
+                        <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868B] mb-1">Prezzo Massimo</label>
+                        <div className="relative">
+                          <input
+                            type="number"
+                            placeholder="es. 2000000"
+                            value={filterPrezzoMax}
+                            onChange={(e) => setFilterPrezzoMax(e.target.value)}
+                            className="w-full pl-3 pr-7 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] transition-all"
+                          />
+                          <span className="absolute inset-y-0 right-3 flex items-center text-gray-400 text-xs pointer-events-none font-semibold">CHF</span>
+                        </div>
+                      </div>
+
+                      {/* Superficie Min */}
+                      <div>
+                        <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868B] mb-1">Superficie Min (mq)</label>
+                        <div className="relative">
+                          <input
+                            type="number"
+                            placeholder="es. 100"
+                            value={filterSuperficieMin}
+                            onChange={(e) => setFilterSuperficieMin(e.target.value)}
+                            className="w-full pl-3 pr-7 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] transition-all"
+                          />
+                          <span className="absolute inset-y-0 right-3 flex items-center text-gray-400 text-xs pointer-events-none font-semibold">m²</span>
+                        </div>
+                      </div>
+
+                      {/* Actions / Reset */}
+                      <div className="flex items-end">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFilterCategoria('Tutti');
+                            setFilterStato('Tutti');
+                            setFilterComune('Tutti');
+                            setFilterPrezzoMin('');
+                            setFilterPrezzoMax('');
+                            setFilterLocaliMin('Tutti');
+                            setFilterSuperficieMin('');
+                          }}
+                          className="w-full py-2 bg-white hover:bg-gray-100 border border-[#D2D2D7] text-[#1D1D1F] text-xs font-semibold rounded-xl transition-all text-center flex items-center justify-center space-x-1"
+                        >
+                          Reset Filtri
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Properties Grid */}
                 {(isCRMLoading || (isRealSupabase && immobili.length === 0)) ? (
@@ -1669,8 +1834,25 @@ export default function App() {
                         const propName = (item.nome_immobile || '').toLowerCase();
                         const propComune = (item.comune || '').toLowerCase();
                         const matchSearch = propName.includes(searchProperty.toLowerCase()) || propComune.includes(searchProperty.toLowerCase());
+                        
                         const matchType = filterPropertyType === 'Tutti' || (item.immobile_in && item.immobile_in.includes(filterPropertyType));
-                        return matchSearch && matchType;
+                        
+                        const matchCategoria = filterCategoria === 'Tutti' || (item.categoria && item.categoria.toLowerCase() === filterCategoria.toLowerCase());
+                        
+                        const matchStato = filterStato === 'Tutti' || (item.stato && item.stato.toLowerCase() === filterStato.toLowerCase());
+                        
+                        const matchComune = filterComune === 'Tutti' || (item.comune && item.comune.toLowerCase() === filterComune.toLowerCase());
+                        
+                        const isRent = item.immobile_in && item.immobile_in.includes('Affitto');
+                        const price = isRent ? Number(item.prezzo_di_affitto || 0) : Number(item.prezzo_di_vendita || 0);
+                        const matchPrezzoMin = !filterPrezzoMin || price >= Number(filterPrezzoMin);
+                        const matchPrezzoMax = !filterPrezzoMax || price <= Number(filterPrezzoMax);
+                        
+                        const matchLocali = filterLocaliMin === 'Tutti' || Number(item.numero_di_locali || 0) >= Number(filterLocaliMin);
+                        
+                        const matchSuperficie = !filterSuperficieMin || Number(item.superficie_abitabile || item.superficie_sul || 0) >= Number(filterSuperficieMin);
+                        
+                        return matchSearch && matchType && matchCategoria && matchStato && matchComune && matchPrezzoMin && matchPrezzoMax && matchLocali && matchSuperficie;
                       })
                       .map((item) => (
                         <div

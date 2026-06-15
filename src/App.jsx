@@ -332,6 +332,23 @@ const INITIAL_VISITE = [
   }
 ];
 
+const INITIAL_IMMOBILI_LOGS = [
+  {
+    id: 1,
+    immobile_id: 101,
+    descrizione: "Creazione immobile",
+    utente: "OLGA HONCHAR",
+    data_ora: "2026-05-26T10:00:00Z"
+  },
+  {
+    id: 2,
+    immobile_id: 101,
+    descrizione: "Prezzo Vendita: \"3400000\" -> \"3450000\"",
+    utente: "MASSIMILIANO BOLDI",
+    data_ora: "2026-05-26T15:30:00Z"
+  }
+];
+
 export default function App() {
   // --- AUTHENTICATION STATES ---
   const [session, setSession] = useState(null);
@@ -352,6 +369,8 @@ export default function App() {
   const [immobili, setImmobili] = useState(isRealSupabase ? [] : INITIAL_IMMOBILI);
   const [contatti, setContatti] = useState(isRealSupabase ? [] : INITIAL_CONTATTI);
   const [visite, setVisite] = useState(isRealSupabase ? [] : INITIAL_VISITE);
+  const [localLogs, setLocalLogs] = useState(INITIAL_IMMOBILI_LOGS);
+  const [immobileLogs, setImmobileLogs] = useState([]);
 
   // Search & Filter states
   const [searchProperty, setSearchProperty] = useState('');
@@ -538,6 +557,30 @@ export default function App() {
       supabase.removeChannel(channel);
     };
   }, [isRealSupabase]);
+
+  useEffect(() => {
+    if (viewingImmobile) {
+      if (isRealSupabase && supabase) {
+        const fetchLogs = async () => {
+          const { data, error } = await supabase
+            .from('immobili_logs')
+            .select('*')
+            .eq('immobile_id', viewingImmobile.id)
+            .order('data_ora', { ascending: false });
+          if (!error && data) {
+            setImmobileLogs(data);
+          }
+        };
+        fetchLogs();
+      } else {
+        const filtered = localLogs.filter(log => log.immobile_id === viewingImmobile.id);
+        filtered.sort((a, b) => new Date(b.data_ora) - new Date(a.data_ora));
+        setImmobileLogs(filtered);
+      }
+    } else {
+      setImmobileLogs([]);
+    }
+  }, [viewingImmobile, localLogs, isRealSupabase]);
 
   const fetchProfile = async (userId) => {
     try {
@@ -942,6 +985,50 @@ export default function App() {
       ultima_modifica_fatta_da: currentSession?.user?.email ? currentSession.user.email.toUpperCase() : "UTENTE CRM"
     };
 
+    // Compare existing fields to find changes
+    const changes = [];
+    const userEmail = currentSession?.user?.email ? currentSession.user.email.toUpperCase() : "UTENTE CRM";
+    
+    if (existing) {
+      const compareFields = [
+        { key: 'nome_immobile', label: 'Nome' },
+        { key: 'prezzo_di_vendita', label: 'Prezzo Vendita' },
+        { key: 'prezzo_di_affitto', label: 'Prezzo Affitto' },
+        { key: 'spese_condominiali', label: 'Spese Condominiali' },
+        { key: 'costo_parcheggi', label: 'Costo Parcheggi' },
+        { key: 'indirizzo', label: 'Indirizzo' },
+        { key: 'comune', label: 'Comune' },
+        { key: 'npa', label: 'NPA' },
+        { key: 'nazione', label: 'Nazione' },
+        { key: 'categoria', label: 'Categoria' },
+        { key: 'superficie_abitabile', label: 'Superficie Abitabile' },
+        { key: 'superficie_sul', label: 'Superficie SUL' },
+        { key: 'numero_di_locali', label: 'Locali' },
+        { key: 'numero_bagni', label: 'Bagni' },
+        { key: 'anno_di_costruzione', label: 'Anno Costruzione' },
+        { key: 'ultimo_rinnovo', label: 'Ultimo Rinnovo' },
+        { key: 'garage', label: 'Garage' },
+        { key: 'parcheggio', label: 'Parcheggio' },
+        { key: 'descrizione_immobile', label: 'Descrizione' },
+        { key: 'numero_di_mappale', label: 'Mappale' },
+        { key: 'vendibile_a_stranieri', label: 'Stranieri' },
+        { key: 'link_a_cartella_condivisa', label: 'Link Cartella' },
+      ];
+      compareFields.forEach(f => {
+        let oldVal = existing[f.key];
+        let newVal = fields[f.key];
+        if (oldVal === undefined || oldVal === null) oldVal = "";
+        if (newVal === undefined || newVal === null) newVal = "";
+        if (String(oldVal) !== String(newVal)) {
+          changes.push(`${f.label}: "${oldVal || '-'}" ➔ "${newVal || '-'}"`);
+        }
+      });
+    } else {
+      changes.push("Creazione immobile");
+    }
+
+    const logDesc = changes.join(', ');
+
     if (isRealSupabase) {
       try {
         if (id) {
@@ -954,6 +1041,30 @@ export default function App() {
           const record = data[0] || { id, ...fields };
           setImmobili(immobili.map(item => item.id === id ? record : item));
           triggerToast("Immobile aggiornato nel database");
+          
+          if (changes.length > 0 && supabase) {
+            const { error: logErr } = await supabase.from('immobili_logs').insert([{
+              immobile_id: id,
+              descrizione: logDesc,
+              utente: userEmail,
+              data_ora: new Date().toISOString()
+            }]);
+            if (logErr) {
+              console.error("Errore salvataggio log:", logErr);
+              triggerToast("Errore salvataggio log: " + logErr.message, "error");
+            }
+            
+            // Force reload logs for viewingImmobile
+            if (viewingImmobile && viewingImmobile.id === id) {
+              const { data: logData } = await supabase
+                .from('immobili_logs')
+                .select('*')
+                .eq('immobile_id', id)
+                .order('data_ora', { ascending: false });
+              if (logData) setImmobileLogs(logData);
+            }
+          }
+
           if (viewingImmobile && viewingImmobile.id === id) {
             setViewingImmobile(record);
           }
@@ -963,8 +1074,22 @@ export default function App() {
             .insert([fields])
             .select();
           if (error) throw error;
-          setImmobili([...immobili, data[0]]);
+          const record = data[0];
+          setImmobili([...immobili, record]);
           triggerToast("Immobile salvato nel database");
+
+          if (supabase) {
+            const { error: logErr } = await supabase.from('immobili_logs').insert([{
+              immobile_id: record.id,
+              descrizione: "Creazione immobile",
+              utente: userEmail,
+              data_ora: new Date().toISOString()
+            }]);
+            if (logErr) {
+              console.error("Errore salvataggio log creazione:", logErr);
+              triggerToast("Errore salvataggio log creazione: " + logErr.message, "error");
+            }
+          }
         }
       } catch (err) {
         console.error(err);
@@ -979,9 +1104,27 @@ export default function App() {
         if (viewingImmobile && viewingImmobile.id === id) {
           setViewingImmobile(localFields);
         }
+        if (changes.length > 0) {
+          const newLog = {
+            id: Date.now(),
+            immobile_id: id,
+            descrizione: logDesc,
+            utente: userEmail,
+            data_ora: new Date().toISOString()
+          };
+          setLocalLogs(prev => [newLog, ...prev]);
+        }
       } else {
         setImmobili([...immobili, localFields]);
         triggerToast("Immobile aggiunto localmente");
+        const newLog = {
+          id: Date.now(),
+          immobile_id: finalId,
+          descrizione: "Creazione immobile",
+          utente: userEmail,
+          data_ora: new Date().toISOString()
+        };
+        setLocalLogs(prev => [newLog, ...prev]);
       }
     }
     setIsImmobileModalOpen(false);
@@ -2997,6 +3140,38 @@ export default function App() {
                           <span className="block text-xs text-[#86868B] mb-0.5">ultima_modifica_fatta_da</span>
                           <span className="font-semibold text-gray-700">{formatField(viewingImmobile.ultima_modifica_fatta_da)}</span>
                         </div>
+                      </div>
+
+                      {/* Timeline Cronologia */}
+                      <div className="space-y-4">
+                        <span className="block font-bold text-gray-500 uppercase tracking-wide text-[9px]">cronologia_modifiche</span>
+                        {immobileLogs.length === 0 ? (
+                          <div className="bg-white p-6 rounded-2xl border border-[#E5E5EA] text-center text-sm text-gray-400 italic">
+                            Nessuna modifica registrata
+                          </div>
+                        ) : (
+                          <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
+                            {immobileLogs.map((log) => (
+                              <div key={log.id} className="bg-white p-4 rounded-2xl border border-[#E5E5EA] space-y-2 relative shadow-sm hover:shadow transition-all">
+                                <div className="flex justify-between items-center text-xs">
+                                  <span className="font-bold text-[#0071E3]">{log.utente}</span>
+                                  <span className="text-gray-400 font-medium">
+                                    {log.data_ora ? new Date(log.data_ora).toLocaleString('it-CH', {
+                                      year: 'numeric',
+                                      month: '2-digit',
+                                      day: '2-digit',
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    }) : ''}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-gray-600 leading-relaxed font-medium">
+                                  {log.descrizione}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}

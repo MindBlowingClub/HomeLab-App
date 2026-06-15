@@ -2093,33 +2093,67 @@ export default function App() {
               <div className="w-full max-w-2xl h-full bg-white shadow-2xl border-l border-[#E5E5EA] flex flex-col animate-slide-left overflow-hidden">
 
                 {/* Header Banner */}
-                <div className="bg-[#F5F5F7] p-6 border-b border-[#E5E5EA] flex justify-between items-start">
-                  <div className="space-y-1">
-                    <span className="text-[10px] uppercase font-bold tracking-widest text-[#86868B]">
-                      id: #{formatField(viewingImmobile.id)} • codice_immobile: {formatField(viewingImmobile.codice_immobile)}
-                    </span>
-                    <h3 className="text-xl font-bold tracking-tight text-[#1D1D1F] leading-snug">
-                      nome_immobile: {viewingImmobile.nome_immobile}
-                    </h3>
-                    <p className="text-xs text-[#86868B] flex items-center">
-                      <span className="mr-1">🗺️</span> indirizzo: {formatField(viewingImmobile.indirizzo)} • comune: {formatField(viewingImmobile.comune)} • npa: {formatField(viewingImmobile.npa)} • nazione: {formatField(viewingImmobile.nazione)}
-                    </p>
+                <div className="bg-[#F5F5F7] border-b border-[#E5E5EA] flex flex-col relative">
+                  {/* Property Image Banner */}
+                  {viewingImmobile.immagine_di_riferimento ? (
+                    <div className="w-full h-48 overflow-hidden relative">
+                      <img
+                        src={viewingImmobile.immagine_di_riferimento}
+                        alt={viewingImmobile.nome_immobile}
+                        className="w-full h-full object-cover"
+                      />
+                      {/* Floating close button */}
+                      <button
+                        onClick={() => setIsDetailModalOpen(false)}
+                        className="absolute top-4 right-4 w-7 h-7 bg-white/90 hover:bg-white rounded-full border border-[#D2D2D7]/50 flex items-center justify-center font-bold text-sm text-[#86868B] transition-colors shadow-md z-10 animate-fade-in"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ) : null}
+
+                  {/* Property Info Area */}
+                  <div className="p-6 flex justify-between items-start">
+                    <div className="space-y-1.5 flex-1">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-[10px] uppercase font-extrabold tracking-widest text-[#86868B] bg-white px-2.5 py-0.5 rounded-full border border-[#D2D2D7] shadow-sm">
+                          ID: #{formatField(viewingImmobile.id)}
+                        </span>
+                        <span className="text-[10px] uppercase font-extrabold tracking-widest text-[#0071E3] bg-[#0071E3]/10 px-2.5 py-0.5 rounded-full font-semibold">
+                          CODICE: {formatField(viewingImmobile.codice_immobile)}
+                        </span>
+                      </div>
+                      <h3 className="text-xl font-bold tracking-tight text-[#1D1D1F] leading-snug">
+                        {viewingImmobile.nome_immobile}
+                      </h3>
+                      <p className="text-xs text-[#86868B] flex items-center font-medium">
+                        <span className="mr-1 text-sm">🗺️</span>
+                        {viewingImmobile.indirizzo ? `${viewingImmobile.indirizzo}; ` : ''}
+                        {viewingImmobile.npa ? `${viewingImmobile.npa}; ` : ''}
+                        {viewingImmobile.comune ? `${viewingImmobile.comune}, ` : ''}
+                        {viewingImmobile.nazione || 'Svizzera'}
+                      </p>
+                    </div>
+                    {/* Fallback close button if no image */}
+                    {!viewingImmobile.immagine_di_riferimento && (
+                      <button
+                        onClick={() => setIsDetailModalOpen(false)}
+                        className="w-7 h-7 bg-white/80 hover:bg-white rounded-full border border-[#D2D2D7] flex items-center justify-center font-bold text-sm text-[#86868B] transition-colors shadow-sm ml-4"
+                      >
+                        ✕
+                      </button>
+                    )}
                   </div>
-                  <button
-                    onClick={() => setIsDetailModalOpen(false)}
-                    className="w-7 h-7 bg-white/80 hover:bg-white rounded-full border border-[#D2D2D7] flex items-center justify-center font-bold text-sm text-[#86868B] transition-colors shadow-sm ml-4"
-                  >
-                    ✕
-                  </button>
                 </div>
+
                 {/* Tab Bar inner Inspector */}
                 <div className="px-6 py-2 bg-white border-b border-[#E5E5EA] flex space-x-1 overflow-x-auto">
                   {[
                     { id: 'generale', label: 'Generale & Prezzi' },
-                    { id: 'specifiche', label: 'Specifiche Fisiche' },
-                    { id: 'mandato', label: 'Mandato' },
-                    { id: 'documenti', label: 'Documenti & Compliance' },
-                    { id: 'media', label: 'Media' }
+                    { id: 'contatti', label: 'Contatti' },
+                    { id: 'amministrazione', label: 'Amministrazione' },
+                    { id: 'documenti', label: 'Documenti' },
+                    { id: 'log', label: 'Log' }
                   ].map(tab => (
                     <button
                       key={tab.id}
@@ -2137,10 +2171,11 @@ export default function App() {
                 {/* Content Drawer Scrollable with dynamic tabs */}
                 <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-white text-[#1D1D1F]">
 
-                  {/* TAB 1: GENERALE */}
+                  {/* TAB 2: GENERALE & PREZZI */}
                   {activeDetailTab === 'generale' && (
                     <div className="space-y-6">
-                      <div className="bg-[#F5F5F7] p-5 rounded-2xl border border-[#E5E5EA] grid grid-cols-2 gap-4">
+                      {/* Stato & Immobile_in outside the main grey container */}
+                      <div className="grid grid-cols-2 gap-4">
                         <div>
                           <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">stato</span>
                           <span className={`inline-flex px-3 py-1 rounded-full text-xs font-bold uppercase shadow-sm ${viewingImmobile.stato === 'Disponibile' ? 'bg-[#34C759] text-white' :
@@ -2156,13 +2191,17 @@ export default function App() {
                             {viewingImmobile.immobile_in ? viewingImmobile.immobile_in.join(' / ') : '-'}
                           </span>
                         </div>
-                        <div className="border-t border-gray-200/60 pt-3">
+                      </div>
+
+                      {/* Main Grey Container holding the 17 specified fields */}
+                      <div className="bg-[#F5F5F7] p-5 rounded-2xl border border-[#E5E5EA] grid grid-cols-2 gap-4 text-sm">
+                        <div>
                           <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">prezzo_di_vendita</span>
                           <span className="text-base font-extrabold">
                             {formatField(viewingImmobile.prezzo_di_vendita, "", true)}
                           </span>
                         </div>
-                        <div className="border-t border-gray-200/60 pt-3">
+                        <div>
                           <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">prezzo_di_affitto</span>
                           <span className="text-base font-extrabold">
                             {formatField(viewingImmobile.prezzo_di_affitto, "/mese", true)}
@@ -2180,8 +2219,61 @@ export default function App() {
                             {formatField(viewingImmobile.costo_parcheggi, "", true)}
                           </span>
                         </div>
+                        <div className="border-t border-gray-200/60 pt-3">
+                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">categoria</span>
+                          <span className="font-semibold">{formatField(viewingImmobile.categoria)}</span>
+                        </div>
+                        <div className="border-t border-gray-200/60 pt-3">
+                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">tipo</span>
+                          <span className="font-semibold">{viewingImmobile.tipo ? viewingImmobile.tipo.join(', ') : '-'}</span>
+                        </div>
+                        <div className="border-t border-gray-200/60 pt-3">
+                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">superficie_abitabile</span>
+                          <span className="font-semibold">{formatField(viewingImmobile.superficie_abitabile, " m²")}</span>
+                        </div>
+                        <div className="border-t border-gray-200/60 pt-3">
+                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">superficie_sul</span>
+                          <span className="font-semibold">{formatField(viewingImmobile.superficie_sul, " m²")}</span>
+                        </div>
+                        <div className="border-t border-gray-200/60 pt-3">
+                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">numero_di_locali</span>
+                          <span className="font-semibold">{formatField(viewingImmobile.numero_di_locali)}</span>
+                        </div>
+                        <div className="border-t border-gray-200/60 pt-3">
+                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">numero_bagni</span>
+                          <span className="font-semibold">{formatField(viewingImmobile.numero_bagni)}</span>
+                        </div>
+                        <div className="border-t border-gray-200/60 pt-3">
+                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">garage</span>
+                          <span className="font-semibold">{formatField(viewingImmobile.garage)}</span>
+                        </div>
+                        <div className="border-t border-gray-200/60 pt-3">
+                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">parcheggio</span>
+                          <span className="font-semibold">{formatField(viewingImmobile.parcheggio)}</span>
+                        </div>
+                        <div className="border-t border-gray-200/60 pt-3">
+                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">anno_di_costruzione</span>
+                          <span className="font-semibold">{formatField(viewingImmobile.anno_di_costruzione)}</span>
+                        </div>
+                        <div className="border-t border-gray-200/60 pt-3">
+                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">ultimo_rinnovo</span>
+                          <span className="font-semibold">{formatUltimoRinnovo(viewingImmobile.ultimo_rinnovo)}</span>
+                        </div>
+                        <div className="border-t border-gray-200/60 pt-3">
+                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">tipo_di_residenza</span>
+                          <span className="font-semibold">{viewingImmobile.tipo_di_residenza ? viewingImmobile.tipo_di_residenza.join(', ') : '-'}</span>
+                        </div>
+                        <div className="border-t border-gray-200/60 pt-3">
+                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">vendibile_a_stranieri</span>
+                          <span className="font-semibold">{formatField(viewingImmobile.vendibile_a_stranieri)}</span>
+                        </div>
+                        <div className="border-t border-gray-200/60 pt-3 col-span-2">
+                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">numero_di_mappale</span>
+                          <span className="font-semibold">{formatField(viewingImmobile.numero_di_mappale)}</span>
+                        </div>
                       </div>
 
+                      {/* Descrizione immobile */}
                       <div className="space-y-1">
                         <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider">descrizione_immobile</span>
                         <p className="text-sm leading-relaxed whitespace-pre-wrap bg-gray-50 p-4 rounded-xl border border-[#E5E5EA]">
@@ -2189,101 +2281,67 @@ export default function App() {
                         </p>
                       </div>
 
-                      <div className="space-y-3">
-                        <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider">anagrafiche_collegate</span>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="bg-white p-3.5 rounded-xl border border-[#E5E5EA]">
-                            <span className="block text-[9px] uppercase font-bold text-[#86868B]">proprietario_id</span>
-                            <span className="font-bold text-sm block mt-0.5">
-                              {getContactName(viewingImmobile.proprietario_id)}
-                            </span>
-                            {viewingImmobile.proprietario_id && (
-                              <div className="mt-2 text-xs text-[#86868B] space-y-0.5">
-                                <p>📞 {getContactPhone(viewingImmobile.proprietario_id)}</p>
-                                <p>✉️ {getContactEmail(viewingImmobile.proprietario_id)}</p>
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="bg-white p-3.5 rounded-xl border border-[#E5E5EA]">
-                            <span className="block text-[9px] uppercase font-bold text-[#86868B]">agente_id</span>
-                            <span className="font-bold text-sm block mt-0.5">
-                              {getContactName(viewingImmobile.agente_id)}
-                            </span>
-                            {viewingImmobile.agente_id && (
-                              <div className="mt-2 text-xs text-[#86868B] space-y-0.5">
-                                <p>📞 {getContactPhone(viewingImmobile.agente_id)}</p>
-                                <p>✉️ {getContactEmail(viewingImmobile.agente_id)}</p>
-                              </div>
-                            )}
+                      {/* Planimetria */}
+                      <div className="bg-[#F5F5F7] p-5 rounded-2xl border border-[#E5E5EA] flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <span className="text-2xl">📐</span>
+                          <div>
+                            <span className="font-bold text-sm block">planimetria</span>
+                            <span className="text-[10px] text-[#86868B] block mt-0.5">planimetria_doc</span>
                           </div>
                         </div>
+                        {viewingImmobile.planimetria ? (
+                          <a
+                            href={viewingImmobile.planimetria}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-xs bg-[#0071E3] hover:bg-[#0077ED] text-white px-4 py-1.5 rounded-full font-semibold transition-all shadow-sm"
+                          >
+                            Apri Planimetria
+                          </a>
+                        ) : (
+                          <span className="text-xs text-[#86868B] font-medium bg-gray-200 px-3 py-1 rounded-full">Assente</span>
+                        )}
                       </div>
                     </div>
                   )}
 
-                  {/* TAB 2: SPECIFICHE */}
-                  {activeDetailTab === 'specifiche' && (
+                  {/* TAB 3: CONTATTI */}
+                  {activeDetailTab === 'contatti' && (
                     <div className="space-y-6">
-                      <div className="grid grid-cols-2 gap-y-4 gap-x-6 text-sm">
-                        <div className="border-b pb-2">
-                          <span className="block text-xs text-[#86868B]">categoria:</span>
-                          <span className="font-semibold">{formatField(viewingImmobile.categoria)}</span>
+                      <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider">anagrafiche_collegate</span>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="bg-white p-3.5 rounded-xl border border-[#E5E5EA]">
+                          <span className="block text-[9px] uppercase font-bold text-[#86868B]">proprietario_oreferrente_id</span>
+                          <span className="font-bold text-sm block mt-0.5">
+                            {getContactName(viewingImmobile.proprietario_id)}
+                          </span>
+                          {viewingImmobile.proprietario_id && (
+                            <div className="mt-2 text-xs text-[#86868B] space-y-0.5">
+                              <p>📞 {getContactPhone(viewingImmobile.proprietario_id)}</p>
+                              <p>✉️ {getContactEmail(viewingImmobile.proprietario_id)}</p>
+                            </div>
+                          )}
                         </div>
-                        <div className="border-b pb-2">
-                          <span className="block text-xs text-[#86868B]">tipo:</span>
-                          <span className="font-semibold">{viewingImmobile.tipo ? viewingImmobile.tipo.join(', ') : '-'}</span>
-                        </div>
-                        <div className="border-b pb-2">
-                          <span className="block text-xs text-[#86868B]">superficie_abitabile:</span>
-                          <span className="font-semibold">{formatField(viewingImmobile.superficie_abitabile, " m²")}</span>
-                        </div>
-                        <div className="border-b pb-2">
-                          <span className="block text-xs text-[#86868B]">superficie_sul:</span>
-                          <span className="font-semibold">{formatField(viewingImmobile.superficie_sul, " m²")}</span>
-                        </div>
-                        <div className="border-b pb-2">
-                          <span className="block text-xs text-[#86868B]">numero_di_locali:</span>
-                          <span className="font-semibold">{formatField(viewingImmobile.numero_di_locali)}</span>
-                        </div>
-                        <div className="border-b pb-2">
-                          <span className="block text-xs text-[#86868B]">numero_bagni:</span>
-                          <span className="font-semibold">{formatField(viewingImmobile.numero_bagni)}</span>
-                        </div>
-                        <div className="border-b pb-2">
-                          <span className="block text-xs text-[#86868B]">anno_di_costruzione:</span>
-                          <span className="font-semibold">{formatField(viewingImmobile.anno_di_costruzione)}</span>
-                        </div>
-                        <div className="border-b pb-2">
-                          <span className="block text-xs text-[#86868B]">ultimo_rinnovo:</span>
-                          <span className="font-semibold">{formatUltimoRinnovo(viewingImmobile.ultimo_rinnovo)}</span>
-                        </div>
-                        <div className="border-b pb-2">
-                          <span className="block text-xs text-[#86868B]">garage:</span>
-                          <span className="font-semibold">{formatField(viewingImmobile.garage)}</span>
-                        </div>
-                        <div className="border-b pb-2">
-                          <span className="block text-xs text-[#86868B]">parcheggio:</span>
-                          <span className="font-semibold">{formatField(viewingImmobile.parcheggio)}</span>
-                        </div>
-                        <div className="border-b pb-2">
-                          <span className="block text-xs text-[#86868B]">numero_di_mappale:</span>
-                          <span className="font-semibold">{formatField(viewingImmobile.numero_di_mappale)}</span>
-                        </div>
-                        <div className="border-b pb-2">
-                          <span className="block text-xs text-[#86868B]">tipo_di_residenza:</span>
-                          <span className="font-semibold">{viewingImmobile.tipo_di_residenza ? viewingImmobile.tipo_di_residenza.join(', ') : '-'}</span>
-                        </div>
-                        <div className="border-b pb-2 col-span-2">
-                          <span className="block text-xs text-[#86868B]">vendibile_a_stranieri:</span>
-                          <span className="font-semibold">{formatField(viewingImmobile.vendibile_a_stranieri)}</span>
+
+                        <div className="bg-white p-3.5 rounded-xl border border-[#E5E5EA]">
+                          <span className="block text-[9px] uppercase font-bold text-[#86868B]">agente_id</span>
+                          <span className="font-bold text-sm block mt-0.5">
+                            {getContactName(viewingImmobile.agente_id)}
+                          </span>
+                          {viewingImmobile.agente_id && (
+                            <div className="mt-2 text-xs text-[#86868B] space-y-0.5">
+                              <p>📞 {getContactPhone(viewingImmobile.agente_id)}</p>
+                              <p>✉️ {getContactEmail(viewingImmobile.agente_id)}</p>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
                   )}
 
-                  {/* TAB 3: MANDATO */}
-                  {activeDetailTab === 'mandato' && (
+                  {/* TAB 4: AMMINISTRAZIONE */}
+                  {activeDetailTab === 'amministrazione' && (
                     <div className="space-y-6">
                       <div className="bg-[#F5F5F7] p-5 rounded-2xl border border-[#E5E5EA] grid grid-cols-2 gap-4">
                         <div>
@@ -2329,36 +2387,11 @@ export default function App() {
                     </div>
                   )}
 
-                  {/* TAB: DOCUMENTI & CERTIFICATI COMPLIANCE */}
+                  {/* TAB 5: DOCUMENTI */}
                   {activeDetailTab === 'documenti' && (
                     <div className="space-y-6">
-
-                      {/* Planimetria (No Si/No field) */}
-                      <div className="bg-[#F5F5F7] p-5 rounded-2xl border border-[#E5E5EA] flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <span className="text-2xl">📐</span>
-                          <div>
-                            <span className="font-bold text-sm block">planimetria</span>
-                            <span className="text-[10px] text-[#86868B] block mt-0.5">planimetria_doc</span>
-                          </div>
-                        </div>
-                        {viewingImmobile.planimetria ? (
-                          <a
-                            href={viewingImmobile.planimetria}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-xs bg-[#0071E3] hover:bg-[#0077ED] text-white px-4 py-1.5 rounded-full font-semibold transition-all shadow-sm"
-                          >
-                            Apri Planimetria
-                          </a>
-                        ) : (
-                          <span className="text-xs text-[#86868B] font-medium bg-gray-200 px-3 py-1 rounded-full">Assente</span>
-                        )}
-                      </div>
-
-                      {/* Compliance documents list */}
                       <div className="space-y-3">
-                        <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider">conformità</span>
+                        <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider">conformità & documenti</span>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {[
                             { key: 'estratto_registro_fondiario', label: 'estratto_registro_fondiario', desc: 'estratto_registro_fondiario_doc' },
@@ -2373,7 +2406,7 @@ export default function App() {
                             { key: 'rasi', label: 'rasi', desc: 'rasi_doc' },
                             { key: 'certificato_radon', label: 'certificato_radon', desc: 'certificato_radon_doc' }
                           ].map(doc => {
-                            const status = viewingImmobile[doc.key]; // "Si" or "No" (or fileUrl if isFileOnly)
+                            const status = viewingImmobile[doc.key];
                             const fileUrl = doc.isFileOnly ? status : viewingImmobile[`${doc.key}_doc`];
                             const isPresent = doc.isFileOnly ? !!fileUrl : status === 'Si';
                             return (
@@ -2406,33 +2439,38 @@ export default function App() {
                           })}
                         </div>
                       </div>
-
                     </div>
                   )}
 
-                  {/* TAB 4: MEDIA */}
-                  {activeDetailTab === 'media' && (
+                  {/* TAB 6: LOG */}
+                  {activeDetailTab === 'log' && (
                     <div className="space-y-6">
-                      <div className="space-y-3">
-                        <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider">immagine_di_riferimento</span>
-                        {viewingImmobile.immagine_di_riferimento ? (
-                          <div className="rounded-2xl border border-[#E5E5EA] overflow-hidden max-h-[300px] shadow-sm">
-                            <img
-                              src={viewingImmobile.immagine_di_riferimento}
-                              alt={viewingImmobile.nome_immobile}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                        ) : (
-                          <p className="text-xs text-[#86868B] italic">Nessuna immagine di riferimento caricata.</p>
-                        )}
-                      </div>
-
-                      <div className="bg-gray-100 p-3.5 rounded-xl text-[11px] text-[#86868B] space-y-1">
-                        <span className="block font-bold text-gray-500 uppercase tracking-wide text-[9px] mb-1">log_sincronizzazione_crm</span>
-                        <p>creato_da: <span className="font-semibold text-gray-700">{formatField(viewingImmobile.creato_da)}</span></p>
-                        <p>ultima_modifica_il: <span className="font-semibold text-gray-700">{formatField(viewingImmobile.ultima_modifica_il)}</span></p>
-                        <p>ultima_modifica_fatta_da: <span className="font-semibold text-gray-700">{formatField(viewingImmobile.ultima_modifica_fatta_da)}</span></p>
+                      <div className="bg-[#F5F5F7] p-5 rounded-2xl border border-[#E5E5EA] space-y-3 text-sm">
+                        <span className="block font-bold text-gray-500 uppercase tracking-wide text-[9px] mb-2">log_sincronizzazione_crm</span>
+                        <div>
+                          <span className="block text-xs text-[#86868B] mb-0.5">creato_da</span>
+                          <span className="font-semibold text-gray-700">{formatField(viewingImmobile.creato_da)}</span>
+                        </div>
+                        <div className="border-t border-gray-200/60 pt-2">
+                          <span className="block text-xs text-[#86868B] mb-0.5">created_at</span>
+                          <span className="font-semibold text-gray-700">
+                            {viewingImmobile.created_at ? new Date(viewingImmobile.created_at).toLocaleString('it-CH', {
+                              year: 'numeric',
+                              month: '2-digit',
+                              day: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            }) : '-'}
+                          </span>
+                        </div>
+                        <div className="border-t border-gray-200/60 pt-2">
+                          <span className="block text-xs text-[#86868B] mb-0.5">ultima_modifica_il</span>
+                          <span className="font-semibold text-gray-700">{formatField(viewingImmobile.ultima_modifica_il)}</span>
+                        </div>
+                        <div className="border-t border-gray-200/60 pt-2">
+                          <span className="block text-xs text-[#86868B] mb-0.5">ultima_modifica_fatta_da</span>
+                          <span className="font-semibold text-gray-700">{formatField(viewingImmobile.ultima_modifica_fatta_da)}</span>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -2640,9 +2678,9 @@ export default function App() {
                 <form onSubmit={handleSaveImmobile} className="flex-1 overflow-y-auto p-6 space-y-6">
                   {currentImmobile && <input type="hidden" name="id" value={currentImmobile.id} />}
 
-                  {/* DATI IDENTIFICATIVI & COMMERCIALI */}
+                  {/* ========= SEZIONE 1: INFORMAZIONI PRINCIPALI ========= */}
                   <div className="space-y-4">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-[#0071E3] border-b pb-1">1. Dati Identificativi & Commerciali</h4>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-[#0071E3] border-b pb-1">1. Informazioni Principali</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="md:col-span-2">
                         <label className="block text-xs font-semibold text-[#86868B] mb-1">nome_immobile *</label>
@@ -2664,7 +2702,7 @@ export default function App() {
                           required
                           placeholder="es. #0001"
                           defaultValue={currentImmobile ? currentImmobile.codice_immobile : ''}
-                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
+                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all text-[#1D1D1F]"
                         />
                       </div>
 
@@ -2684,128 +2722,6 @@ export default function App() {
                         )}
                       </div>
 
-                      <div>
-                        <label className="block text-xs font-semibold text-[#86868B] mb-2">immobile_in *</label>
-                        <div className="flex space-x-4">
-                          {['Affitto', 'Vendita'].map(val => (
-                            <label key={val} className="flex items-center space-x-2 text-sm">
-                              <input
-                                type="checkbox"
-                                name={`immobile_in_${val}`}
-                                defaultChecked={currentImmobile && currentImmobile.immobile_in ? currentImmobile.immobile_in.includes(val) : (val === 'Vendita')}
-                                className="rounded text-[#0071E3] focus:ring-[#0071E3]"
-                              />
-                              <span>{val}</span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-semibold text-[#86868B] mb-1">stato *</label>
-                        <select
-                          name="stato"
-                          defaultValue={currentImmobile ? currentImmobile.stato : 'Disponibile'}
-                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                        >
-                          <option value="Disponibile">Disponibile</option>
-                          <option value="In Trattativa">In Trattativa</option>
-                          <option value="Venduto">Venduto</option>
-                          <option value="Affittato">Affittato</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-semibold text-[#86868B] mb-1">mandato_firmato *</label>
-                        <select
-                          name="mandato_firmato"
-                          defaultValue={currentImmobile ? currentImmobile.mandato_firmato : 'No'}
-                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                        >
-                          <option value="No">No</option>
-                          <option value="Stand By">Stand By</option>
-                          <option value="Si">Si</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-semibold text-[#86868B] mb-1">tipo_di_mandato *</label>
-                        <select
-                          name="tipo_di_mandato"
-                          defaultValue={currentImmobile ? currentImmobile.tipo_di_mandato : 'Non in Esclusiva'}
-                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                        >
-                          <option value="Non in Esclusiva">Non in Esclusiva</option>
-                          <option value="In Esclusiva">In Esclusiva</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-semibold text-[#86868B] mb-1">mandato</label>
-                        <input
-                          type="file"
-                          name="mandato_file"
-                          accept="image/*,application/pdf"
-                          className="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#0071E3]/10 file:text-[#0071E3] hover:file:bg-[#0071E3]/20 cursor-pointer"
-                        />
-                        {currentImmobile && currentImmobile.mandato && (
-                          <div className="flex items-center gap-2 mt-1.5">
-                            <span className="text-[10px] text-gray-400">File attuale:</span>
-                            <a href={currentImmobile.mandato} target="_blank" rel="noreferrer" className="text-[10px] text-[#0071E3] underline truncate max-w-[240px]">{currentImmobile.mandato.split('/').pop()}</a>
-                          </div>
-                        )}
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-semibold text-[#86868B] mb-1">prezzo_di_vendita</label>
-                        <input
-                          type="number"
-                          name="prezzo_di_vendita"
-                          placeholder="es. 3450000"
-                          defaultValue={currentImmobile ? currentImmobile.prezzo_di_vendita : ''}
-                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-semibold text-[#86868B] mb-1">prezzo_di_affitto</label>
-                        <input
-                          type="number"
-                          name="prezzo_di_affitto"
-                          placeholder="es. 3100"
-                          defaultValue={currentImmobile ? currentImmobile.prezzo_di_affitto : ''}
-                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-semibold text-[#86868B] mb-1">spese_condominiali</label>
-                        <input
-                          type="number"
-                          name="spese_condominiali"
-                          placeholder="es. 250"
-                          defaultValue={currentImmobile ? currentImmobile.spese_condominiali : ''}
-                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-semibold text-[#86868B] mb-1">costo_parcheggi</label>
-                        <input
-                          type="number"
-                          name="costo_parcheggi"
-                          placeholder="es. 150"
-                          defaultValue={currentImmobile ? currentImmobile.costo_parcheggi : ''}
-                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* LOCALIZZAZIONE & CARATTERISTICHE */}
-                  <div className="space-y-4">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-[#0071E3] border-b pb-1">2. Localizzazione & Caratteristiche</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="md:col-span-2">
                         <label className="block text-xs font-semibold text-[#86868B] mb-1">indirizzo *</label>
                         <input
@@ -2814,18 +2730,7 @@ export default function App() {
                           required
                           placeholder="Via Cantonale 1"
                           defaultValue={currentImmobile ? currentImmobile.indirizzo : ''}
-                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-[#86868B] mb-1">comune *</label>
-                        <input
-                          type="text"
-                          name="comune"
-                          required
-                          placeholder="Lugano"
-                          defaultValue={currentImmobile ? currentImmobile.comune : ''}
-                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
+                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all text-[#1D1D1F]"
                         />
                       </div>
 
@@ -2837,7 +2742,18 @@ export default function App() {
                           required
                           placeholder="6900"
                           defaultValue={currentImmobile ? currentImmobile.npa : ''}
-                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
+                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all text-[#1D1D1F]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-[#86868B] mb-1">comune *</label>
+                        <input
+                          type="text"
+                          name="comune"
+                          required
+                          placeholder="Lugano"
+                          defaultValue={currentImmobile ? currentImmobile.comune : ''}
+                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all text-[#1D1D1F]"
                         />
                       </div>
                       <div>
@@ -2846,38 +2762,39 @@ export default function App() {
                           type="text"
                           name="nazione"
                           defaultValue={currentImmobile ? currentImmobile.nazione : 'Svizzera'}
-                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
+                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all text-[#1D1D1F]"
                         />
                       </div>
+                    </div>
+                  </div>
+
+                  {/* ========= SEZIONE 2: GENERALE & PREZZI ========= */}
+                  <div className="space-y-4">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-[#0071E3] border-b pb-1">2. Generale & Prezzi</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-xs font-semibold text-[#86868B] mb-1">categoria *</label>
+                        <label className="block text-xs font-semibold text-[#86868B] mb-1">stato *</label>
                         <select
-                          name="categoria"
-                          defaultValue={currentImmobile ? currentImmobile.categoria : 'Appartamento'}
-                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
+                          name="stato"
+                          defaultValue={currentImmobile ? currentImmobile.stato : 'Disponibile'}
+                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all text-[#1D1D1F]"
                         >
-                          <option value="Appartamento">Appartamento</option>
-                          <option value="Casa">Casa</option>
-                          <option value="Locali di Servizio">Locali di Servizio</option>
-                          <option value="Terreno">Terreno</option>
-                          <option value="Parcheggio">Parcheggio</option>
-                          <option value="Box">Box</option>
+                          <option value="Disponibile">Disponibile</option>
+                          <option value="In Trattativa">In Trattativa</option>
+                          <option value="Venduto">Venduto</option>
+                          <option value="Affittato">Affittato</option>
                         </select>
                       </div>
 
-                      <div className="md:col-span-3">
-                        <label className="block text-xs font-semibold text-[#86868B] mb-2">tipo</label>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 bg-[#F5F5F7] p-4 rounded-2xl border border-transparent">
-                          {[
-                            "Appartamento", "Attico", "Villa", "Duplex", "Loft", "Casa a Schiera",
-                            "Casa Unifamiliare", "Ufficio", "Rustico", "Parcheggio all'Aperto",
-                            "Parcheggio al Coperto", "Garage", "Terreno Commerciale", "Terreno per Costruire"
-                          ].map(val => (
-                            <label key={val} className="flex items-center space-x-2 text-xs">
+                      <div>
+                        <label className="block text-xs font-semibold text-[#86868B] mb-2">immobile_in *</label>
+                        <div className="flex space-x-4 py-1.5">
+                          {['Affitto', 'Vendita'].map(val => (
+                            <label key={val} className="flex items-center space-x-2 text-sm text-[#1D1D1F]">
                               <input
                                 type="checkbox"
-                                name={`tipo_${val}`}
-                                defaultChecked={currentImmobile && currentImmobile.tipo ? currentImmobile.tipo.includes(val) : false}
+                                name={`immobile_in_${val}`}
+                                defaultChecked={currentImmobile && currentImmobile.immobile_in ? currentImmobile.immobile_in.includes(val) : (val === 'Vendita')}
                                 className="rounded text-[#0071E3] focus:ring-[#0071E3]"
                               />
                               <span>{val}</span>
@@ -2885,142 +2802,242 @@ export default function App() {
                           ))}
                         </div>
                       </div>
-
-                      <div>
-                        <label className="block text-xs font-semibold text-[#86868B] mb-1">superficie_abitabile</label>
-                        <input
-                          type="number"
-                          name="superficie_abitabile"
-                          defaultValue={currentImmobile ? currentImmobile.superficie_abitabile : ''}
-                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-[#86868B] mb-1">superficie_sul</label>
-                        <input
-                          type="number"
-                          name="superficie_sul"
-                          defaultValue={currentImmobile ? currentImmobile.superficie_sul : ''}
-                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-[#86868B] mb-1">numero_di_locali</label>
-                        <input
-                          type="number"
-                          step="0.1"
-                          name="numero_di_locali"
-                          placeholder="es. 3.5"
-                          defaultValue={currentImmobile ? currentImmobile.numero_di_locali : ''}
-                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-[#86868B] mb-1">numero_bagni</label>
-                        <input
-                          type="number"
-                          name="numero_bagni"
-                          placeholder="es. 2"
-                          defaultValue={currentImmobile ? currentImmobile.numero_bagni : ''}
-                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-[#86868B] mb-1">anno_di_costruzione</label>
-                        <input
-                          type="number"
-                          name="anno_di_costruzione"
-                          placeholder="es. 2018"
-                          defaultValue={currentImmobile ? currentImmobile.anno_di_costruzione : ''}
-                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-[#86868B] mb-1">ultimo_rinnovo</label>
-                        <input
-                          type="month"
-                          name="ultimo_rinnovo_input"
-                          defaultValue={currentImmobile ? (() => {
-                            if (!currentImmobile.ultimo_rinnovo) return "";
-                            const year = Math.floor(currentImmobile.ultimo_rinnovo / 100);
-                            const month = currentImmobile.ultimo_rinnovo % 100;
-                            if (year && month) {
-                              return `${year}-${String(month).padStart(2, '0')}`;
-                            }
-                            return "";
-                          })() : ''}
-                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-[#86868B] mb-1">garage</label>
-                        <input
-                          type="number"
-                          name="garage"
-                          placeholder="es. 1"
-                          defaultValue={currentImmobile ? currentImmobile.garage : ''}
-                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-[#86868B] mb-1">parcheggio</label>
-                        <input
-                          type="number"
-                          name="parcheggio"
-                          placeholder="es. 2"
-                          defaultValue={currentImmobile ? currentImmobile.parcheggio : ''}
-                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                        />
-                      </div>
                     </div>
-                  </div>
 
-                  {/* CATASTO & RESIDENZA */}
-                  <div className="space-y-4">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-[#0071E3] border-b pb-1">3. Catasto & Residenza</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Container wrapping pricing and specifications */}
+                    <div className="bg-[#F5F5F7] p-5 rounded-2xl border border-[#E5E5EA] space-y-4">
+                      <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Specifiche e Prezzi</span>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-semibold text-[#86868B] mb-1">prezzo_di_vendita</label>
+                          <input
+                            type="number"
+                            name="prezzo_di_vendita"
+                            placeholder="es. 3450000"
+                            defaultValue={currentImmobile ? currentImmobile.prezzo_di_vendita : ''}
+                            className="w-full px-3.5 py-2 bg-white border border-[#E5E5EA] rounded-xl text-sm focus:outline-none focus:border-[#0071E3] text-[#1D1D1F]"
+                          />
+                        </div>
 
-                      <div>
-                        <label className="block text-xs font-semibold text-[#86868B] mb-1">numero_di_mappale</label>
-                        <input
-                          type="text"
-                          name="numero_di_mappale"
-                          placeholder="es. 1234"
-                          defaultValue={currentImmobile ? currentImmobile.numero_di_mappale : ''}
-                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                        />
-                      </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-[#86868B] mb-1">prezzo_di_affitto</label>
+                          <input
+                            type="number"
+                            name="prezzo_di_affitto"
+                            placeholder="es. 3100"
+                            defaultValue={currentImmobile ? currentImmobile.prezzo_di_affitto : ''}
+                            className="w-full px-3.5 py-2 bg-white border border-[#E5E5EA] rounded-xl text-sm focus:outline-none focus:border-[#0071E3] text-[#1D1D1F]"
+                          />
+                        </div>
 
-                      <div>
-                        <label className="block text-xs font-semibold text-[#86868B] mb-1">vendibile_a_stranieri</label>
-                        <select
-                          name="vendibile_a_stranieri"
-                          defaultValue={currentImmobile ? currentImmobile.vendibile_a_stranieri : 'No'}
-                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                        >
-                          <option value="No">No</option>
-                          <option value="Si">Si</option>
-                        </select>
-                      </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-[#86868B] mb-1">spese_condominiali</label>
+                          <input
+                            type="number"
+                            name="spese_condominiali"
+                            placeholder="es. 250"
+                            defaultValue={currentImmobile ? currentImmobile.spese_condominiali : ''}
+                            className="w-full px-3.5 py-2 bg-white border border-[#E5E5EA] rounded-xl text-sm focus:outline-none focus:border-[#0071E3] text-[#1D1D1F]"
+                          />
+                        </div>
 
-                      <div>
-                        <label className="block text-xs font-semibold text-[#86868B] mb-2">tipo_di_residenza</label>
-                        <div className="flex space-x-6 bg-[#F5F5F7] p-3 rounded-2xl border border-transparent">
-                          {['Primaria', 'Secondaria'].map(res => (
-                            <label key={res} className="flex items-center space-x-2 text-xs">
-                              <input
-                                type="checkbox"
-                                name={`tipo_di_residenza_${res}`}
-                                defaultChecked={currentImmobile && currentImmobile.tipo_di_residenza ? currentImmobile.tipo_di_residenza.includes(res) : false}
-                                className="rounded text-[#0071E3] focus:ring-[#0071E3]"
-                              />
-                              <span>{res}</span>
-                            </label>
-                          ))}
+                        <div>
+                          <label className="block text-xs font-semibold text-[#86868B] mb-1">costo_parcheggi</label>
+                          <input
+                            type="number"
+                            name="costo_parcheggi"
+                            placeholder="es. 150"
+                            defaultValue={currentImmobile ? currentImmobile.costo_parcheggi : ''}
+                            className="w-full px-3.5 py-2 bg-white border border-[#E5E5EA] rounded-xl text-sm focus:outline-none focus:border-[#0071E3] text-[#1D1D1F]"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-semibold text-[#86868B] mb-1">categoria *</label>
+                          <select
+                            name="categoria"
+                            defaultValue={currentImmobile ? currentImmobile.categoria : 'Appartamento'}
+                            className="w-full px-3.5 py-2 bg-white border border-[#E5E5EA] rounded-xl text-sm focus:outline-none focus:border-[#0071E3] text-[#1D1D1F]"
+                          >
+                            <option value="Appartamento">Appartamento</option>
+                            <option value="Casa">Casa</option>
+                            <option value="Locali di Servizio">Locali di Servizio</option>
+                            <option value="Terreno">Terreno</option>
+                            <option value="Parcheggio">Parcheggio</option>
+                            <option value="Box">Box</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-semibold text-[#86868B] mb-1">numero_di_mappale</label>
+                          <input
+                            type="text"
+                            name="numero_di_mappale"
+                            placeholder="es. 1234"
+                            defaultValue={currentImmobile ? currentImmobile.numero_di_mappale : ''}
+                            className="w-full px-3.5 py-2 bg-white border border-[#E5E5EA] rounded-xl text-sm focus:outline-none focus:border-[#0071E3] text-[#1D1D1F]"
+                          />
+                        </div>
+
+                        <div className="md:col-span-2">
+                          <label className="block text-xs font-semibold text-[#86868B] mb-2">tipo</label>
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 bg-white p-4 rounded-2xl border border-[#E5E5EA]">
+                            {[
+                              "Appartamento", "Attico", "Villa", "Duplex", "Loft", "Casa a Schiera",
+                              "Casa Unifamiliare", "Ufficio", "Rustico", "Parcheggio all'Aperto",
+                              "Parcheggio al Coperto", "Garage", "Terreno Commerciale", "Terreno per Costruire"
+                            ].map(val => (
+                              <label key={val} className="flex items-center space-x-2 text-xs text-[#1D1D1F]">
+                                <input
+                                  type="checkbox"
+                                  name={`tipo_${val}`}
+                                  defaultChecked={currentImmobile && currentImmobile.tipo ? currentImmobile.tipo.includes(val) : false}
+                                  className="rounded text-[#0071E3] focus:ring-[#0071E3]"
+                                />
+                                <span>{val}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-semibold text-[#86868B] mb-1">superficie_abitabile</label>
+                          <input
+                            type="number"
+                            name="superficie_abitabile"
+                            defaultValue={currentImmobile ? currentImmobile.superficie_abitabile : ''}
+                            className="w-full px-3.5 py-2 bg-white border border-[#E5E5EA] rounded-xl text-sm focus:outline-none focus:border-[#0071E3] text-[#1D1D1F]"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-semibold text-[#86868B] mb-1">superficie_sul</label>
+                          <input
+                            type="number"
+                            name="superficie_sul"
+                            defaultValue={currentImmobile ? currentImmobile.superficie_sul : ''}
+                            className="w-full px-3.5 py-2 bg-white border border-[#E5E5EA] rounded-xl text-sm focus:outline-none focus:border-[#0071E3] text-[#1D1D1F]"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-semibold text-[#86868B] mb-1">numero_di_locali</label>
+                          <input
+                            type="number"
+                            step="0.1"
+                            name="numero_di_locali"
+                            placeholder="es. 3.5"
+                            defaultValue={currentImmobile ? currentImmobile.numero_di_locali : ''}
+                            className="w-full px-3.5 py-2 bg-white border border-[#E5E5EA] rounded-xl text-sm focus:outline-none focus:border-[#0071E3] text-[#1D1D1F]"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-semibold text-[#86868B] mb-1">numero_bagni</label>
+                          <input
+                            type="number"
+                            name="numero_bagni"
+                            placeholder="es. 2"
+                            defaultValue={currentImmobile ? currentImmobile.numero_bagni : ''}
+                            className="w-full px-3.5 py-2 bg-white border border-[#E5E5EA] rounded-xl text-sm focus:outline-none focus:border-[#0071E3] text-[#1D1D1F]"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-semibold text-[#86868B] mb-1">garage</label>
+                          <input
+                            type="number"
+                            name="garage"
+                            placeholder="es. 1"
+                            defaultValue={currentImmobile ? currentImmobile.garage : ''}
+                            className="w-full px-3.5 py-2 bg-white border border-[#E5E5EA] rounded-xl text-sm focus:outline-none focus:border-[#0071E3] text-[#1D1D1F]"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-semibold text-[#86868B] mb-1">parcheggio</label>
+                          <input
+                            type="number"
+                            name="parcheggio"
+                            placeholder="es. 2"
+                            defaultValue={currentImmobile ? currentImmobile.parcheggio : ''}
+                            className="w-full px-3.5 py-2 bg-white border border-[#E5E5EA] rounded-xl text-sm focus:outline-none focus:border-[#0071E3] text-[#1D1D1F]"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-semibold text-[#86868B] mb-1">anno_di_costruzione</label>
+                          <input
+                            type="number"
+                            name="anno_di_costruzione"
+                            placeholder="es. 2018"
+                            defaultValue={currentImmobile ? currentImmobile.anno_di_costruzione : ''}
+                            className="w-full px-3.5 py-2 bg-white border border-[#E5E5EA] rounded-xl text-sm focus:outline-none focus:border-[#0071E3] text-[#1D1D1F]"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-semibold text-[#86868B] mb-1">ultimo_rinnovo</label>
+                          <input
+                            type="month"
+                            name="ultimo_rinnovo_input"
+                            defaultValue={currentImmobile ? (() => {
+                              if (!currentImmobile.ultimo_rinnovo) return "";
+                              const year = Math.floor(currentImmobile.ultimo_rinnovo / 100);
+                              const month = currentImmobile.ultimo_rinnovo % 100;
+                              if (year && month) {
+                                return `${year}-${String(month).padStart(2, '0')}`;
+                              }
+                              return "";
+                            })() : ''}
+                            className="w-full px-3.5 py-2 bg-white border border-[#E5E5EA] rounded-xl text-sm focus:outline-none focus:border-[#0071E3] text-[#1D1D1F]"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-semibold text-[#86868B] mb-2">tipo_di_residenza</label>
+                          <div className="flex space-x-6 bg-white p-3 rounded-2xl border border-[#E5E5EA]">
+                            {['Primaria', 'Secondaria'].map(res => (
+                              <label key={res} className="flex items-center space-x-2 text-xs text-[#1D1D1F]">
+                                <input
+                                  type="checkbox"
+                                  name={`tipo_di_residenza_${res}`}
+                                  defaultChecked={currentImmobile && currentImmobile.tipo_di_residenza ? currentImmobile.tipo_di_residenza.includes(res) : false}
+                                  className="rounded text-[#0071E3] focus:ring-[#0071E3]"
+                                />
+                                <span>{res}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-semibold text-[#86868B] mb-1">vendibile_a_stranieri</label>
+                          <select
+                            name="vendibile_a_stranieri"
+                            defaultValue={currentImmobile ? currentImmobile.vendibile_a_stranieri : 'No'}
+                            className="w-full px-3.5 py-2 bg-white border border-[#E5E5EA] rounded-xl text-sm focus:outline-none focus:border-[#0071E3] text-[#1D1D1F]"
+                          >
+                            <option value="No">No</option>
+                            <option value="Si">Si</option>
+                          </select>
                         </div>
                       </div>
+                    </div>
 
-                      <div>
+                    {/* Outside container: descrizione_immobile, planimetria */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-semibold text-[#86868B] mb-1">descrizione_immobile</label>
+                        <textarea
+                          name="descrizione_immobile"
+                          rows="4"
+                          defaultValue={currentImmobile ? currentImmobile.descrizione_immobile : ''}
+                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all text-[#1D1D1F]"
+                        />
+                      </div>
+
+                      <div className="md:col-span-2">
                         <label className="block text-xs font-semibold text-[#86868B] mb-1">planimetria</label>
                         <input
                           type="file"
@@ -3035,18 +3052,101 @@ export default function App() {
                           </div>
                         )}
                       </div>
-
                     </div>
                   </div>
 
-                  {/* DOCUMENTI & CERTIFICATI COMPLIANCE */}
+                  {/* ========= SEZIONE 3: CONTATTI ========= */}
                   <div className="space-y-4">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-[#0071E3] border-b pb-1">4. Documenti & Certificati Compliance</h4>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-[#0071E3] border-b pb-1">3. Contatti</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-[#86868B] mb-1">proprietario_oreferrente_id *</label>
+                        <select
+                          name="proprietario_id"
+                          defaultValue={currentImmobile ? currentImmobile.proprietario_id : ''}
+                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all text-[#1D1D1F]"
+                        >
+                          <option value="">Nessuno (Seleziona contatto)</option>
+                          {contatti
+                            .filter(c => (c.ruolo || '').includes('Proprietario') || (c.ruolo || '').includes('Locatore'))
+                            .map(c => (
+                              <option key={c.id} value={c.id}>{c.cognome} {c.nome}</option>
+                            ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-[#86868B] mb-1">agente_id</label>
+                        <select
+                          name="agente_id"
+                          defaultValue={currentImmobile ? currentImmobile.agente_id : ''}
+                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all text-[#1D1D1F]"
+                        >
+                          <option value="">Nessuno</option>
+                          {contatti
+                            .filter(c => (c.ruolo || '').includes('Agente'))
+                            .map(c => (
+                              <option key={c.id} value={c.id}>{c.cognome} {c.nome}</option>
+                            ))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ========= SEZIONE 4: AMMINISTRAZIONE ========= */}
+                  <div className="space-y-4">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-[#0071E3] border-b pb-1">4. Amministrazione</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-[#86868B] mb-1">mandato_firmato *</label>
+                        <select
+                          name="mandato_firmato"
+                          defaultValue={currentImmobile ? currentImmobile.mandato_firmato : 'No'}
+                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all text-[#1D1D1F]"
+                        >
+                          <option value="No">No</option>
+                          <option value="Stand By">Stand By</option>
+                          <option value="Si">Si</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-[#86868B] mb-1">tipo_di_mandato *</label>
+                        <select
+                          name="tipo_di_mandato"
+                          defaultValue={currentImmobile ? currentImmobile.tipo_di_mandato : 'Non in Esclusiva'}
+                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all text-[#1D1D1F]"
+                        >
+                          <option value="Non in Esclusiva">Non in Esclusiva</option>
+                          <option value="In Esclusiva">In Esclusiva</option>
+                        </select>
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-semibold text-[#86868B] mb-1">mandato</label>
+                        <input
+                          type="file"
+                          name="mandato_file"
+                          accept="image/*,application/pdf"
+                          className="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#0071E3]/10 file:text-[#0071E3] hover:file:bg-[#0071E3]/20 cursor-pointer"
+                        />
+                        {currentImmobile && currentImmobile.mandato && (
+                          <div className="flex items-center gap-2 mt-1.5">
+                            <span className="text-[10px] text-gray-400">File attuale:</span>
+                            <a href={currentImmobile.mandato} target="_blank" rel="noreferrer" className="text-[10px] text-[#0071E3] underline truncate max-w-[240px]">{currentImmobile.mandato.split('/').pop()}</a>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ========= SEZIONE 5: DOCUMENTI ========= */}
+                  <div className="space-y-4">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-[#0071E3] border-b pb-1">5. Documenti</h4>
                     <p className="text-[11px] text-[#86868B] -mt-2">
                       Indica per ogni documento se è presente e carica il relativo file (Foto o PDF).
                     </p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
                       {[
                         { key: 'estratto_registro_fondiario', label: 'estratto_registro_fondiario', desc: 'estratto_registro_fondiario_doc' },
                         { key: 'descrittivo_tecnico', label: 'descrittivo_tecnico', desc: 'descrittivo_tecnico_doc' },
@@ -3114,59 +3214,53 @@ export default function App() {
                           </div>
                         );
                       })}
-
                     </div>
                   </div>
 
-                  {/* ASSEGNAZIONE & NOTE */}
-                  <div className="space-y-4">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-[#0071E3] border-b pb-1">5. Relazioni & Descrizione</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs font-semibold text-[#86868B] mb-1">proprietario_id *</label>
-                        <select
-                          name="proprietario_id"
-                          defaultValue={currentImmobile ? currentImmobile.proprietario_id : ''}
-                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                        >
-                          <option value="">Nessuno (Seleziona contatto)</option>
-                          {contatti
-                            .filter(c => (c.ruolo || '').includes('Proprietario') || (c.ruolo || '').includes('Locatore'))
-                            .map(c => (
-                              <option key={c.id} value={c.id}>{c.cognome} {c.nome}</option>
-                            ))}
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-semibold text-[#86868B] mb-1">agente_id</label>
-                        <select
-                          name="agente_id"
-                          defaultValue={currentImmobile ? currentImmobile.agente_id : ''}
-                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                        >
-                          <option value="">Nessuno</option>
-                          {contatti
-                            .filter(c => (c.ruolo || '').includes('Agente'))
-                            .map(c => (
-                              <option key={c.id} value={c.id}>{c.cognome} {c.nome}</option>
-                            ))}
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-4">
-                      <div>
-                        <label className="block text-xs font-semibold text-[#86868B] mb-1">descrizione_immobile</label>
-                        <textarea
-                          name="descrizione_immobile"
-                          rows="4"
-                          defaultValue={currentImmobile ? currentImmobile.descrizione_immobile : ''}
-                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all text-[#1D1D1F]"
-                        />
+                  {/* ========= SEZIONE 6: LOG ========= */}
+                  {currentImmobile && (
+                    <div className="space-y-4">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-[#0071E3] border-b pb-1">6. Log</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                        <div>
+                          <label className="block font-semibold text-[#86868B] mb-1">creato_da</label>
+                          <input
+                            type="text"
+                            disabled
+                            value={currentImmobile.creato_da || '-'}
+                            className="w-full px-3.5 py-2 bg-gray-100 border border-transparent rounded-xl text-sm text-gray-500 cursor-not-allowed"
+                          />
+                        </div>
+                        <div>
+                          <label className="block font-semibold text-[#86868B] mb-1">created_at</label>
+                          <input
+                            type="text"
+                            disabled
+                            value={currentImmobile.created_at ? new Date(currentImmobile.created_at).toLocaleString('it-CH') : '-'}
+                            className="w-full px-3.5 py-2 bg-gray-100 border border-transparent rounded-xl text-sm text-gray-500 cursor-not-allowed"
+                          />
+                        </div>
+                        <div>
+                          <label className="block font-semibold text-[#86868B] mb-1">ultima_modifica_il</label>
+                          <input
+                            type="text"
+                            disabled
+                            value={currentImmobile.ultima_modifica_il || '-'}
+                            className="w-full px-3.5 py-2 bg-gray-100 border border-transparent rounded-xl text-sm text-gray-500 cursor-not-allowed"
+                          />
+                        </div>
+                        <div>
+                          <label className="block font-semibold text-[#86868B] mb-1">ultima_modifica_fatta_da</label>
+                          <input
+                            type="text"
+                            disabled
+                            value={currentImmobile.ultima_modifica_fatta_da || '-'}
+                            className="w-full px-3.5 py-2 bg-gray-100 border border-transparent rounded-xl text-sm text-gray-500 cursor-not-allowed"
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Buttons */}
                   <div className="pt-4 border-t border-[#E5E5EA] flex justify-end space-x-2">

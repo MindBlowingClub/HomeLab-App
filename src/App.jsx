@@ -1059,7 +1059,7 @@ export default function App() {
   };
 
   return (
-    <div className="relative min-h-screen bg-slate-950 text-slate-100 font-sans antialiased overflow-hidden selection:bg-indigo-500 selection:text-white">
+    <div className="relative min-h-screen liquid-bg text-slate-100 font-sans antialiased overflow-hidden selection:bg-[#0071E3] selection:text-white">
 
       {/* Background Decorative Glows for overall premium style */}
       <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[50%] rounded-full bg-indigo-900/10 blur-[130px] pointer-events-none" />
@@ -1190,10 +1190,10 @@ export default function App() {
         /* ========================================================= */
         /* Protezione superata: Dashboard CRM Completa */
         /* ========================================================= */
-        <div className="flex h-screen bg-[#F5F5F7] text-[#1D1D1F] antialiased overflow-hidden relative z-10">
+        <div className="flex h-screen bg-transparent text-[#1D1D1F] antialiased overflow-hidden relative z-10">
 
           {/* LATERAL SIDEBAR (macOS / iPadOS style) */}
-          <aside className="w-64 bg-[#F5F5F7]/80 backdrop-blur-md border-r border-[#E5E5EA] flex flex-col justify-between py-6 px-4 shrink-0">
+          <aside className="w-64 glass-sidebar flex flex-col justify-between py-6 px-4 shrink-0 z-20">
             <div>
               {/* Brand Header */}
               <div className="flex items-center space-x-3 px-3 mb-8">
@@ -1336,7 +1336,7 @@ export default function App() {
           </aside>
 
           {/* MAIN WORKSPACE AREA */}
-          <main className="flex-1 overflow-y-auto bg-[#F5F5F7] p-8">
+          <main className="flex-1 overflow-y-auto bg-transparent p-8">
 
             {/* TAB 1: DASHBOARD */}
             {activeTab === 'dashboard' && (
@@ -1367,7 +1367,7 @@ export default function App() {
 
                 {/* macOS Widget Style Statistics cards */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                  <div className="bg-white p-5 rounded-2xl border border-[#E5E5EA] shadow-sm flex flex-col justify-between h-36">
+                  <div className="glass-panel p-5 rounded-3xl flex flex-col justify-between h-36 hover:scale-[1.02] hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300">
                     <span className="text-xs font-semibold text-[#86868B] uppercase tracking-wider">Immobili Attivi</span>
                     <div className="my-2">
                       {isCRMLoading ? (
@@ -1381,7 +1381,7 @@ export default function App() {
                     </button>
                   </div>
 
-                  <div className="bg-white p-5 rounded-2xl border border-[#E5E5EA] shadow-sm flex flex-col justify-between h-36">
+                  <div className="glass-panel p-5 rounded-3xl flex flex-col justify-between h-36 hover:scale-[1.02] hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300">
                     <span className="text-xs font-semibold text-[#86868B] uppercase tracking-wider">Portafoglio Stimato</span>
                     <div className="my-2">
                       {isCRMLoading ? (
@@ -1395,7 +1395,7 @@ export default function App() {
                     <span className="text-xs text-[#86868B]">Valore degli immobili in vendita</span>
                   </div>
 
-                  <div className="bg-white p-5 rounded-2xl border border-[#E5E5EA] shadow-sm flex flex-col justify-between h-36">
+                  <div className="glass-panel p-5 rounded-3xl flex flex-col justify-between h-36 hover:scale-[1.02] hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300">
                     <span className="text-xs font-semibold text-[#86868B] uppercase tracking-wider">Contatti in CRM</span>
                     <div className="my-2">
                       {isCRMLoading ? (
@@ -1409,7 +1409,7 @@ export default function App() {
                     </button>
                   </div>
 
-                  <div className="bg-white p-5 rounded-2xl border border-[#E5E5EA] shadow-sm flex flex-col justify-between h-36">
+                  <div className="glass-panel p-5 rounded-3xl flex flex-col justify-between h-36 hover:scale-[1.02] hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300">
                     <span className="text-xs font-semibold text-[#86868B] uppercase tracking-wider">Eventi a Calendario</span>
                     <div className="my-2">
                       {isCRMLoading ? (
@@ -1425,24 +1425,24 @@ export default function App() {
                 </div>
 
                 {/* Quick Actions Panel */}
-                <div className="bg-white p-6 rounded-3xl border border-[#E5E5EA] shadow-sm">
+                <div className="glass-panel p-6 rounded-3xl">
                   <h3 className="text-lg font-semibold tracking-tight text-[#1D1D1F] mb-4">Azioni Rapide</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <button
                       onClick={() => { setIsImmobileModalOpen(true); setCurrentImmobile(null); setActiveFormTab('principale'); }}
-                      className="bg-[#0071E3] hover:bg-[#0077ED] text-white p-4 rounded-2xl font-medium text-sm transition-all flex items-center justify-center space-x-2 shadow-sm"
+                      className="btn-glossy text-white p-4 rounded-2xl font-medium text-sm transition-all flex items-center justify-center space-x-2"
                     >
                       <IconPlus /> <span>Registra Nuovo Immobile</span>
                     </button>
                     <button
                       onClick={() => { setIsContattoModalOpen(true); setCurrentContatto(null); }}
-                      className="bg-white hover:bg-[#F5F5F7] text-[#1D1D1F] p-4 rounded-2xl font-medium text-sm border border-[#D2D2D7] transition-all flex items-center justify-center space-x-2"
+                      className="bg-white/45 backdrop-blur hover:bg-white/70 text-[#1D1D1F] p-4 rounded-2xl font-medium text-sm border border-white/40 shadow-sm transition-all flex items-center justify-center space-x-2 hover:scale-[1.01]"
                     >
                       <IconPlus /> <span>Aggiungi Contatto</span>
                     </button>
                     <button
                       onClick={() => { setIsVisitaModalOpen(true); setCurrentVisita(null); }}
-                      className="bg-white hover:bg-[#F5F5F7] text-[#1D1D1F] p-4 rounded-2xl font-medium text-sm border border-[#D2D2D7] transition-all flex items-center justify-center space-x-2"
+                      className="bg-white/45 backdrop-blur hover:bg-white/70 text-[#1D1D1F] p-4 rounded-2xl font-medium text-sm border border-white/40 shadow-sm transition-all flex items-center justify-center space-x-2 hover:scale-[1.01]"
                     >
                       <IconPlus /> <span>Pianifica Visita/Shooting</span>
                     </button>
@@ -1608,7 +1608,7 @@ export default function App() {
                         <div
                           key={item.id}
                           onClick={() => handleViewImmobile(item)}
-                          className="bg-white rounded-2xl border border-[#E5E5EA] shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col justify-between cursor-pointer group"
+                          className="glass-panel rounded-3xl transition-all overflow-hidden flex flex-col justify-between cursor-pointer group hover:scale-[1.02] hover:-translate-y-0.5 hover:shadow-xl duration-300"
                         >
                           {/* Header Photo / Placeholder */}
                           <div
@@ -1802,7 +1802,7 @@ export default function App() {
                 </div>
 
                 {/* Contacts Table View */}
-                <div className="bg-white rounded-3xl border border-[#E5E5EA] overflow-hidden shadow-sm">
+                <div className="glass-panel rounded-3xl overflow-hidden">
                   <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                       <thead>
@@ -2019,7 +2019,7 @@ export default function App() {
                       .map((item) => {
                         const dateObj = new Date(item.data_ora);
                         return (
-                          <div key={item.id} className="bg-white rounded-3xl p-5 border border-[#E5E5EA] shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row justify-between gap-4 items-start md:items-center">
+                           <div key={item.id} className="glass-panel rounded-3xl p-5 hover:scale-[1.01] hover:shadow-xl transition-all duration-300 flex flex-col md:flex-row justify-between gap-4 items-start md:items-center">
 
                             <div className="flex items-center space-x-4 min-w-[150px]">
                               <div className="text-center bg-[#F5F5F7] py-2 px-3.5 rounded-2xl border border-[#E5E5EA]">
@@ -2092,7 +2092,7 @@ export default function App() {
             <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/20 backdrop-blur-sm transition-all">
               <div className="absolute inset-0 -z-10" onClick={() => setIsDetailModalOpen(false)}></div>
 
-              <div className="w-full max-w-2xl h-full bg-white shadow-2xl border-l border-[#E5E5EA] flex flex-col animate-slide-left overflow-hidden">
+              <div className="w-full max-w-2xl h-full bg-white/70 backdrop-blur-2xl shadow-2xl border-l border-white/30 flex flex-col animate-slide-left overflow-hidden">
 
                 {/* Header Banner */}
                 <div className="bg-[#F5F5F7] border-b border-[#E5E5EA] flex flex-col relative">
@@ -2668,7 +2668,7 @@ export default function App() {
           {/* 1. MODALE IMMOBILI (FORM COMPLETO PER CREAZIONE/MODIFICA) */}
           {isImmobileModalOpen && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4 overflow-y-auto">
-              <div className="bg-white w-full max-w-3xl rounded-3xl shadow-2xl border border-[#E5E5EA] overflow-hidden my-8 h-[680px] max-h-[90vh] flex flex-col text-[#1D1D1F]">
+              <div className="glass-modal w-full max-w-3xl rounded-3xl shadow-2xl overflow-hidden my-8 h-[680px] max-h-[90vh] flex flex-col text-[#1D1D1F]">
 
                 <div className="px-6 py-4 border-b border-[#E5E5EA] flex justify-between items-center bg-[#F5F5F7]">
                   <div>

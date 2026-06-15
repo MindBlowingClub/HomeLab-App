@@ -956,6 +956,7 @@ export default function App() {
       garage: Number(formData.get('garage')) || 0,
       parcheggio: Number(formData.get('parcheggio')) || 0,
       descrizione_immobile: formData.get('descrizione_immobile') || "",
+      note_interne: formData.get('note_interne') || "",
       proprietario_id: Number(formData.get('proprietario_id')) || null,
       agente_id: Number(formData.get('agente_id')) || null,
       planimetria,
@@ -1017,6 +1018,7 @@ export default function App() {
         { key: 'numero_di_mappale', label: 'Mappale' },
         { key: 'vendibile_a_stranieri', label: 'Stranieri' },
         { key: 'link_a_cartella_condivisa', label: 'Link Cartella' },
+        { key: 'note_interne', label: 'Note Interne' },
       ];
       compareFields.forEach(f => {
         let oldVal = existing[f.key];
@@ -2853,6 +2855,7 @@ export default function App() {
                     { id: 'contatti', label: 'Contatti' },
                     { id: 'amministrazione', label: 'Amministrazione' },
                     { id: 'documenti', label: 'Documenti' },
+                    { id: 'note_interne', label: 'Note Interne' },
                     { id: 'log', label: 'Log' }
                   ].map(tab => (
                     <button
@@ -3160,6 +3163,20 @@ export default function App() {
                               </div>
                             );
                           })}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* TAB: NOTE INTERNE */}
+                  {activeDetailTab === 'note_interne' && (
+                    <div className="space-y-6">
+                      <div className="space-y-2">
+                        <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider">note_interne</span>
+                        <div className="bg-white p-5 rounded-2xl border border-[#E5E5EA] text-sm text-[#1D1D1F] whitespace-pre-wrap leading-relaxed min-h-[150px]">
+                          {viewingImmobile.note_interne || (
+                            <span className="text-gray-400 italic">Nessuna nota interna inserita per questo immobile.</span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -3575,6 +3592,7 @@ export default function App() {
                     { id: 'contatti', label: 'Contatti' },
                     { id: 'amministrazione', label: 'Amministrazione' },
                     { id: 'documenti', label: 'Documenti' },
+                    { id: 'note_interne', label: 'Note Interne' },
                     { id: 'log', label: 'Log', hidden: !currentImmobile },
                   ].filter(t => !t.hidden).map(tab => (
                     <button
@@ -4147,6 +4165,21 @@ export default function App() {
                           </div>
                         );
                       })}
+                    </div>
+                  </div>
+
+                  {/* ========= SEZIONE: NOTE INTERNE ========= */}
+                  <div className={activeFormTab === 'note_interne' ? 'space-y-4' : 'hidden'}>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-[#0071E3] border-b pb-1">Note Interne</h4>
+                    <div>
+                      <label className="block text-xs font-semibold text-[#86868B] mb-1">note_interne</label>
+                      <textarea
+                        name="note_interne"
+                        rows="8"
+                        placeholder="Inserisci note interne riservate all'agenzia..."
+                        defaultValue={currentImmobile ? currentImmobile.note_interne : ''}
+                        className="w-full px-3.5 py-2.5 bg-white border border-[#E5E5EA] rounded-xl text-sm focus:outline-none focus:border-[#0071E3] text-[#1D1D1F] leading-relaxed"
+                      />
                     </div>
                   </div>
 

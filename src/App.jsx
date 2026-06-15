@@ -63,50 +63,91 @@ const INITIAL_CONTATTI = [
     cognome: "Honchar",
     nome: "Olga",
     societa: "HOME LAB Real Estate Sagl",
-    ruolo: "Agente Immobiliare",
+    ruolo: ["Agente Immobiliare"],
     telefono: "+41 79 533 74 19",
     mail: "o.honchar@homelabrealestate.ch",
-    note: "Agente principale di riferimento per le proprietà di alto standing a Lugano."
+    note: "Agente principale di riferimento per le proprietà di alto standing a Lugano.",
+    note_contatto: "Agente principale di riferimento per le proprietà di alto standing a Lugano.",
+    immobili_posseduti: [],
+    immobili_gestiti: [101, 102]
   },
   {
     id: 2,
     cognome: "Iannone",
     nome: "Andrea",
     societa: "",
-    ruolo: "Proprietario, Locatore",
+    ruolo: ["Proprietario", "Locatore"],
     telefono: "+41 76 458 29 29",
     mail: "a.iannone@exclusive-properties.ch",
-    note: "Proprietario dell'appartamento esclusivo con piscina a Bissone."
+    note: "Proprietario dell'appartamento esclusivo con piscina a Bissone.",
+    note_contatto: "Proprietario dell'appartamento esclusivo con piscina a Bissone.",
+    immobili_posseduti: [101, 102, 103],
+    immobili_gestiti: []
   },
   {
     id: 3,
     cognome: "Boldi",
     nome: "Massimiliano",
     societa: "HOME LAB Real Estate Sagl",
-    ruolo: "Intermediario",
+    ruolo: ["Intermediario"],
     telefono: "+41 79 457 95 58",
     mail: "m.boldi@homelabrealestate.ch",
-    note: "Gestore delle relazioni con i clienti e procacciatore d'affari."
+    note: "Gestore delle relazioni con i clienti e procacciatore d'affari.",
+    note_contatto: "Gestore delle relazioni con i clienti e procacciatore d'affari.",
+    immobili_posseduti: [],
+    immobili_gestiti: [103]
   },
   {
     id: 4,
     cognome: "Cau",
     nome: "Stefano",
     societa: "Design Addict",
-    ruolo: "Fotografo",
+    ruolo: ["Fotografo"],
     telefono: "+41 76 526 28 82",
     mail: "studio@designaddict.ch",
-    note: "Fotografo professionista specializzato in architettura d'interni e video droni."
+    note: "Fotografo professionista specializzato in architettura d'interni e video droni.",
+    note_contatto: "Fotografo professionista specializzato in architettura d'interni e video droni.",
+    immobili_posseduti: [],
+    immobili_gestiti: []
   },
   {
     id: 5,
     cognome: "Kogan Amaro",
     nome: "Julio",
     societa: "",
-    ruolo: "Cliente",
+    ruolo: ["Acquirente"],
     telefono: "+41 78 991 12 23",
     mail: "j.kogan@vip-invest.ch",
-    note: "Potenziale acquirente interessato ad attici di lusso con vista lago."
+    note: "Potenziale acquirente interessato ad attici di lusso con vista lago.",
+    note_contatto: "Potenziale acquirente interessato ad attici di lusso con vista lago.",
+    immobili_posseduti: [],
+    immobili_gestiti: []
+  },
+  {
+    id: 6,
+    cognome: "Rossi",
+    nome: "Marco",
+    societa: "Rossi Investments",
+    ruolo: ["Proprietario", "Locatore"],
+    telefono: "+41 79 123 45 67",
+    mail: "m.rossi@rossi-invest.ch",
+    note: "Investitore immobiliare locale focalizzato sul mercato degli appartamenti da reddito.",
+    note_contatto: "Investitore immobiliare locale focalizzato sul mercato degli appartamenti da reddito.",
+    immobili_posseduti: [102],
+    immobili_gestiti: []
+  },
+  {
+    id: 7,
+    cognome: "Bianchi",
+    nome: "Elena",
+    societa: "",
+    ruolo: ["Acquirente", "Affittuario"],
+    telefono: "+41 76 987 65 43",
+    mail: "elena.bianchi@gmail.com",
+    note: "Cerca un appartamento in affitto o acquisto in zona Paradiso o Lugano centro.",
+    note_contatto: "Cerca un appartamento in affitto o acquisto in zona Paradiso o Lugano centro.",
+    immobili_posseduti: [],
+    immobili_gestiti: []
   }
 ];
 
@@ -394,6 +435,7 @@ export default function App() {
 
   const [searchContact, setSearchContact] = useState('');
   const [filterContactRuolo, setFilterContactRuolo] = useState('Tutti');
+  const [sortContactOrder, setSortContactOrder] = useState('nome-cognome');
   const [searchVisit, setSearchVisit] = useState('');
 
   // Editing modals
@@ -415,6 +457,11 @@ export default function App() {
   // Modals for Contatti and Visite
   const [currentContatto, setCurrentContatto] = useState(null);
   const [isContattoModalOpen, setIsContattoModalOpen] = useState(false);
+  const [selectedPosseduti, setSelectedPosseduti] = useState([]);
+  const [selectedGestiti, setSelectedGestiti] = useState([]);
+  const [addingPropertyForContact, setAddingPropertyForContact] = useState(null);
+  const [searchPossedutiQuery, setSearchPossedutiQuery] = useState('');
+  const [searchGestitiQuery, setSearchGestitiQuery] = useState('');
   const [currentVisita, setCurrentVisita] = useState(null);
   const [isVisitaModalOpen, setIsVisitaModalOpen] = useState(false);
 
@@ -798,41 +845,36 @@ export default function App() {
 
   const uploadToSupabase = async (file, bucketName = 'immobili-media') => {
     if (!isRealSupabase || !supabase) return null;
-    try {
-      const fileExt = file.name.split('.').pop().toLowerCase();
-      const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif'].includes(fileExt);
-      const folder = isImage ? 'images' : 'docs';
-      const uniqueName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
-      const filePath = `${folder}/${uniqueName}`;
+    const fileExt = file.name.split('.').pop().toLowerCase();
+    const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif'].includes(fileExt);
+    const folder = isImage ? 'images' : 'docs';
+    const uniqueName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+    const filePath = `${folder}/${uniqueName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from(bucketName)
-        .upload(filePath, file, { upsert: false });
+    const { error: uploadError } = await supabase.storage
+      .from(bucketName)
+      .upload(filePath, file, { upsert: false });
 
-      if (uploadError) {
-        console.error('Supabase Storage upload error:', uploadError.message);
-        throw uploadError;
-      }
-
-      const { data: publicUrlData } = supabase.storage
-        .from(bucketName)
-        .getPublicUrl(filePath);
-
-      return publicUrlData.publicUrl;
-    } catch (err) {
-      console.error('uploadToSupabase failed:', err.message || err);
-      return null;
+    if (uploadError) {
+      console.error('Supabase Storage upload error:', uploadError.message);
+      throw uploadError;
     }
+
+    const { data: publicUrlData } = supabase.storage
+      .from(bucketName)
+      .getPublicUrl(filePath);
+
+    return publicUrlData.publicUrl;
   };
 
   const handleUploadOrBase64 = async (fileField, existingValue) => {
     if (fileField && fileField.size > 0) {
       if (isRealSupabase) {
-        // Prova Supabase Storage — se fallisce mostra warning ma non fa crash
         const url = await uploadToSupabase(fileField);
-        if (url) return url;
-        console.warn('Upload Supabase fallito, mantenuto valore esistente:', existingValue);
-        return existingValue || "";
+        if (!url) {
+          throw new Error("Impossibile generare l'URL pubblico per il file caricato.");
+        }
+        return url;
       }
       // Demo mode: usa base64 locale
       return await readAsBase64(fileField);
@@ -891,7 +933,8 @@ export default function App() {
       certificato_radon_doc = await handleUploadOrBase64(formData.get('certificato_radon_doc_file'), existing ? existing.certificato_radon_doc : "");
     } catch (fileErr) {
       console.error("File processing error:", fileErr);
-      triggerToast("Errore durante l'elaborazione dei file", "error");
+      triggerToast("Errore durante il caricamento dei file: " + (fileErr.message || fileErr), "error");
+      return;
     }
 
     const immobile_in = [];
@@ -1060,7 +1103,16 @@ export default function App() {
           const match = str.match(/^data:([^;]+);/);
           return match ? `[Nuovo File: ${match[1]}]` : '[Nuovo File]';
         }
-        if (str.includes('/') && (str.endsWith('.pdf') || str.endsWith('.png') || str.endsWith('.jpg') || str.endsWith('.jpeg') || str.includes('supabase'))) {
+        if (str.startsWith('http://') || str.startsWith('https://')) {
+          try {
+            const urlObj = new URL(str);
+            const pathname = urlObj.pathname;
+            return pathname.split('/').pop() || str;
+          } catch (_) {
+            return str.split('/').pop() || str;
+          }
+        }
+        if (str.includes('/')) {
           return str.split('/').pop();
         }
         return str;
@@ -1144,6 +1196,15 @@ export default function App() {
               triggerToast("Errore salvataggio log creazione: " + logErr.message, "error");
             }
           }
+
+          if (addingPropertyForContact) {
+            if (addingPropertyForContact.type === 'posseduti') {
+              setSelectedPosseduti(prev => [...prev, record.id]);
+            } else if (addingPropertyForContact.type === 'gestiti') {
+              setSelectedGestiti(prev => [...prev, record.id]);
+            }
+            setAddingPropertyForContact(null);
+          }
         }
       } catch (err) {
         console.error(err);
@@ -1179,6 +1240,15 @@ export default function App() {
           data_ora: new Date().toISOString()
         };
         setLocalLogs(prev => [newLog, ...prev]);
+
+        if (addingPropertyForContact) {
+          if (addingPropertyForContact.type === 'posseduti') {
+            setSelectedPosseduti(prev => [...prev, finalId]);
+          } else if (addingPropertyForContact.type === 'gestiti') {
+            setSelectedGestiti(prev => [...prev, finalId]);
+          }
+          setAddingPropertyForContact(null);
+        }
       }
     }
     setIsImmobileModalOpen(false);
@@ -1234,14 +1304,25 @@ export default function App() {
     const idVal = formData.get('id');
     const id = idVal ? parseInt(idVal) : null;
 
+    const ruolo = [];
+    const RUOLO_OPTIONS = ["Proprietario", "Locatore", "Acquirente", "Affittuario", "Agente Immobiliare", "Intermediario", "Fotografo"];
+    RUOLO_OPTIONS.forEach(r => {
+      if (formData.get(`ruolo_${r}`) === 'on') {
+        ruolo.push(r);
+      }
+    });
+
     const fields = {
       cognome: formData.get('cognome'),
       nome: formData.get('nome'),
       societa: formData.get('societa'),
-      ruolo: formData.get('ruolo'),
+      ruolo,
       telefono: formData.get('telefono'),
       mail: formData.get('mail'),
-      note: formData.get('note')
+      note: formData.get('note_contatto'),
+      note_contatto: formData.get('note_contatto'),
+      immobili_posseduti: selectedPosseduti,
+      immobili_gestiti: selectedGestiti
     };
 
     if (isRealSupabase) {
@@ -1292,6 +1373,19 @@ export default function App() {
 
   const handleEditContatto = (item) => {
     setCurrentContatto(item);
+    setSelectedPosseduti(item.immobili_posseduti || []);
+    setSelectedGestiti(item.immobili_gestiti || []);
+    setSearchPossedutiQuery('');
+    setSearchGestitiQuery('');
+    setIsContattoModalOpen(true);
+  };
+
+  const handleCreateContatto = () => {
+    setCurrentContatto(null);
+    setSelectedPosseduti([]);
+    setSelectedGestiti([]);
+    setSearchPossedutiQuery('');
+    setSearchGestitiQuery('');
     setIsContattoModalOpen(true);
   };
 
@@ -1452,20 +1546,20 @@ export default function App() {
 
       {isAuthInitializing ? (
         <div className="min-h-screen flex flex-col justify-center items-center relative z-20">
-          <div className="absolute top-[20%] left-[20%] w-[50%] h-[50%] rounded-full bg-indigo-900/10 blur-[120px] pointer-events-none" />
-          <div className="absolute bottom-[20%] right-[20%] w-[50%] h-[50%] rounded-full bg-violet-900/10 blur-[120px] pointer-events-none" />
+          <div className="absolute top-[20%] left-[20%] w-[50%] h-[50%] rounded-full bg-[#0071E3]/5 blur-[120px] pointer-events-none" />
+          <div className="absolute bottom-[20%] right-[20%] w-[50%] h-[50%] rounded-full bg-[#5AC8FA]/5 blur-[120px] pointer-events-none" />
           
           <div className="flex flex-col items-center space-y-6">
-            <div className="h-16 w-16 rounded-2xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-2xl shadow-indigo-500/30 animate-pulse">
+            <div className="h-16 w-16 rounded-2xl bg-gradient-to-tr from-[#0071E3] to-[#5AC8FA] flex items-center justify-center shadow-xl shadow-[#0071E3]/25 animate-pulse">
               <span className="text-white font-bold text-3xl">H</span>
             </div>
             <div className="text-center space-y-2 animate-pulse">
-              <h1 className="text-2xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">HomeLab CRM</h1>
-              <p className="text-xs text-slate-400 font-medium tracking-wide">Inizializzazione sessione sicura...</p>
+              <h1 className="text-2xl font-bold tracking-tight text-[#1D1D1F]">HomeLab CRM</h1>
+              <p className="text-xs text-[#86868B] font-medium tracking-wide">Inizializzazione sessione sicura...</p>
             </div>
             
             <div className="pt-4 flex items-center justify-center">
-              <svg className="animate-spin h-6 w-6 text-indigo-500" fill="none" viewBox="0 0 24 24">
+              <svg className="animate-spin h-6 w-6 text-[#0071E3]" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
               </svg>
@@ -1476,74 +1570,74 @@ export default function App() {
         /* ========================================================= */
         /* Schermata di Login */
         /* ========================================================= */
-        <div className="min-h-screen flex flex-col justify-between items-center px-4 py-12 relative z-10">
+        <div className="min-h-screen flex flex-col justify-between items-center px-4 py-12 relative z-10 text-[#1D1D1F]">
 
           {/* Header */}
           <div className="flex items-center space-x-3 mt-4">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-              <span className="text-white font-bold text-xl">H</span>
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#0071E3] to-[#5AC8FA] flex items-center justify-center text-white font-semibold text-lg shadow-md">
+              H
             </div>
             <div>
-              <h1 className="text-lg font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-300">HomeLab CRM</h1>
-              <p className="text-xs text-slate-400 font-medium">Real Estate Office</p>
+              <h1 className="text-base font-bold tracking-tight text-[#1D1D1F]">HomeLab CRM</h1>
+              <p className="text-xs text-[#86868B] font-medium">Real Estate Office</p>
             </div>
           </div>
 
           {/* Form Card */}
-          <div className="w-full max-w-md bg-slate-900/40 backdrop-blur-xl border border-slate-800/80 p-8 rounded-3xl shadow-2xl transition-all duration-300 my-auto">
+          <div className="w-full max-w-md glass-modal p-8 rounded-3xl transition-all duration-300 my-auto">
             <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold text-white tracking-tight">Bentornato</h2>
-              <p className="text-xs text-slate-400 mt-2">Accedi per gestire la tua applicazione</p>
+              <h2 className="text-2xl font-bold text-[#1D1D1F] tracking-tight">Bentornato</h2>
+              <p className="text-xs text-[#86868B] mt-2">Accedi per gestire la tua applicazione</p>
             </div>
 
             {/* Notifications */}
             {errorMsg && (
-              <div className="mb-5 bg-red-500/10 border border-red-500/20 text-red-200 text-xs py-3 px-4 rounded-xl flex items-start space-x-2">
-                <svg className="w-4 h-4 shrink-0 mt-0.5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="mb-5 bg-[#FF3B30]/10 border border-[#FF3B30]/20 text-[#FF3B30] text-xs py-3 px-4 rounded-xl flex items-start space-x-2">
+                <svg className="w-4 h-4 shrink-0 mt-0.5 text-[#FF3B30]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
-                <span>{errorMsg}</span>
+                <span className="font-semibold">{errorMsg}</span>
               </div>
             )}
 
             {successMsg && (
-              <div className="mb-5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-200 text-xs py-3 px-4 rounded-xl flex items-start space-x-2">
-                <svg className="w-4 h-4 shrink-0 mt-0.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="mb-5 bg-[#34C759]/10 border border-[#34C759]/20 text-[#34C759] text-xs py-3 px-4 rounded-xl flex items-start space-x-2">
+                <svg className="w-4 h-4 shrink-0 mt-0.5 text-[#34C759]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span>{successMsg}</span>
+                <span className="font-semibold">{successMsg}</span>
               </div>
             )}
 
             <form onSubmit={handleAuth} className="space-y-4">
               <div>
-                <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Email</label>
+                <label className="block text-[11px] font-semibold text-[#86868B] uppercase tracking-wider mb-1.5">Email</label>
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@example.com"
-                  className="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2.5 px-3.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition-colors"
+                  className="w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-[#1D1D1F] placeholder-gray-400 focus:outline-none focus:bg-white transition-colors"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Password</label>
+                <label className="block text-[11px] font-semibold text-[#86868B] uppercase tracking-wider mb-1.5">Password</label>
                 <input
                   type="password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full bg-slate-950/60 border border-slate-800 rounded-xl py-2.5 px-3.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition-colors"
+                  className="w-full glass-input rounded-xl py-2.5 px-3.5 text-xs text-[#1D1D1F] placeholder-gray-400 focus:outline-none focus:bg-white transition-colors"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full mt-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:opacity-90 active:scale-[0.98] text-white py-2.5 rounded-xl font-semibold text-xs tracking-wide transition-all shadow-lg shadow-indigo-500/20 flex items-center justify-center space-x-2"
+                className="w-full mt-2 btn-glossy text-white py-2.5 rounded-xl font-semibold text-xs tracking-wide transition-all flex items-center justify-center space-x-2"
               >
                 {loading ? (
                   <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
@@ -1558,7 +1652,7 @@ export default function App() {
           </div>
 
           {/* Footer */}
-          <footer className="text-center text-xs text-slate-500 mt-8">
+          <footer className="text-center text-xs text-[#86868B] mt-8">
             <p>© 2026 HomeLab App Starter • Autenticazione protetta</p>
           </footer>
 
@@ -1826,7 +1920,7 @@ export default function App() {
                       <IconPlus /> <span>Registra Nuovo Immobile</span>
                     </button>
                     <button
-                      onClick={() => { setIsContattoModalOpen(true); setCurrentContatto(null); }}
+                      onClick={handleCreateContatto}
                       className="bg-white/45 backdrop-blur hover:bg-white/70 text-[#1D1D1F] p-4 rounded-2xl font-medium text-sm border border-white/40 shadow-sm transition-all flex items-center justify-center space-x-2 hover:scale-[1.01]"
                     >
                       <IconPlus /> <span>Aggiungi Contatto</span>
@@ -2511,7 +2605,7 @@ export default function App() {
                     </div>
                   </div>
                   <button
-                    onClick={() => { setIsContattoModalOpen(true); setCurrentContatto(null); }}
+                    onClick={handleCreateContatto}
                     className="bg-[#0071E3] hover:bg-[#0077ED] text-white px-4 py-2 rounded-full text-sm font-medium transition-all shadow-sm flex items-center self-start"
                   >
                     <IconPlus /> Nuovo Contatto
@@ -2519,8 +2613,8 @@ export default function App() {
                 </div>
 
                 {/* Filters */}
-                <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white p-4 rounded-2xl border border-[#E5E5EA] shadow-sm">
-                  <div className="relative w-full sm:w-80">
+                <div className="flex flex-col md:flex-row gap-3 items-center justify-between bg-white p-4 rounded-2xl border border-[#E5E5EA] shadow-sm">
+                  <div className="relative w-full md:w-80">
                     <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
                       <IconSearch />
                     </span>
@@ -2533,24 +2627,50 @@ export default function App() {
                     />
                   </div>
 
-                  <div className="flex bg-[#F5F5F7] p-1 rounded-xl w-full sm:w-auto overflow-x-auto">
-                    {['Tutti', 'Agente Immobiliare', 'Proprietario', 'Locatore', 'Intermediario', 'Fotografo', 'Cliente'].map((r) => (
-                      <button
-                        key={r}
-                        onClick={() => setFilterContactRuolo(r)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold tracking-tight transition-all shrink-0 ${filterContactRuolo === r
-                            ? 'bg-white text-[#1D1D1F] shadow-sm'
-                            : 'text-[#86868B] hover:text-[#1D1D1F]'
-                          }`}
+                  <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto items-stretch sm:items-center">
+                    {/* Role Filter */}
+                    <div className="flex-1 sm:flex-none relative">
+                      <select
+                        value={filterContactRuolo}
+                        onChange={(e) => setFilterContactRuolo(e.target.value)}
+                        className="w-full sm:w-44 px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs font-semibold text-[#1D1D1F] focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all appearance-none pr-8 cursor-pointer"
                       >
-                        {r}
-                      </button>
-                    ))}
+                        <option value="Tutti">Tutti i Ruoli</option>
+                        <option value="Agente Immobiliare">Agente Immobiliare</option>
+                        <option value="Proprietario">Proprietario</option>
+                        <option value="Locatore">Locatore</option>
+                        <option value="Intermediario">Intermediario</option>
+                        <option value="Fotografo">Fotografo</option>
+                        <option value="Cliente">Cliente</option>
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-[#86868B]">
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                        </svg>
+                      </div>
+                    </div>
+
+                    {/* Sorting */}
+                    <div className="flex-1 sm:flex-none relative">
+                      <select
+                        value={sortContactOrder}
+                        onChange={(e) => setSortContactOrder(e.target.value)}
+                        className="w-full sm:w-52 px-3 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs font-semibold text-[#1D1D1F] focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all appearance-none pr-8 cursor-pointer"
+                      >
+                        <option value="nome-cognome">Ordina per: Nome e Cognome</option>
+                        <option value="cognome-nome">Ordina per: Cognome e Nome</option>
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-[#86868B]">
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                        </svg>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                {/* Contacts Table View */}
-                <div className="glass-panel rounded-3xl overflow-hidden">
+                {/* Contacts Table View (Desktop) */}
+                <div className="hidden sm:block glass-panel rounded-3xl overflow-hidden">
                   <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                       <thead>
@@ -2604,8 +2724,25 @@ export default function App() {
                             .filter(item => {
                               const fullName = `${item.nome || ''} ${item.cognome || ''}`.toLowerCase();
                               const matchSearch = fullName.includes(searchContact.toLowerCase()) || (item.mail || '').toLowerCase().includes(searchContact.toLowerCase());
-                              const matchRuolo = filterContactRuolo === 'Tutti' || (item.ruolo || '').includes(filterContactRuolo);
+                              const matchRuolo = filterContactRuolo === 'Tutti' || 
+                                (Array.isArray(item.ruolo) 
+                                  ? item.ruolo.includes(filterContactRuolo) 
+                                  : String(item.ruolo || '').includes(filterContactRuolo)
+                                );
                               return matchSearch && matchRuolo;
+                            })
+                            .sort((a, b) => {
+                              if (sortContactOrder === 'cognome-nome') {
+                                const cognomeA = (a.cognome || '').toLowerCase();
+                                const cognomeB = (b.cognome || '').toLowerCase();
+                                if (cognomeA !== cognomeB) return cognomeA.localeCompare(cognomeB);
+                                return (a.nome || '').toLowerCase().localeCompare((b.nome || '').toLowerCase());
+                              } else {
+                                const nomeA = (a.nome || '').toLowerCase();
+                                const nomeB = (b.nome || '').toLowerCase();
+                                if (nomeA !== nomeB) return nomeA.localeCompare(nomeB);
+                                return (a.cognome || '').toLowerCase().localeCompare((b.cognome || '').toLowerCase());
+                              }
                             })
                             .map((item) => (
                               <tr
@@ -2620,7 +2757,7 @@ export default function App() {
                                     </div>
                                     <div>
                                       <span className="font-bold text-sm block text-[#1D1D1F] group-hover:text-[#0071E3] transition-colors">{item.cognome} {item.nome}</span>
-                                      <span className="text-[11px] text-[#86868B] block truncate max-w-[200px]">{item.note}</span>
+                                      <span className="text-[11px] text-[#86868B] block truncate max-w-[200px]">{item.note_contatto || item.note}</span>
                                     </div>
                                   </div>
                                 </td>
@@ -2629,7 +2766,7 @@ export default function App() {
                                 </td>
                                 <td className="py-4 px-6">
                                   <span className="inline-flex bg-[#0071E3]/10 text-[#0071E3] px-2.5 py-1 rounded-full text-xs font-semibold">
-                                    {item.ruolo}
+                                    {Array.isArray(item.ruolo) ? item.ruolo.join(', ') : (item.ruolo || '')}
                                   </span>
                                 </td>
                                 <td className="py-4 px-6 text-xs space-y-1">
@@ -2670,6 +2807,148 @@ export default function App() {
                       </tbody>
                     </table>
                   </div>
+                </div>
+
+                {/* Contacts Card View (Mobile) */}
+                <div className="block sm:hidden space-y-4">
+                  {isCRMLoading ? (
+                    [1, 2, 3].map((n) => (
+                      <div key={n} className="glass-panel p-4 rounded-3xl border border-[#E5E5EA] bg-white flex flex-col space-y-3 animate-pulse">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 rounded-full bg-[#E5E5EA]" />
+                          <div className="space-y-2 flex-1">
+                            <div className="h-4 bg-[#E5E5EA] rounded w-1/3" />
+                            <div className="h-3 bg-[#E5E5EA] rounded w-1/2" />
+                          </div>
+                        </div>
+                        <div className="h-3 bg-[#E5E5EA] rounded w-full" />
+                        <div className="h-8 bg-[#E5E5EA] rounded-xl w-full" />
+                      </div>
+                    ))
+                  ) : contatti.length === 0 ? (
+                    <p className="text-center text-xs text-[#86868B] py-8">Nessun contatto trovato.</p>
+                  ) : (
+                    (() => {
+                      const filtered = contatti.filter(item => {
+                        const fullName = `${item.nome || ''} ${item.cognome || ''}`.toLowerCase();
+                        const matchSearch = fullName.includes(searchContact.toLowerCase()) || (item.mail || '').toLowerCase().includes(searchContact.toLowerCase());
+                        const matchRuolo = filterContactRuolo === 'Tutti' || 
+                          (Array.isArray(item.ruolo) 
+                            ? item.ruolo.includes(filterContactRuolo) 
+                            : String(item.ruolo || '').includes(filterContactRuolo)
+                          );
+                        return matchSearch && matchRuolo;
+                      });
+                      
+                      if (filtered.length === 0) {
+                        return <p className="text-center text-xs text-[#86868B] py-8">Nessun risultato per la ricerca.</p>;
+                      }
+
+                      // Apply sorting
+                      filtered.sort((a, b) => {
+                        if (sortContactOrder === 'cognome-nome') {
+                          const cognomeA = (a.cognome || '').toLowerCase();
+                          const cognomeB = (b.cognome || '').toLowerCase();
+                          if (cognomeA !== cognomeB) return cognomeA.localeCompare(cognomeB);
+                          return (a.nome || '').toLowerCase().localeCompare((b.nome || '').toLowerCase());
+                        } else {
+                          const nomeA = (a.nome || '').toLowerCase();
+                          const nomeB = (b.nome || '').toLowerCase();
+                          if (nomeA !== nomeB) return nomeA.localeCompare(nomeB);
+                          return (a.cognome || '').toLowerCase().localeCompare((b.cognome || '').toLowerCase());
+                        }
+                      });
+                      
+                      return filtered.map(item => (
+                        <div 
+                          key={item.id} 
+                          onClick={() => handleViewContatto(item)}
+                          className="glass-panel p-4 rounded-3xl border border-[#E5E5EA] bg-white flex flex-col space-y-3 cursor-pointer hover:shadow-md transition-all active:scale-[0.99] duration-200"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                              {/* Avatar */}
+                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#0071E3] to-[#5AC8FA] text-white flex items-center justify-center font-bold text-xs shadow-sm shrink-0">
+                                {(item.nome || 'U').charAt(0)}{(item.cognome || '').charAt(0)}
+                              </div>
+                              <div>
+                                <span className="font-bold text-sm text-[#1D1D1F] block group-hover:text-[#0071E3] transition-colors">{item.cognome} {item.nome}</span>
+                                {item.societa && (
+                                  <span className="text-xs text-[#86868B] block font-medium mt-0.5">{item.societa}</span>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {/* Actions */}
+                            <div className="flex items-center space-x-1" onClick={(e) => e.stopPropagation()}>
+                              <button
+                                onClick={() => handleEditContatto(item)}
+                                className="p-2 bg-[#F5F5F7] hover:bg-[#E5E5EA] rounded-xl text-gray-700 transition-all"
+                                title="Modifica"
+                              >
+                                <IconEdit />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteContatto(item.id)}
+                                className="p-2 bg-red-50 hover:bg-red-100 rounded-xl text-red-600 transition-all"
+                                title="Elimina"
+                              >
+                                <IconTrash />
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Roles badges */}
+                          <div className="flex flex-wrap gap-1">
+                            {Array.isArray(item.ruolo) ? (
+                              item.ruolo.map(r => (
+                                <span key={r} className="bg-[#0071E3]/10 text-[#0071E3] px-2.5 py-0.5 rounded-full text-[10px] font-semibold">
+                                  {r}
+                                </span>
+                              ))
+                            ) : (
+                              item.ruolo && (
+                                <span className="bg-[#0071E3]/10 text-[#0071E3] px-2.5 py-0.5 rounded-full text-[10px] font-semibold">
+                                  {item.ruolo}
+                                </span>
+                              )
+                            )}
+                          </div>
+
+                          {/* Notes snippet */}
+                          {(item.note_contatto || item.note) && (
+                            <p className="text-[11px] text-[#86868B] leading-relaxed bg-[#F5F5F7] p-2.5 rounded-2xl line-clamp-2">
+                              {item.note_contatto || item.note}
+                            </p>
+                          )}
+
+                          {/* Contact quick connections */}
+                          {(item.telefono || item.mail) && (
+                            <div className="grid grid-cols-2 gap-2 border-t border-[#F5F5F7] pt-3 text-xs" onClick={(e) => e.stopPropagation()}>
+                              {item.telefono && (
+                                <a 
+                                  href={`tel:${item.telefono}`}
+                                  className="flex items-center text-[#0071E3] hover:underline bg-[#F5F5F7] p-2 rounded-xl justify-center font-medium"
+                                >
+                                  <span className="mr-1.5">📞</span>
+                                  <span className="truncate">{item.telefono}</span>
+                                </a>
+                              )}
+                              {item.mail && (
+                                <a 
+                                  href={`mailto:${item.mail}`}
+                                  className="flex items-center text-[#0071E3] hover:underline bg-[#F5F5F7] p-2 rounded-xl justify-center font-medium"
+                                >
+                                  <span className="mr-1.5">✉️</span>
+                                  <span className="truncate">{item.mail}</span>
+                                </a>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      ));
+                    })()
+                  )}
                 </div>
 
               </div>
@@ -3347,7 +3626,7 @@ export default function App() {
                       </h3>
                       <div className="flex flex-wrap gap-2 items-center">
                         <span className="bg-[#0071E3]/10 text-[#0071E3] px-2.5 py-0.5 rounded-full text-xs font-semibold">
-                          {viewingContatto.ruolo}
+                          {Array.isArray(viewingContatto.ruolo) ? viewingContatto.ruolo.join(', ') : (viewingContatto.ruolo || '')}
                         </span>
                         {viewingContatto.societa && (
                           <span className="text-xs text-[#86868B] font-medium">
@@ -3399,39 +3678,68 @@ export default function App() {
                   <div className="space-y-1">
                     <h4 className="text-xs font-bold text-[#86868B] uppercase tracking-wider border-b pb-1">Note operative</h4>
                     <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                      {viewingContatto.note || "Nessuna nota aggiuntiva registrata per questo contatto."}
+                      {viewingContatto.note_contatto || viewingContatto.note || "Nessuna nota aggiuntiva registrata per questo contatto."}
                     </p>
                   </div>
 
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     <h4 className="text-xs font-bold text-[#86868B] uppercase tracking-wider border-b pb-1">Immobili Collegati</h4>
-                    {immobili.filter(imm => imm.proprietario_id === viewingContatto.id || imm.agente_id === viewingContatto.id).length > 0 ? (
-                      <div className="space-y-2">
-                        {immobili.filter(imm => imm.proprietario_id === viewingContatto.id || imm.agente_id === viewingContatto.id).map(imm => (
+                    
+                    {/* Immobili Posseduti */}
+                    <div className="space-y-2">
+                      <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Immobili Posseduti (Proprietà)</span>
+                      {(() => {
+                        const owned = immobili.filter(imm => 
+                          (viewingContatto.immobili_posseduti && viewingContatto.immobili_posseduti.includes(imm.id)) ||
+                          imm.proprietario_id === viewingContatto.id
+                        );
+                        if (owned.length === 0) return <p className="text-xs text-gray-400 italic pl-1">Nessun immobile posseduto collegato.</p>;
+                        return owned.map(imm => (
                           <div
                             key={imm.id}
                             onClick={() => {
                               setIsContactDetailModalOpen(false);
                               handleViewImmobile(imm);
                             }}
-                            className="bg-white p-3.5 rounded-xl border border-[#E5E5EA] flex justify-between items-center hover:border-[#0071E3] cursor-pointer transition-all group"
+                            className="bg-white p-3.5 rounded-xl border border-[#E5E5EA] flex justify-between items-center hover:border-[#0071E3] cursor-pointer transition-all group shadow-sm"
                           >
                             <div>
-                              <span className="block text-[9px] uppercase font-bold text-[#86868B]">
-                                {imm.proprietario_id === viewingContatto.id ? 'Proprietà' : 'Assegnato come Agente'}
-                              </span>
-                              <span className="font-bold text-sm group-hover:text-[#0071E3] transition-all">
-                                {imm.nome_immobile}
-                              </span>
-                              <p className="text-xs text-[#86868B]">{imm.comune} • CHF {imm.prezzo_di_vendita > 0 ? Number(imm.prezzo_di_vendita).toLocaleString('it-CH') : Number(imm.prezzo_di_affitto).toLocaleString('it-CH')}</p>
+                              <span className="font-bold text-sm group-hover:text-[#0071E3] transition-all">{imm.nome_immobile}</span>
+                              <span className="block text-xs text-[#86868B]">{imm.comune} • {formatField(imm.prezzo_di_vendita || imm.prezzo_di_affitto, "", true)}</span>
                             </div>
                             <span className="text-xs text-[#86868B] group-hover:text-[#0071E3] transition-all">→</span>
                           </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-[#86868B]">Nessun immobile collegato a questo nominativo.</p>
-                    )}
+                        ));
+                      })()}
+                    </div>
+
+                    {/* Immobili Gestiti */}
+                    <div className="space-y-2 pt-2">
+                      <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Immobili Gestiti (Agente)</span>
+                      {(() => {
+                        const managed = immobili.filter(imm => 
+                          (viewingContatto.immobili_gestiti && viewingContatto.immobili_gestiti.includes(imm.id)) ||
+                          imm.agente_id === viewingContatto.id
+                        );
+                        if (managed.length === 0) return <p className="text-xs text-gray-400 italic pl-1">Nessun immobile gestito collegato.</p>;
+                        return managed.map(imm => (
+                          <div
+                            key={imm.id}
+                            onClick={() => {
+                              setIsContactDetailModalOpen(false);
+                              handleViewImmobile(imm);
+                            }}
+                            className="bg-white p-3.5 rounded-xl border border-[#E5E5EA] flex justify-between items-center hover:border-[#0071E3] cursor-pointer transition-all group shadow-sm"
+                          >
+                            <div>
+                              <span className="font-bold text-sm group-hover:text-[#0071E3] transition-all">{imm.nome_immobile}</span>
+                              <span className="block text-xs text-[#86868B]">{imm.comune} • {formatField(imm.prezzo_di_vendita || imm.prezzo_di_affitto, "", true)}</span>
+                            </div>
+                            <span className="text-xs text-[#86868B] group-hover:text-[#0071E3] transition-all">→</span>
+                          </div>
+                        ));
+                      })()}
+                    </div>
                   </div>
 
                   <div className="space-y-3">
@@ -4329,22 +4637,20 @@ export default function App() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-semibold text-[#86868B] mb-1">Cognome *</label>
+                      <label className="block text-xs font-semibold text-[#86868B] mb-1">Cognome</label>
                       <input
                         type="text"
                         name="cognome"
-                        required
                         placeholder="es. Boldi"
                         defaultValue={currentContatto ? currentContatto.cognome : ''}
                         className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-[#86868B] mb-1">Nome *</label>
+                      <label className="block text-xs font-semibold text-[#86868B] mb-1">Nome</label>
                       <input
                         type="text"
                         name="nome"
-                        required
                         placeholder="es. Massimiliano"
                         defaultValue={currentContatto ? currentContatto.nome : ''}
                         className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all"
@@ -4364,40 +4670,42 @@ export default function App() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Ruolo Principale *</label>
-                    <select
-                      name="ruolo"
-                      defaultValue={currentContatto ? currentContatto.ruolo : 'Cliente'}
-                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all"
-                    >
-                      <option value="Cliente">Cliente (Acquirente/Inquilino)</option>
-                      <option value="Proprietario">Proprietario</option>
-                      <option value="Locatore">Locatore</option>
-                      <option value="Proprietario, Locatore">Proprietario, Locatore</option>
-                      <option value="Agente Immobiliare">Agente Immobiliare</option>
-                      <option value="Intermediario">Intermediario</option>
-                      <option value="Fotografo">Fotografo</option>
-                    </select>
+                    <label className="block text-xs font-semibold text-[#86868B] mb-2">Ruoli del Contatto</label>
+                    <div className="grid grid-cols-2 gap-2 bg-[#F5F5F7] p-3 rounded-2xl border border-transparent">
+                      {["Proprietario", "Locatore", "Acquirente", "Affittuario", "Agente Immobiliare", "Intermediario", "Fotografo"].map(r => {
+                        const currentRoles = currentContatto ? (Array.isArray(currentContatto.ruolo) ? currentContatto.ruolo : String(currentContatto.ruolo || '').split(',').map(x => x.trim())) : [];
+                        const isChecked = currentRoles.includes(r);
+                        return (
+                          <label key={r} className="flex items-center space-x-2 text-xs font-semibold text-[#1D1D1F] cursor-pointer">
+                            <input
+                              type="checkbox"
+                              name={`ruolo_${r}`}
+                              defaultChecked={isChecked}
+                              className="rounded text-[#0071E3] focus:ring-[#0071E3] w-4 h-4"
+                            />
+                            <span>{r}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-semibold text-[#86868B] mb-1">Telefono *</label>
+                      <label className="block text-xs font-semibold text-[#86868B] mb-1">Telefono</label>
                       <input
                         type="tel"
                         name="telefono"
-                        required
                         placeholder="+41 79 000 00 00"
                         defaultValue={currentContatto ? currentContatto.telefono : ''}
                         className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-[#86868B] mb-1">E-mail *</label>
+                      <label className="block text-xs font-semibold text-[#86868B] mb-1">E-mail</label>
                       <input
                         type="email"
                         name="mail"
-                        required
                         placeholder="nome@dominio.ch"
                         defaultValue={currentContatto ? currentContatto.mail : ''}
                         className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
@@ -4406,14 +4714,316 @@ export default function App() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Note Libere Contatto</label>
+                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Note Libere Contatto (Testo Lungo)</label>
                     <textarea
-                      name="note"
+                      name="note_contatto"
                       rows="3"
                       placeholder="Note operative, referenze e preferenze immobili..."
-                      defaultValue={currentContatto ? currentContatto.note : ''}
+                      defaultValue={currentContatto ? (currentContatto.note_contatto || currentContatto.note) : ''}
                       className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all"
                     />
+                  </div>
+
+                  <div className="space-y-4 pt-2">
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <label className="block text-xs font-semibold text-[#86868B]">Immobili Posseduti (Proprietario)</label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAddingPropertyForContact({ contactId: currentContatto?.id || 'new', type: 'posseduti' });
+                            setIsImmobileModalOpen(true);
+                            setCurrentImmobile(null);
+                          }}
+                          className="text-[10px] text-[#0071E3] hover:underline font-semibold"
+                        >
+                          + Aggiungi Immobile
+                        </button>
+                      </div>
+
+                      <input
+                        type="text"
+                        placeholder="🔍 Cerca per nome, codice o comune..."
+                        value={searchPossedutiQuery}
+                        onChange={(e) => setSearchPossedutiQuery(e.target.value)}
+                        className="w-full px-2.5 py-1.5 mb-2 bg-[#F5F5F7] border border-transparent rounded-lg text-xs focus:outline-none focus:border-[#0071E3] transition-all"
+                      />
+
+                      <div className="max-h-72 overflow-y-auto border border-[#E5E5EA] rounded-2xl p-2.5 bg-[#F5F5F7] grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        {immobili.length === 0 ? (
+                          <p className="text-xs text-gray-400 italic col-span-2 text-center py-4">Nessun immobile a catalogo</p>
+                        ) : (
+                          (() => {
+                            const filtered = immobili.filter(imm => 
+                              (imm.nome_immobile || '').toLowerCase().includes(searchPossedutiQuery.toLowerCase()) || 
+                              (imm.comune || '').toLowerCase().includes(searchPossedutiQuery.toLowerCase()) ||
+                              (imm.codice_immobile || '').toLowerCase().includes(searchPossedutiQuery.toLowerCase())
+                            );
+                            if (filtered.length === 0) return <p className="text-[10px] text-gray-400 italic col-span-2 text-center py-4">Nessun risultato</p>;
+                            return filtered.map(imm => {
+                              const isSelected = selectedPosseduti.includes(imm.id);
+                              return (
+                                <label key={imm.id} className={`relative border rounded-2xl overflow-hidden bg-white flex flex-col cursor-pointer transition-all hover:shadow-md ${isSelected ? 'border-[#0071E3] ring-1 ring-[#0071E3]/25 shadow-sm' : 'border-gray-200 hover:border-gray-300'}`}>
+                                  {/* Floating checkbox */}
+                                  <div className="absolute top-2 right-2 z-20">
+                                    <input
+                                      type="checkbox"
+                                      checked={isSelected}
+                                      onChange={(e) => {
+                                        if (e.target.checked) {
+                                          setSelectedPosseduti([...selectedPosseduti, imm.id]);
+                                        } else {
+                                          setSelectedPosseduti(selectedPosseduti.filter(id => id !== imm.id));
+                                        }
+                                      }}
+                                      className="rounded-full text-[#0071E3] focus:ring-[#0071E3] w-4.5 h-4.5 cursor-pointer shadow-sm bg-white border-gray-300"
+                                    />
+                                  </div>
+
+                                  {/* Thumbnail header */}
+                                  <div 
+                                    className="h-32 bg-cover bg-center relative flex items-end"
+                                    style={{
+                                      backgroundImage: imm.immagine_di_riferimento 
+                                        ? `url(${imm.immagine_di_riferimento})` 
+                                        : 'linear-gradient(to bottom right, #E5E5EA, #D2D2D7)'
+                                    }}
+                                  >
+                                    <div className="absolute inset-0 bg-black/10"></div>
+                                    
+                                    <div className="absolute top-2 left-2 flex gap-1 z-10 flex-wrap">
+                                      <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold tracking-wide uppercase shadow-sm ${imm.stato === 'Disponibile' ? 'bg-[#34C759] text-white' :
+                                          imm.stato === 'In Trattativa' ? 'bg-[#FF9500] text-white' :
+                                            imm.stato === 'Venduto' ? 'bg-[#8E8E93] text-white' : 'bg-[#0071E3] text-white'
+                                        }`}>
+                                        {imm.stato}
+                                      </span>
+                                      <span className="bg-black/40 backdrop-blur-md text-white px-1.5 py-0.5 rounded text-[8px] font-semibold tracking-wide shadow-sm">
+                                        {imm.categoria}
+                                      </span>
+                                    </div>
+
+                                    {!imm.immagine_di_riferimento && (
+                                      <div className="absolute inset-0 flex flex-col items-center justify-center text-[#86868B]/60 select-none z-10 p-2">
+                                        <svg className="w-8 h-8 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1">
+                                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                        </svg>
+                                      </div>
+                                    )}
+
+                                    <div className="absolute bottom-2 left-2 text-white text-[9px] font-bold drop-shadow-md z-10">
+                                      {imm.comune}{imm.nazione ? `, ${imm.nazione}` : ''}
+                                    </div>
+                                    
+                                    <span className="absolute bottom-2 right-2 bg-[#0071E3] text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full shadow-sm z-10">
+                                      {imm.immobile_in ? imm.immobile_in.join(' / ') : ''}
+                                    </span>
+                                  </div>
+
+                                  {/* Details */}
+                                  <div className="p-3 flex-1 flex flex-col justify-between space-y-2">
+                                    <div>
+                                      <h4 className="font-bold text-xs text-[#1D1D1F] line-clamp-1 leading-tight group-hover:text-[#0071E3] transition-colors">
+                                        {imm.nome_immobile}
+                                      </h4>
+                                      <p className="text-[10px] text-[#86868B] leading-snug line-clamp-2 mt-0.5">
+                                        {imm.descrizione_immobile}
+                                      </p>
+                                    </div>
+
+                                    {/* Tech Metrics Grid */}
+                                    <div className="grid grid-cols-3 gap-1 border-t border-b border-[#F5F5F7] py-1.5 text-center">
+                                      <div>
+                                        <span className="block text-[8px] font-medium text-[#86868B] uppercase tracking-wider">Codice</span>
+                                        <span className="text-[9px] font-semibold text-[#1D1D1F]">{imm.codice_immobile || 'N/D'}</span>
+                                      </div>
+                                      <div>
+                                        <span className="block text-[8px] font-medium text-[#86868B] uppercase tracking-wider">Locali</span>
+                                        <span className="text-[9px] font-semibold text-[#1D1D1F]">{imm.numero_di_locali}</span>
+                                      </div>
+                                      <div>
+                                        <span className="block text-[8px] font-medium text-[#86868B] uppercase tracking-wider">Superficie</span>
+                                        <span className="text-[9px] font-semibold text-[#1D1D1F]">
+                                          {imm.superficie_abitabile ? `${imm.superficie_abitabile} m²` : '—'}
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    <div className="space-y-0.5 pt-0.5">
+                                      {Number(imm.prezzo_di_vendita) > 0 && (
+                                        <div className="text-[10px] font-extrabold text-[#1D1D1F]">
+                                          <span className="text-[8px] text-[#86868B] font-semibold uppercase mr-1">Vendita:</span>
+                                          CHF {Number(imm.prezzo_di_vendita).toLocaleString('it-CH')}
+                                        </div>
+                                      )}
+                                      {Number(imm.prezzo_di_affitto) > 0 && (
+                                        <div className="text-[10px] font-extrabold text-[#1D1D1F]">
+                                          <span className="text-[8px] text-[#86868B] font-semibold uppercase mr-1">Affitto:</span>
+                                          CHF {Number(imm.prezzo_di_affitto).toLocaleString('it-CH')}/mese
+                                        </div>
+                                      )}
+                                      {!(Number(imm.prezzo_di_vendita) > 0) && !(Number(imm.prezzo_di_affitto) > 0) && (
+                                        <span className="text-[9px] font-semibold text-gray-400 italic">Trattativa Riservata</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </label>
+                              );
+                            });
+                          })()
+                        )}
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <label className="block text-xs font-semibold text-[#86868B]">Immobili Gestiti (Agente)</label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAddingPropertyForContact({ contactId: currentContatto?.id || 'new', type: 'gestiti' });
+                            setIsImmobileModalOpen(true);
+                            setCurrentImmobile(null);
+                          }}
+                          className="text-[10px] text-[#0071E3] hover:underline font-semibold"
+                        >
+                          + Aggiungi Immobile
+                        </button>
+                      </div>
+
+                      <input
+                        type="text"
+                        placeholder="🔍 Cerca per nome, codice o comune..."
+                        value={searchGestitiQuery}
+                        onChange={(e) => setSearchGestitiQuery(e.target.value)}
+                        className="w-full px-2.5 py-1.5 mb-2 bg-[#F5F5F7] border border-transparent rounded-lg text-xs focus:outline-none focus:border-[#0071E3] transition-all"
+                      />
+
+                      <div className="max-h-72 overflow-y-auto border border-[#E5E5EA] rounded-2xl p-2.5 bg-[#F5F5F7] grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        {immobili.length === 0 ? (
+                          <p className="text-xs text-gray-400 italic col-span-2 text-center py-4">Nessun immobile a catalogo</p>
+                        ) : (
+                          (() => {
+                            const filtered = immobili.filter(imm => 
+                              (imm.nome_immobile || '').toLowerCase().includes(searchGestitiQuery.toLowerCase()) || 
+                              (imm.comune || '').toLowerCase().includes(searchGestitiQuery.toLowerCase()) ||
+                              (imm.codice_immobile || '').toLowerCase().includes(searchGestitiQuery.toLowerCase())
+                            );
+                            if (filtered.length === 0) return <p className="text-[10px] text-gray-400 italic col-span-2 text-center py-4">Nessun risultato</p>;
+                            return filtered.map(imm => {
+                              const isSelected = selectedGestiti.includes(imm.id);
+                              return (
+                                <label key={imm.id} className={`relative border rounded-2xl overflow-hidden bg-white flex flex-col cursor-pointer transition-all hover:shadow-md ${isSelected ? 'border-[#0071E3] ring-1 ring-[#0071E3]/25 shadow-sm' : 'border-gray-200 hover:border-gray-300'}`}>
+                                  {/* Floating checkbox */}
+                                  <div className="absolute top-2 right-2 z-20">
+                                    <input
+                                      type="checkbox"
+                                      checked={isSelected}
+                                      onChange={(e) => {
+                                        if (e.target.checked) {
+                                          setSelectedGestiti([...selectedGestiti, imm.id]);
+                                        } else {
+                                          setSelectedGestiti(selectedGestiti.filter(id => id !== imm.id));
+                                        }
+                                      }}
+                                      className="rounded-full text-[#0071E3] focus:ring-[#0071E3] w-4.5 h-4.5 cursor-pointer shadow-sm bg-white border-gray-300"
+                                    />
+                                  </div>
+
+                                  {/* Thumbnail header */}
+                                  <div 
+                                    className="h-32 bg-cover bg-center relative flex items-end"
+                                    style={{
+                                      backgroundImage: imm.immagine_di_riferimento 
+                                        ? `url(${imm.immagine_di_riferimento})` 
+                                        : 'linear-gradient(to bottom right, #E5E5EA, #D2D2D7)'
+                                    }}
+                                  >
+                                    <div className="absolute inset-0 bg-black/10"></div>
+                                    
+                                    <div className="absolute top-2 left-2 flex gap-1 z-10 flex-wrap">
+                                      <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold tracking-wide uppercase shadow-sm ${imm.stato === 'Disponibile' ? 'bg-[#34C759] text-white' :
+                                          imm.stato === 'In Trattativa' ? 'bg-[#FF9500] text-white' :
+                                            imm.stato === 'Venduto' ? 'bg-[#8E8E93] text-white' : 'bg-[#0071E3] text-white'
+                                        }`}>
+                                        {imm.stato}
+                                      </span>
+                                      <span className="bg-black/40 backdrop-blur-md text-white px-1.5 py-0.5 rounded text-[8px] font-semibold tracking-wide shadow-sm">
+                                        {imm.categoria}
+                                      </span>
+                                    </div>
+
+                                    {!imm.immagine_di_riferimento && (
+                                      <div className="absolute inset-0 flex flex-col items-center justify-center text-[#86868B]/60 select-none z-10 p-2">
+                                        <svg className="w-8 h-8 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1">
+                                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                        </svg>
+                                      </div>
+                                    )}
+
+                                    <div className="absolute bottom-2 left-2 text-white text-[9px] font-bold drop-shadow-md z-10">
+                                      {imm.comune}{imm.nazione ? `, ${imm.nazione}` : ''}
+                                    </div>
+                                    
+                                    <span className="absolute bottom-2 right-2 bg-[#0071E3] text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full shadow-sm z-10">
+                                      {imm.immobile_in ? imm.immobile_in.join(' / ') : ''}
+                                    </span>
+                                  </div>
+
+                                  {/* Details */}
+                                  <div className="p-3 flex-1 flex flex-col justify-between space-y-2">
+                                    <div>
+                                      <h4 className="font-bold text-xs text-[#1D1D1F] line-clamp-1 leading-tight group-hover:text-[#0071E3] transition-colors">
+                                        {imm.nome_immobile}
+                                      </h4>
+                                      <p className="text-[10px] text-[#86868B] leading-snug line-clamp-2 mt-0.5">
+                                        {imm.descrizione_immobile}
+                                      </p>
+                                    </div>
+
+                                    {/* Tech Metrics Grid */}
+                                    <div className="grid grid-cols-3 gap-1 border-t border-b border-[#F5F5F7] py-1.5 text-center">
+                                      <div>
+                                        <span className="block text-[8px] font-medium text-[#86868B] uppercase tracking-wider">Codice</span>
+                                        <span className="text-[9px] font-semibold text-[#1D1D1F]">{imm.codice_immobile || 'N/D'}</span>
+                                      </div>
+                                      <div>
+                                        <span className="block text-[8px] font-medium text-[#86868B] uppercase tracking-wider">Locali</span>
+                                        <span className="text-[9px] font-semibold text-[#1D1D1F]">{imm.numero_di_locali}</span>
+                                      </div>
+                                      <div>
+                                        <span className="block text-[8px] font-medium text-[#86868B] uppercase tracking-wider">Superficie</span>
+                                        <span className="text-[9px] font-semibold text-[#1D1D1F]">
+                                          {imm.superficie_abitabile ? `${imm.superficie_abitabile} m²` : '—'}
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    <div className="space-y-0.5 pt-0.5">
+                                      {Number(imm.prezzo_di_vendita) > 0 && (
+                                        <div className="text-[10px] font-extrabold text-[#1D1D1F]">
+                                          <span className="text-[8px] text-[#86868B] font-semibold uppercase mr-1">Vendita:</span>
+                                          CHF {Number(imm.prezzo_di_vendita).toLocaleString('it-CH')}
+                                        </div>
+                                      )}
+                                      {Number(imm.prezzo_di_affitto) > 0 && (
+                                        <div className="text-[10px] font-extrabold text-[#1D1D1F]">
+                                          <span className="text-[8px] text-[#86868B] font-semibold uppercase mr-1">Affitto:</span>
+                                          CHF {Number(imm.prezzo_di_affitto).toLocaleString('it-CH')}/mese
+                                        </div>
+                                      )}
+                                      {!(Number(imm.prezzo_di_vendita) > 0) && !(Number(imm.prezzo_di_affitto) > 0) && (
+                                        <span className="text-[9px] font-semibold text-gray-400 italic">Trattativa Riservata</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </label>
+                              );
+                            });
+                          })()
+                        )}
+                      </div>
+                    </div>
                   </div>
 
                   </div>

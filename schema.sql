@@ -27,10 +27,13 @@ CREATE TABLE public.contatti (
     cognome text NOT NULL,
     nome text NOT NULL,
     societa text,
-    ruolo text NOT NULL,
+    ruolo text[] DEFAULT '{}'::text[],
     telefono text,
     mail text,
     note text,
+    note_contatto text,
+    immobili_posseduti bigint[] DEFAULT '{}'::bigint[],
+    immobili_gestiti bigint[] DEFAULT '{}'::bigint[],
     created_at timestamptz DEFAULT now()
 );
 
@@ -147,12 +150,12 @@ CREATE TRIGGER on_auth_user_created
   FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
 
 -- SEED DATA: CONTATTI
-INSERT INTO public.contatti (id, cognome, nome, societa, ruolo, telefono, mail, note) OVERRIDING SYSTEM VALUE VALUES
-(1, 'Honchar', 'Olga', 'HOME LAB Real Estate Sagl', 'Agente Immobiliare', '+41 79 533 74 19', 'o.honchar@homelabrealestate.ch', 'Agente principale di riferimento per le proprietà di alto standing a Lugano.'),
-(2, 'Iannone', 'Andrea', '', 'Proprietario, Locatore', '+41 76 458 29 29', 'a.iannone@exclusive-properties.ch', 'Proprietario dell''appartamento esclusivo con piscina a Bissone.'),
-(3, 'Boldi', 'Massimiliano', 'HOME LAB Real Estate Sagl', 'Intermediario', '+41 79 457 95 58', 'm.boldi@homelabrealestate.ch', 'Gestore delle relazioni con i clienti e procacciatore d''affari.'),
-(4, 'Cau', 'Stefano', 'Design Addict', 'Fotografo', '+41 76 526 28 82', 'studio@designaddict.ch', 'Fotografo professionista specializzato in architettura d''interni e video droni.'),
-(5, 'Kogan Amaro', 'Julio', '', 'Cliente', '+41 78 991 12 23', 'j.kogan@vip-invest.ch', 'Potenziale acquirente interessato ad attici di lusso con vista lago.');
+INSERT INTO public.contatti (id, cognome, nome, societa, ruolo, telefono, mail, note, note_contatto, immobili_posseduti, immobili_gestiti) OVERRIDING SYSTEM VALUE VALUES
+(1, 'Honchar', 'Olga', 'HOME LAB Real Estate Sagl', ARRAY['Agente Immobiliare']::text[], '+41 79 533 74 19', 'o.honchar@homelabrealestate.ch', 'Agente principale di riferimento per le proprietà di alto standing a Lugano.', 'Agente principale di riferimento per le proprietà di alto standing a Lugano.', '{}'::bigint[], '{}'::bigint[]),
+(2, 'Iannone', 'Andrea', '', ARRAY['Proprietario', 'Locatore']::text[], '+41 76 458 29 29', 'a.iannone@exclusive-properties.ch', 'Proprietario dell''appartamento esclusivo con piscina a Bissone.', 'Proprietario dell''appartamento esclusivo con piscina a Bissone.', '{}'::bigint[], '{}'::bigint[]),
+(3, 'Boldi', 'Massimiliano', 'HOME LAB Real Estate Sagl', ARRAY['Acquirente']::text[], '+41 79 457 95 58', 'm.boldi@homelabrealestate.ch', 'Gestore delle relazioni con i clienti e procacciatore d''affari.', 'Gestore delle relazioni con i clienti e procacciatore d''affari.', '{}'::bigint[], '{}'::bigint[]),
+(4, 'Cau', 'Stefano', 'Design Addict', ARRAY['Fotografo']::text[], '+41 76 526 28 82', 'studio@designaddict.ch', 'Fotografo professionista specializzato in architettura d''interni e video droni.', 'Fotografo professionista specializzato in architettura d''interni e video droni.', '{}'::bigint[], '{}'::bigint[]),
+(5, 'Kogan Amaro', 'Julio', '', ARRAY['Acquirente']::text[], '+41 78 991 12 23', 'j.kogan@vip-invest.ch', 'Potenziale acquirente interessato ad attici di lusso con vista lago.', 'Potenziale acquirente interessato ad attici di lusso con vista lago.', '{}'::bigint[], '{}'::bigint[]);
 
 SELECT setval(pg_get_serial_sequence('public.contatti', 'id'), COALESCE(MAX(id), 1)) FROM public.contatti;
 

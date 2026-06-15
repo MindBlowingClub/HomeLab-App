@@ -360,6 +360,7 @@ export default function App() {
   // Editing modals
   const [currentImmobile, setCurrentImmobile] = useState(null);
   const [isImmobileModalOpen, setIsImmobileModalOpen] = useState(false);
+  const [activeFormTab, setActiveFormTab] = useState('principale');
 
   // Detail inspector (Immobili)
   const [viewingImmobile, setViewingImmobile] = useState(null);
@@ -809,6 +810,7 @@ export default function App() {
 
   const handleEditImmobile = (item) => {
     setCurrentImmobile(item);
+    setActiveFormTab('principale');
     setIsImmobileModalOpen(true);
   };
 
@@ -1427,7 +1429,7 @@ export default function App() {
                   <h3 className="text-lg font-semibold tracking-tight text-[#1D1D1F] mb-4">Azioni Rapide</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <button
-                      onClick={() => { setIsImmobileModalOpen(true); setCurrentImmobile(null); }}
+                      onClick={() => { setIsImmobileModalOpen(true); setCurrentImmobile(null); setActiveFormTab('principale'); }}
                       className="bg-[#0071E3] hover:bg-[#0077ED] text-white p-4 rounded-2xl font-medium text-sm transition-all flex items-center justify-center space-x-2 shadow-sm"
                     >
                       <IconPlus /> <span>Registra Nuovo Immobile</span>
@@ -1527,7 +1529,7 @@ export default function App() {
                     </div>
                   </div>
                   <button
-                    onClick={() => { setIsImmobileModalOpen(true); setCurrentImmobile(null); }}
+                    onClick={() => { setIsImmobileModalOpen(true); setCurrentImmobile(null); setActiveFormTab('principale'); }}
                     className="bg-[#0071E3] hover:bg-[#0077ED] text-white px-4 py-2 rounded-full text-sm font-medium transition-all shadow-sm flex items-center self-start"
                   >
                     <IconPlus /> Nuovo Immobile
@@ -2683,11 +2685,36 @@ export default function App() {
                   </button>
                 </div>
 
+                {/* Tab selector per il form */}
+                <div className="px-6 py-2.5 bg-[#F5F5F7] border-b border-[#E5E5EA] overflow-x-auto flex space-x-1 scrollbar-none">
+                  {[
+                    { id: 'principale', label: 'Principale' },
+                    { id: 'generale', label: 'Generale & Prezzi' },
+                    { id: 'contatti', label: 'Contatti' },
+                    { id: 'amministrazione', label: 'Amministrazione' },
+                    { id: 'documenti', label: 'Documenti' },
+                    { id: 'log', label: 'Log', hidden: !currentImmobile },
+                  ].filter(t => !t.hidden).map(tab => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setActiveFormTab(tab.id)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold tracking-tight whitespace-nowrap transition-all ${
+                        activeFormTab === tab.id
+                          ? 'bg-[#0071E3] text-white shadow-sm'
+                          : 'text-[#86868B] hover:text-[#1D1D1F] hover:bg-[#E5E5EA]/50'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+
                 <form onSubmit={handleSaveImmobile} className="flex-1 overflow-y-auto p-6 space-y-6">
                   {currentImmobile && <input type="hidden" name="id" value={currentImmobile.id} />}
 
                   {/* ========= SEZIONE 1: INFORMAZIONI PRINCIPALI ========= */}
-                  <div className="space-y-4">
+                  <div className={activeFormTab === 'principale' ? 'space-y-4' : 'hidden'}>
                     <h4 className="text-xs font-bold uppercase tracking-wider text-[#0071E3] border-b pb-1">1. Informazioni Principali</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="md:col-span-2">
@@ -2777,7 +2804,7 @@ export default function App() {
                   </div>
 
                   {/* ========= SEZIONE 2: GENERALE & PREZZI ========= */}
-                  <div className="space-y-4">
+                  <div className={activeFormTab === 'generale' ? 'space-y-4' : 'hidden'}>
                     <h4 className="text-xs font-bold uppercase tracking-wider text-[#0071E3] border-b pb-1">2. Generale & Prezzi</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
@@ -3064,7 +3091,7 @@ export default function App() {
                   </div>
 
                   {/* ========= SEZIONE 3: CONTATTI ========= */}
-                  <div className="space-y-4">
+                  <div className={activeFormTab === 'contatti' ? 'space-y-4' : 'hidden'}>
                     <h4 className="text-xs font-bold uppercase tracking-wider text-[#0071E3] border-b pb-1">3. Contatti</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
@@ -3102,7 +3129,7 @@ export default function App() {
                   </div>
 
                   {/* ========= SEZIONE 4: AMMINISTRAZIONE ========= */}
-                  <div className="space-y-4">
+                  <div className={activeFormTab === 'amministrazione' ? 'space-y-4' : 'hidden'}>
                     <h4 className="text-xs font-bold uppercase tracking-wider text-[#0071E3] border-b pb-1">4. Amministrazione</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
@@ -3149,7 +3176,7 @@ export default function App() {
                   </div>
 
                   {/* ========= SEZIONE 5: DOCUMENTI ========= */}
-                  <div className="space-y-4">
+                  <div className={activeFormTab === 'documenti' ? 'space-y-4' : 'hidden'}>
                     <h4 className="text-xs font-bold uppercase tracking-wider text-[#0071E3] border-b pb-1">5. Documenti</h4>
                     <p className="text-[11px] text-[#86868B] -mt-2">
                       Indica per ogni documento se è presente e carica il relativo file (Foto o PDF).
@@ -3227,7 +3254,7 @@ export default function App() {
 
                   {/* ========= SEZIONE 6: LOG ========= */}
                   {currentImmobile && (
-                    <div className="space-y-4">
+                    <div className={activeFormTab === 'log' ? 'space-y-4' : 'hidden'}>
                       <h4 className="text-xs font-bold uppercase tracking-wider text-[#0071E3] border-b pb-1">6. Log</h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                         <div>

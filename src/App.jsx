@@ -567,7 +567,10 @@ export default function App() {
             .select('*')
             .eq('immobile_id', viewingImmobile.id)
             .order('data_ora', { ascending: false });
-          if (!error && data) {
+          if (error) {
+            console.error("Errore caricamento log:", error);
+            triggerToast("Errore caricamento log: " + error.message, "error");
+          } else if (data) {
             setImmobileLogs(data);
           }
         };

@@ -16,6 +16,7 @@ CREATE TABLE public.profiles (
     nome text,
     cognome text,
     ruolo text DEFAULT 'User',
+    foto text,
     updated_at timestamptz DEFAULT now(),
     created_at timestamptz DEFAULT now()
 );

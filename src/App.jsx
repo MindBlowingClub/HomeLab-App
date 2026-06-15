@@ -390,7 +390,7 @@ export default function App() {
   const [filterPostiAutoMin, setFilterPostiAutoMin] = useState('');
   const [filterBagniMin, setFilterBagniMin] = useState('Tutti');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-  const [sortProperty, setSortProperty] = useState('default');
+  const [sortProperty, setSortProperty] = useState('creazione-desc');
 
   const [searchContact, setSearchContact] = useState('');
   const [filterContactRuolo, setFilterContactRuolo] = useState('Tutti');
@@ -1915,13 +1915,12 @@ export default function App() {
                       onChange={(e) => setSortProperty(e.target.value)}
                       className="px-3 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs font-semibold focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] cursor-pointer shrink-0 transition-all"
                     >
-                      <option value="default">Ordina per...</option>
+                      <option value="creazione-desc">Ultimo creato (Default)</option>
                       <option value="prezzo-asc">Prezzo Crescente</option>
                       <option value="prezzo-desc">Prezzo decrescente</option>
                       <option value="superficie-asc">Superficie Crescente</option>
                       <option value="superficie-desc">Superficie Decrescente</option>
                       <option value="creazione-asc">Creazione Crescente</option>
-                      <option value="creazione-desc">Creazione Decrescente</option>
                       <option value="modifica-asc">Modifica Crescente</option>
                       <option value="modifica-desc">Modifica Decrescente</option>
                     </select>

@@ -3209,36 +3209,38 @@ export default function App() {
                       </div>
 
                       {/* Timeline Cronologia */}
-                      <div className="space-y-4">
-                        <span className="block font-bold text-gray-500 uppercase tracking-wide text-[9px]">cronologia_modifiche</span>
-                        {immobileLogs.length === 0 ? (
-                          <div className="bg-white p-6 rounded-2xl border border-[#E5E5EA] text-center text-sm text-gray-400 italic">
-                            Nessuna modifica registrata
-                          </div>
-                        ) : (
-                          <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
-                            {immobileLogs.map((log) => (
-                              <div key={log.id} className="bg-white p-4 rounded-2xl border border-[#E5E5EA] space-y-2 relative shadow-sm hover:shadow transition-all">
-                                <div className="flex justify-between items-center text-xs">
-                                  <span className="font-bold text-[#0071E3]">{log.utente}</span>
-                                  <span className="text-gray-400 font-medium">
-                                    {log.data_ora ? new Date(log.data_ora).toLocaleString('it-CH', {
-                                      year: 'numeric',
-                                      month: '2-digit',
-                                      day: '2-digit',
-                                      hour: '2-digit',
-                                      minute: '2-digit'
-                                    }) : ''}
-                                  </span>
+                      {profile?.ruolo && profile.ruolo.toLowerCase().includes('admin') ? (
+                        <div className="space-y-4">
+                          <span className="block font-bold text-gray-500 uppercase tracking-wide text-[9px]">cronologia_modifiche</span>
+                          {immobileLogs.length === 0 ? (
+                            <div className="bg-white p-6 rounded-2xl border border-[#E5E5EA] text-center text-sm text-gray-400 italic">
+                              Nessuna modifica registrata
+                            </div>
+                          ) : (
+                            <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
+                              {immobileLogs.map((log) => (
+                                <div key={log.id} className="bg-white p-4 rounded-2xl border border-[#E5E5EA] space-y-2 relative shadow-sm hover:shadow transition-all">
+                                  <div className="flex justify-between items-center text-xs">
+                                    <span className="font-bold text-[#0071E3]">{log.utente}</span>
+                                    <span className="text-gray-400 font-medium">
+                                      {log.data_ora ? new Date(log.data_ora).toLocaleString('it-CH', {
+                                        year: 'numeric',
+                                        month: '2-digit',
+                                        day: '2-digit',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                      }) : ''}
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-gray-600 leading-relaxed font-medium">
+                                    {log.descrizione}
+                                  </p>
                                 </div>
-                                <p className="text-xs text-gray-600 leading-relaxed font-medium">
-                                  {log.descrizione}
-                                </p>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ) : null}
                     </div>
                   )}
 

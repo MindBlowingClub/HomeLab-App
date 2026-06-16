@@ -1985,7 +1985,7 @@ export default function App() {
                       {isCRMLoading ? (
                         <div className="h-9 w-28 bg-gradient-to-r from-[#F5F5F7] via-[#EBEBEB] to-[#F5F5F7] rounded-lg animate-pulse" />
                       ) : (
-                        <span className="text-2xl font-bold text-[#1D1D1F] pr-1">
+                        <span className="inline-block text-xl sm:text-2xl font-bold text-[#1D1D1F] whitespace-nowrap overflow-visible">
                           CHF {(immobili.reduce((acc, curr) => acc + (Number(curr.prezzo_di_vendita) || 0), 0) / 1000000).toFixed(2)}M
                         </span>
                       )}

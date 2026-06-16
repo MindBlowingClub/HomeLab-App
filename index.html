@@ -14,6 +14,38 @@
     document.addEventListener('gesturestart', function (e) {
       e.preventDefault();
     });
+
+    // Generatore dinamico di Icona con sfondo personalizzato (#1B343F) per iOS/Android Home Screen
+    (function() {
+      const logoUrl = 'https://vndajxcmgqjybhvppkqe.supabase.co/storage/v1/object/public/immobili-media/images/HomeLab-LOGO%20RIDOTTO-Bianco.png';
+      const bgColor = '#1B343F';
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = function() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 180;
+        canvas.height = 180;
+        const ctx = canvas.getContext('2d');
+        
+        // Sfondo solido color #1B343F
+        ctx.fillStyle = bgColor;
+        ctx.fillRect(0, 0, 180, 180);
+        
+        // Centra il logo ridotto bianco (dimensione 126x126 per un padding equilibrato di 27px)
+        const size = 126;
+        const offset = (180 - size) / 2;
+        ctx.drawImage(img, offset, offset, size, size);
+        
+        const dataUrl = canvas.toDataURL('image/png');
+        
+        // Aggiorna apple-touch-icon
+        let appleLink = document.querySelector('link[rel="apple-touch-icon"]');
+        if (appleLink) {
+          appleLink.href = dataUrl;
+        }
+      };
+      img.src = logoUrl;
+    })();
   </script>
 </head>
 

@@ -773,7 +773,9 @@ export default function App() {
       const userId = currentSession?.user?.id || 'simulated-uuid-12345';
       let fotoUrl = profile?.foto || '';
 
-      if (fotoFile && fotoFile.size > 0) {
+      if (tempProfileFotoUrl === '') {
+        fotoUrl = '';
+      } else if (fotoFile && fotoFile.size > 0) {
         if (isRealSupabase) {
           const uploadedUrl = await uploadToSupabase(fotoFile, 'immobili-media');
           if (uploadedUrl) {
@@ -1790,7 +1792,7 @@ export default function App() {
               onClick={() => { setIsUserSettingsModalOpen(true); setTempProfileFotoUrl(null); }}
               className="w-7 h-7 rounded-full bg-gradient-to-tr from-indigo-500 to-pink-500 text-white flex items-center justify-center font-bold text-[10px] cursor-pointer hover:scale-105 transition-transform"
             >
-              {profile?.foto ? (
+              {profile?.foto && profile.foto.trim() !== '' ? (
                 <img src={profile.foto} alt="Profile" className="w-full h-full rounded-full object-cover" />
               ) : (
                 <span>{(profile?.nome || 'U')[0]}{(profile?.cognome || '')[0]}</span>
@@ -1909,17 +1911,17 @@ export default function App() {
                  className="bg-white/80 hover:bg-white p-3 rounded-2xl border border-[#E5E5EA] shadow-sm flex items-center space-x-3 cursor-pointer hover:scale-[1.01] transition-all"
                  title="Impostazioni Profilo"
                >
-                 {profile?.foto ? (
-                   <img
-                     src={profile.foto}
-                     alt="Profile"
-                     className="w-8 h-8 rounded-full object-cover shrink-0"
-                   />
-                 ) : (
-                   <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-pink-500 text-white flex items-center justify-center font-bold text-xs shrink-0">
-                     {profile?.nome?.[0] || 'U'}{profile?.cognome?.[0] || ''}
-                   </div>
-                 )}
+                 {profile?.foto && profile.foto.trim() !== '' ? (
+                    <img
+                      src={profile.foto}
+                      alt="Profile"
+                      className="w-8 h-8 rounded-full object-cover shrink-0"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-pink-500 text-white flex items-center justify-center font-bold text-xs shrink-0">
+                      {profile?.nome?.[0] || 'U'}{profile?.cognome?.[0] || ''}
+                    </div>
+                  )}
                  <div className="overflow-hidden">
                    <span className="font-bold text-xs text-[#1D1D1F] block truncate">
                      {profile?.nome || 'Utente'} {profile?.cognome || ''}
@@ -3939,7 +3941,7 @@ export default function App() {
                     {/* Photo Section */}
                   <div className="flex flex-col items-center space-y-3">
                     <div className="relative group">
-                      {tempProfileFotoUrl || profile?.foto ? (
+                      {tempProfileFotoUrl || (profile?.foto && profile.foto.trim() !== '') ? (
                         <img
                           src={tempProfileFotoUrl || profile.foto}
                           alt="Avatar"
@@ -3967,6 +3969,18 @@ export default function App() {
                         />
                       </label>
                     </div>
+                    {(tempProfileFotoUrl || (profile?.foto && profile.foto.trim() !== '')) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTempProfileFotoUrl('');
+                          triggerToast("Immagine profilo rimossa. Salva per confermare.", "info");
+                        }}
+                        className="text-xs text-[#FF3B30] hover:underline font-semibold"
+                      >
+                        Rimuovi foto
+                      </button>
+                    )}
                     <span className="text-[10px] text-[#86868B]">Clicca sull'avatar per caricare una nuova foto</span>
                   </div>
 

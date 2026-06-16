@@ -1665,8 +1665,8 @@ export default function App() {
           <div className="absolute bottom-[20%] right-[20%] w-[50%] h-[50%] rounded-full bg-[#5AC8FA]/5 blur-[120px] pointer-events-none" />
           
           <div className="flex flex-col items-center space-y-6">
-            <div className="h-16 w-16 rounded-2xl bg-gradient-to-tr from-[#0071E3] to-[#5AC8FA] flex items-center justify-center shadow-xl shadow-[#0071E3]/25 animate-pulse">
-              <span className="text-white font-bold text-3xl">H</span>
+            <div className="h-16 w-16 rounded-2xl bg-white flex items-center justify-center shadow-md animate-pulse p-2 border border-[#E5E5EA]">
+              <img src="https://vndajxcmgqjybhvppkqe.supabase.co/storage/v1/object/public/immobili-media/images/HomeLab-Nero.png" alt="Logo" className="w-full h-full object-contain" />
             </div>
             <div className="text-center space-y-2 animate-pulse">
               <h1 className="text-2xl font-bold tracking-tight text-[#1D1D1F]">HomeLab CRM</h1>
@@ -1689,8 +1689,8 @@ export default function App() {
 
           {/* Header */}
           <div className="flex items-center space-x-3 mt-4">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#0071E3] to-[#5AC8FA] flex items-center justify-center text-white font-semibold text-lg shadow-md">
-              H
+            <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm p-1.5 border border-[#E5E5EA]">
+              <img src="https://vndajxcmgqjybhvppkqe.supabase.co/storage/v1/object/public/immobili-media/images/HomeLab-Nero.png" alt="Logo" className="w-full h-full object-contain" />
             </div>
             <div>
               <h1 className="text-base font-bold tracking-tight text-[#1D1D1F]">HomeLab CRM</h1>
@@ -1781,8 +1781,8 @@ export default function App() {
           {/* MOBILE TOP HEADER */}
           <header className="flex md:hidden items-center justify-between px-4 py-3 bg-white/60 backdrop-blur-lg border-b border-white/20 z-30 shrink-0">
             <div className="flex items-center space-x-2.5">
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-[#0071E3] to-[#5AC8FA] flex items-center justify-center text-white font-semibold text-sm shadow-sm">
-                H
+              <div className="w-7 h-7 rounded-lg bg-white flex items-center justify-center shadow-sm p-1 border border-[#E5E5EA]">
+                <img src="https://vndajxcmgqjybhvppkqe.supabase.co/storage/v1/object/public/immobili-media/images/HomeLab-Nero.png" alt="Logo" className="w-full h-full object-contain" />
               </div>
               <h1 className="text-sm font-bold tracking-tight text-[#1D1D1F]">HomeLab CRM</h1>
             </div>
@@ -1805,8 +1805,8 @@ export default function App() {
             <div>
               {/* Brand Header */}
               <div className="flex items-center space-x-3 px-3 mb-8">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#0071E3] to-[#5AC8FA] flex items-center justify-center text-white font-semibold text-lg shadow-md">
-                  H
+                <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-sm p-1 border border-[#E5E5EA]">
+                  <img src="https://vndajxcmgqjybhvppkqe.supabase.co/storage/v1/object/public/immobili-media/images/HomeLab-Nero.png" alt="Logo" className="w-full h-full object-contain" />
                 </div>
                 <div>
                   <h1 className="text-base font-semibold tracking-tight text-[#1D1D1F]">HomeLab CRM</h1>

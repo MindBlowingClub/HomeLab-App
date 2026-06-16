@@ -1967,7 +1967,7 @@ export default function App() {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                   <div className="glass-panel p-5 rounded-3xl flex flex-col justify-between h-36 hover:scale-[1.02] hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300">
                     <span className="text-xs font-semibold text-[#86868B] uppercase tracking-wider">Immobili Attivi</span>
-                    <div className="my-2">
+                    <div className="my-2" key={isCRMLoading ? 'loading' : 'ready'}>
                       {isCRMLoading ? (
                         <div className="h-9 w-16 bg-gradient-to-r from-[#F5F5F7] via-[#EBEBEB] to-[#F5F5F7] rounded-lg animate-pulse" />
                       ) : (
@@ -1981,7 +1981,7 @@ export default function App() {
 
                   <div className="glass-panel p-5 rounded-3xl flex flex-col justify-between h-36 hover:scale-[1.02] hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300">
                     <span className="text-xs font-semibold text-[#86868B] uppercase tracking-wider">Portafoglio Stimato</span>
-                    <div className="my-2">
+                    <div className="my-2" key={isCRMLoading ? 'loading' : 'ready'}>
                       {isCRMLoading ? (
                         <div className="h-9 w-28 bg-gradient-to-r from-[#F5F5F7] via-[#EBEBEB] to-[#F5F5F7] rounded-lg animate-pulse" />
                       ) : (
@@ -1995,7 +1995,7 @@ export default function App() {
 
                   <div className="glass-panel p-5 rounded-3xl flex flex-col justify-between h-36 hover:scale-[1.02] hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300">
                     <span className="text-xs font-semibold text-[#86868B] uppercase tracking-wider">Contatti in CRM</span>
-                    <div className="my-2">
+                    <div className="my-2" key={isCRMLoading ? 'loading' : 'ready'}>
                       {isCRMLoading ? (
                         <div className="h-9 w-16 bg-gradient-to-r from-[#F5F5F7] via-[#EBEBEB] to-[#F5F5F7] rounded-lg animate-pulse" />
                       ) : (
@@ -2009,7 +2009,7 @@ export default function App() {
 
                   <div className="glass-panel p-5 rounded-3xl flex flex-col justify-between h-36 hover:scale-[1.02] hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300">
                     <span className="text-xs font-semibold text-[#86868B] uppercase tracking-wider">Eventi a Calendario</span>
-                    <div className="my-2">
+                    <div className="my-2" key={isCRMLoading ? 'loading' : 'ready'}>
                       {isCRMLoading ? (
                         <div className="h-9 w-16 bg-gradient-to-r from-[#F5F5F7] via-[#EBEBEB] to-[#F5F5F7] rounded-lg animate-pulse" />
                       ) : (

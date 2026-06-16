@@ -1340,14 +1340,85 @@ export default function App() {
           if (viewingContatto && viewingContatto.id === id) {
             setViewingContatto(record);
           }
+
+          // Rimuove l'associazione per gli immobili precedentemente posseduti/gestiti ma non più selezionati
+          await supabase
+            .from('immobili')
+            .update({ proprietario_id: null })
+            .eq('proprietario_id', id)
+            .not('id', 'in', `(${selectedPosseduti.join(',') || 0})`);
+          
+          await supabase
+            .from('immobili')
+            .update({ agente_id: null })
+            .eq('agente_id', id)
+            .not('id', 'in', `(${selectedGestiti.join(',') || 0})`);
+
+          // Imposta l'associazione per gli immobili correnti
+          if (selectedPosseduti.length > 0) {
+            await supabase
+              .from('immobili')
+              .update({ proprietario_id: id })
+              .in('id', selectedPosseduti);
+          }
+          if (selectedGestiti.length > 0) {
+            await supabase
+              .from('immobili')
+              .update({ agente_id: id })
+              .in('id', selectedGestiti);
+          }
+
+          // Aggiorna lo stato locale degli immobili
+          setImmobili(prevImmobili => prevImmobili.map(imm => {
+            let updatedImm = { ...imm };
+            if (selectedPosseduti.includes(Number(imm.id))) {
+              updatedImm.proprietario_id = id;
+            } else if (imm.proprietario_id === id) {
+              updatedImm.proprietario_id = null;
+            }
+            if (selectedGestiti.includes(Number(imm.id))) {
+              updatedImm.agente_id = id;
+            } else if (imm.agente_id === id) {
+              updatedImm.agente_id = null;
+            }
+            return updatedImm;
+          }));
+
         } else {
           const { data, error } = await supabase
             .from('contatti')
             .insert([fields])
             .select();
           if (error) throw error;
-          setContatti([...contatti, data[0]]);
+          const record = data[0];
+          setContatti([...contatti, record]);
           triggerToast("Contatto salvato nel database");
+
+          const newId = record.id;
+          if (selectedPosseduti.length > 0) {
+            await supabase
+              .from('immobili')
+              .update({ proprietario_id: newId })
+              .in('id', selectedPosseduti);
+          }
+          if (selectedGestiti.length > 0) {
+            await supabase
+              .from('immobili')
+              .update({ agente_id: newId })
+              .in('id', selectedGestiti);
+          }
+
+          // Aggiorna lo stato locale degli immobili
+          setImmobili(prevImmobili => prevImmobili.map(imm => {
+            let updatedImm = { ...imm };
+            if (selectedPosseduti.includes(Number(imm.id))) {
+              updatedImm.proprietario_id = newId;
+            }
+            if (selectedGestiti.includes(Number(imm.id))) {
+              updatedImm.agente_id = newId;
+            }
+            return updatedImm;
+          }));
         }
       } catch (err) {
         console.error(err);
@@ -1362,9 +1433,37 @@ export default function App() {
         if (viewingContatto && viewingContatto.id === id) {
           setViewingContatto(localFields);
         }
+
+        // Aggiorna lo stato locale degli immobili
+        setImmobili(prevImmobili => prevImmobili.map(imm => {
+          let updatedImm = { ...imm };
+          if (selectedPosseduti.includes(Number(imm.id))) {
+            updatedImm.proprietario_id = id;
+          } else if (imm.proprietario_id === id) {
+            updatedImm.proprietario_id = null;
+          }
+          if (selectedGestiti.includes(Number(imm.id))) {
+            updatedImm.agente_id = id;
+          } else if (imm.agente_id === id) {
+            updatedImm.agente_id = null;
+          }
+          return updatedImm;
+        }));
       } else {
         setContatti([...contatti, localFields]);
         triggerToast("Contatto aggiunto localmente");
+
+        // Aggiorna lo stato locale degli immobili
+        setImmobili(prevImmobili => prevImmobili.map(imm => {
+          let updatedImm = { ...imm };
+          if (selectedPosseduti.includes(Number(imm.id))) {
+            updatedImm.proprietario_id = finalId;
+          }
+          if (selectedGestiti.includes(Number(imm.id))) {
+            updatedImm.agente_id = finalId;
+          }
+          return updatedImm;
+        }));
       }
     }
     setIsContattoModalOpen(false);
@@ -1404,6 +1503,13 @@ export default function App() {
             .eq('id', id);
           if (error) throw error;
           setContatti(contatti.filter(item => item.id !== id));
+          // Reset delle associazioni locali
+          setImmobili(prevImmobili => prevImmobili.map(imm => {
+            let updated = { ...imm };
+            if (imm.proprietario_id === id) updated.proprietario_id = null;
+            if (imm.agente_id === id) updated.agente_id = null;
+            return updated;
+          }));
           triggerToast("Contatto rimosso dal database");
           if (viewingContatto && viewingContatto.id === id) {
             setIsContactDetailModalOpen(false);
@@ -1415,6 +1521,13 @@ export default function App() {
         }
       } else {
         setContatti(contatti.filter(item => item.id !== id));
+        // Reset delle associazioni locali
+        setImmobili(prevImmobili => prevImmobili.map(imm => {
+          let updated = { ...imm };
+          if (imm.proprietario_id === id) updated.proprietario_id = null;
+          if (imm.agente_id === id) updated.agente_id = null;
+          return updated;
+        }));
         triggerToast("Contatto eliminato localmente", "info");
         if (viewingContatto && viewingContatto.id === id) {
           setIsContactDetailModalOpen(false);
@@ -2149,7 +2262,13 @@ export default function App() {
                           className="w-full px-3 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] transition-all"
                         >
                           <option value="Tutti">Tutti gli agenti</option>
-                          {contatti.filter(c => (c.ruolo || '').includes('Agente')).map(ag => (
+                          {contatti.filter(c => {
+                            const roles = c.ruolo;
+                            if (Array.isArray(roles)) {
+                              return roles.some(r => r.toLowerCase().includes('agente'));
+                            }
+                            return String(roles || '').toLowerCase().includes('agente');
+                          }).map(ag => (
                             <option key={ag.id} value={ag.id}>{ag.cognome} {ag.nome}</option>
                           ))}
                         </select>
@@ -4374,11 +4493,9 @@ export default function App() {
                           className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all text-[#1D1D1F]"
                         >
                           <option value="">Nessuno (Seleziona contatto)</option>
-                          {contatti
-                            .filter(c => (c.ruolo || '').includes('Proprietario') || (c.ruolo || '').includes('Locatore'))
-                            .map(c => (
-                              <option key={c.id} value={c.id}>{c.cognome} {c.nome}</option>
-                            ))}
+                          {contatti.map(c => (
+                            <option key={c.id} value={c.id}>{c.cognome} {c.nome}</option>
+                          ))}
                         </select>
                       </div>
 
@@ -4391,7 +4508,13 @@ export default function App() {
                         >
                           <option value="">Nessuno</option>
                           {contatti
-                            .filter(c => (c.ruolo || '').includes('Agente'))
+                            .filter(c => {
+                              const roles = c.ruolo;
+                              if (Array.isArray(roles)) {
+                                return roles.some(r => r.toLowerCase().includes('agente'));
+                              }
+                              return String(roles || '').toLowerCase().includes('agente');
+                            })
                             .map(c => (
                               <option key={c.id} value={c.id}>{c.cognome} {c.nome}</option>
                             ))}

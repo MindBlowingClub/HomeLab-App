@@ -497,6 +497,7 @@ export default function App() {
   const [isPropertySearchFocused, setIsPropertySearchFocused] = useState(false);
 
   const calendarScrollRef = useRef(null);
+  const listScrollRef = useRef(null);
   const isResizingRef = useRef(false);
 
   useEffect(() => {
@@ -511,6 +512,19 @@ export default function App() {
       }, 50);
     }
   }, [activeTab, calendarView]);
+
+  useEffect(() => {
+    if (activeTab === 'visite' && calendarView === 'list' && listScrollRef.current) {
+      setTimeout(() => {
+        if (listScrollRef.current) {
+          const anchor = listScrollRef.current.querySelector('[data-today-anchor="true"]');
+          if (anchor) {
+            anchor.scrollIntoView({ behavior: 'auto', block: 'start' });
+          }
+        }
+      }, 50);
+    }
+  }, [activeTab, calendarView, visite, searchVisit, filterVisitAgent, filterVisitClient, filterVisitProperty, filterVisitType, filterVisitOutcome]);
 
   // Editing modals
   const [currentImmobile, setCurrentImmobile] = useState(null);
@@ -1424,6 +1438,15 @@ export default function App() {
         setIsContactDetailModalOpen(true);
       }
       setPreviousModalContext(null);
+    }
+  };
+
+  const handleScrollToListToday = () => {
+    if (listScrollRef.current) {
+      const anchor = listScrollRef.current.querySelector('[data-today-anchor="true"]');
+      if (anchor) {
+        anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     }
   };
 
@@ -2429,19 +2452,16 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Prossimi Appuntamenti in Calendario */}
+                {/* Prossime Attività in Calendario */}
                 <div className="bg-white p-6 rounded-3xl border border-[#E5E5EA] shadow-sm">
-                  <div className="flex justify-between items-center mb-4">
-                    <div className="flex items-center space-x-3">
-                      <h3 className="text-lg font-semibold tracking-tight text-[#1D1D1F]">Prossimi Appuntamenti</h3>
-                      <button
-                        onClick={() => setActiveTab('visite')}
-                        className="text-xs text-[#0071E3] hover:text-[#005BB5] hover:underline font-semibold transition-colors"
-                      >
-                        Vedi calendario →
-                      </button>
-                    </div>
-                    <span className="text-xs text-[#86868B] font-medium">{formatDashboardWeekRange()}</span>
+                  <div className="flex justify-between items-center mb-4 pb-2 border-b border-[#F5F5F7]">
+                    <h3 className="text-lg font-semibold tracking-tight text-[#1D1D1F]">Prossime Attività</h3>
+                    <button
+                      onClick={() => setActiveTab('visite')}
+                      className="text-xs text-[#0071E3] hover:text-[#005BB5] hover:underline font-semibold transition-colors"
+                    >
+                      Vedi calendario →
+                    </button>
                   </div>
 
                   <div className="space-y-3">
@@ -2464,12 +2484,14 @@ export default function App() {
                     ) : (() => {
                       const upcomingEvents = [...visite]
                         .filter(v => new Date(v.inizio_evento) >= new Date().setHours(0,0,0,0))
-                        .sort((a, b) => new Date(a.inizio_evento) - new Date(b.inizio_evento))
-                        .slice(0, 3);
+                        .sort((a, b) => new Date(a.inizio_evento) - new Date(b.inizio_evento));
                       
-                      const eventsToShow = upcomingEvents.length > 0 
+                      const totalEvents = upcomingEvents.length > 0 
                         ? upcomingEvents 
-                        : [...visite].sort((a, b) => new Date(a.inizio_evento) - new Date(b.inizio_evento)).slice(0, 3);
+                        : [...visite].sort((a, b) => new Date(a.inizio_evento) - new Date(b.inizio_evento));
+
+                      const eventsToShow = totalEvents.slice(0, 5);
+                      const extraCount = totalEvents.length - 5;
 
                       if (eventsToShow.length === 0) {
                         return <p className="text-xs text-[#86868B] py-2 text-center">Nessun appuntamento in programma.</p>;
@@ -2477,100 +2499,121 @@ export default function App() {
 
                       return (
                         <div className="space-y-4">
-                          {eventsToShow.map((item) => {
-                            const startObj = new Date(item.inizio_evento);
-                            const endObj = item.fine_evento ? new Date(item.fine_evento) : null;
-                            const fmtTime = (d) => d.toLocaleTimeString('it-CH', { hour: '2-digit', minute: '2-digit' });
-                            const clienteName = getContactName(item.cliente_id);
-                            const immobileName = getImmobileName(item.immobile_di_riferimento_id);
-                            const partecipantiList = item.partecipanti ? item.partecipanti.split(',').map(p => p.trim()).filter(Boolean) : [];
-                            return (
-                              <div
-                                key={item.id}
-                                onClick={() => handleViewVisita(item)}
-                                className="group bg-white border border-[#E5E5EA] rounded-2xl cursor-pointer hover:border-[#0071E3]/40 hover:shadow-lg transition-all duration-200 overflow-hidden"
-                              >
-                                <div className="flex">
-                                  {/* Date column */}
-                                  <div className="w-[72px] shrink-0 flex flex-col items-center justify-center bg-[#F5F5F7] border-r border-[#E5E5EA] py-4 gap-0.5">
-                                    <span className="text-[11px] font-bold uppercase text-[#86868B] tracking-wider leading-none">
-                                      {startObj.toLocaleDateString('it-IT', { month: 'short' })}
-                                    </span>
-                                    <span className="text-[32px] font-black text-[#1D1D1F] leading-none">
-                                      {startObj.toLocaleDateString('it-IT', { day: 'numeric' })}
-                                    </span>
-                                    <span className="text-[10px] font-semibold text-[#86868B] capitalize leading-none">
-                                      {startObj.toLocaleDateString('it-IT', { weekday: 'short' })}
-                                    </span>
-                                  </div>
+                          <div className="space-y-4">
+                            {eventsToShow.map((item) => {
+                              const startObj = new Date(item.inizio_evento);
+                              const endObj = item.fine_evento ? new Date(item.fine_evento) : null;
+                              const fmtTime = (d) => d.toLocaleTimeString('it-CH', { hour: '2-digit', minute: '2-digit' });
+                              const clienteName = getContactName(item.cliente_id);
+                              const immobileName = getImmobileName(item.immobile_di_riferimento_id);
+                              const partecipantiList = item.partecipanti ? item.partecipanti.split(',').map(p => p.trim()).filter(Boolean) : [];
+                              return (
+                                <div
+                                  key={item.id}
+                                  onClick={() => handleViewVisita(item)}
+                                  className="group bg-white border border-[#E5E5EA] rounded-2xl cursor-pointer hover:border-[#0071E3]/40 hover:shadow-lg transition-all duration-200 overflow-hidden"
+                                >
+                                  <div className="flex">
+                                    {/* Date column */}
+                                    <div className="w-[72px] shrink-0 flex flex-col items-center justify-center bg-[#F5F5F7] border-r border-[#E5E5EA] py-4 gap-0.5">
+                                      <span className="text-[11px] font-bold uppercase text-[#86868B] tracking-wider leading-none">
+                                        {startObj.toLocaleDateString('it-IT', { month: 'short' })}
+                                      </span>
+                                      <span className="text-[32px] font-black text-[#1D1D1F] leading-none">
+                                        {startObj.toLocaleDateString('it-IT', { day: 'numeric' })}
+                                      </span>
+                                      <span className="text-[10px] font-semibold text-[#86868B] capitalize leading-none">
+                                        {startObj.toLocaleDateString('it-IT', { weekday: 'short' })}
+                                      </span>
+                                    </div>
 
-                                  {/* Main content */}
-                                  <div className="flex-1 min-w-0 px-4 py-3.5 flex flex-col gap-2.5">
+                                    {/* Main content */}
+                                    <div className="flex-1 min-w-0 px-4 py-3.5 flex flex-col gap-2.5">
 
-                                    {/* Title + time */}
-                                    <div className="flex items-start justify-between gap-2">
-                                      <div className="min-w-0 flex-1">
-                                        <h3 className="text-[14px] font-extrabold text-[#1D1D1F] leading-snug group-hover:text-[#0071E3] transition-colors truncate">
-                                          {item.nome_evento || item.tipo_visita || '—'}
-                                        </h3>
-                                        <span className="text-[10px] text-[#86868B] font-medium block mt-0.5">
-                                          Gestito da: <span className="font-bold text-[#555]">{isMyEvent(item) ? 'Me' : (item.creato_da || 'CRM')}</span>
-                                        </span>
-                                      </div>
-                                      <div className="flex items-center gap-1.5 shrink-0">
-                                        <div className={`w-6 h-6 rounded-full flex items-center justify-center font-black text-[9px] uppercase shadow-sm ${
-                                          isMyEvent(item) 
-                                            ? 'bg-gradient-to-tr from-[#0071E3] to-[#5AC8FA] text-white border border-[#0071E3]/20' 
-                                            : 'bg-gradient-to-tr from-[#8E8E93] to-[#D2D2D7] text-white border border-[#8E8E93]/20'
-                                        }`} title={item.creato_da || 'MASSIMILIANO BOLDI'}>
-                                          {isMyEvent(item) ? 'TU' : getCreatorTag(item)}
-                                        </div>
-                                        {item.tutto_giorno ? (
-                                          <span className="shrink-0 inline-flex items-center gap-1 bg-[#FFF3E0] text-[#E65100] text-[11px] font-bold px-2.5 py-1 rounded-full border border-[#FFB74D]/30 whitespace-nowrap">
-                                            ☀️ Tutto il giorno
+                                      {/* Title + time */}
+                                      <div className="flex items-start justify-between gap-2">
+                                        <div className="min-w-0 flex-1">
+                                          <h3 className="text-[14px] font-extrabold text-[#1D1D1F] leading-snug group-hover:text-[#0071E3] transition-colors truncate">
+                                            {item.nome_evento || item.tipo_visita || '—'}
+                                          </h3>
+                                          <span className="text-[10px] text-[#86868B] font-medium block mt-0.5">
+                                            Gestito da: <span className="font-bold text-[#555]">{isMyEvent(item) ? 'Me' : (item.creato_da || 'CRM')}</span>
                                           </span>
-                                        ) : (
-                                          <span className="shrink-0 inline-flex items-center gap-1 bg-[#E8F4FF] text-[#0071E3] text-[11px] font-bold px-2.5 py-1 rounded-full border border-[#0071E3]/20 whitespace-nowrap">
-                                            🕐 {fmtTime(startObj)}{endObj ? ' → ' + fmtTime(endObj) : ''}
+                                        </div>
+                                        <div className="flex items-center gap-1.5 shrink-0">
+                                          <div className={`w-6 h-6 rounded-full flex items-center justify-center font-black text-[9px] uppercase shadow-sm ${
+                                            isMyEvent(item) 
+                                              ? 'bg-gradient-to-tr from-[#0071E3] to-[#5AC8FA] text-white border border-[#0071E3]/20' 
+                                              : 'bg-gradient-to-tr from-[#8E8E93] to-[#D2D2D7] text-white border border-[#8E8E93]/20'
+                                          }`} title={item.creato_da || 'MASSIMILIANO BOLDI'}>
+                                            {isMyEvent(item) ? 'TU' : getCreatorTag(item)}
+                                          </div>
+                                          {item.tutto_giorno ? (
+                                            <span className="shrink-0 inline-flex items-center gap-1 bg-[#FFF3E0] text-[#E65100] text-[11px] font-bold px-2.5 py-1 rounded-full border border-[#FFB74D]/30 whitespace-nowrap">
+                                              ☀️ Tutto il giorno
+                                            </span>
+                                          ) : (
+                                            <span className="shrink-0 inline-flex items-center gap-1 bg-[#E8F4FF] text-[#0071E3] text-[11px] font-bold px-2.5 py-1 rounded-full border border-[#0071E3]/20 whitespace-nowrap">
+                                              🕐 {fmtTime(startObj)}{endObj ? ' → ' + fmtTime(endObj) : ''}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+
+                                      {/* Pills: cliente + partecipanti + immobile */}
+                                      <div className="flex flex-wrap gap-1.5">
+                                        {/* Cliente */}
+                                        <span className="inline-flex items-center gap-1 bg-[#F5F5F7] border border-[#E5E5EA] rounded-full px-2.5 py-1 text-[11px] font-semibold text-[#374151]">
+                                          👤 {clienteName || '—'}
+                                        </span>
+                                        {/* Partecipanti */}
+                                        {partecipantiList.length > 0 ? (
+                                          partecipantiList.map((p, i) => (
+                                            <span key={i} className="inline-flex items-center gap-1 bg-[#EFF6FF] border border-[#BFDBFE] rounded-full px-2.5 py-1 text-[11px] font-semibold text-[#1D4ED8]">
+                                              👥 {p}
+                                            </span>
+                                          ))
+                                        ) : null}
+                                        {/* Immobile */}
+                                        {immobileName && (
+                                          <span className="inline-flex items-center gap-1 bg-[#F0FDF4] border border-[#BBF7D0] rounded-full px-2.5 py-1 text-[11px] font-semibold text-[#15803D]">
+                                            🏠 {immobileName}
                                           </span>
                                         )}
                                       </div>
-                                    </div>
 
-                                    {/* Pills: cliente + partecipanti + immobile */}
-                                    <div className="flex flex-wrap gap-1.5">
-                                      {/* Cliente */}
-                                      <span className="inline-flex items-center gap-1 bg-[#F5F5F7] border border-[#E5E5EA] rounded-full px-2.5 py-1 text-[11px] font-semibold text-[#374151]">
-                                        👤 {clienteName || '—'}
-                                      </span>
-                                      {/* Partecipanti */}
-                                      {partecipantiList.length > 0 ? (
-                                        partecipantiList.map((p, i) => (
-                                          <span key={i} className="inline-flex items-center gap-1 bg-[#EFF6FF] border border-[#BFDBFE] rounded-full px-2.5 py-1 text-[11px] font-semibold text-[#1D4ED8]">
-                                            👥 {p}
-                                          </span>
-                                        ))
-                                      ) : null}
-                                      {/* Immobile */}
-                                      {immobileName && (
-                                        <span className="inline-flex items-center gap-1 bg-[#F0FDF4] border border-[#BBF7D0] rounded-full px-2.5 py-1 text-[11px] font-semibold text-[#15803D]">
-                                          🏠 {immobileName}
-                                        </span>
+                                      {/* Note */}
+                                      {item.esito_e_note && (
+                                        <p className="text-[11px] text-[#86868B] leading-relaxed line-clamp-2 border-t border-[#F5F5F7] pt-2">
+                                          <span className="font-semibold text-[#6B7280]">Note: </span>
+                                          {item.esito_e_note}
+                                        </p>
                                       )}
                                     </div>
-
-                                    {/* Note */}
-                                    {item.esito_e_note && (
-                                      <p className="text-[11px] text-[#86868B] leading-relaxed line-clamp-2 border-t border-[#F5F5F7] pt-2">
-                                        <span className="font-semibold text-[#6B7280]">Note: </span>
-                                        {item.esito_e_note}
-                                      </p>
-                                    )}
                                   </div>
                                 </div>
+                              );
+                            })}
+                          </div>
+                          {extraCount > 0 && (
+                            <div className="flex items-center justify-between p-4 bg-[#F5F5F7]/80 rounded-2xl border border-[#E5E5EA]/70 mt-2 hover:bg-[#F5F5F7] transition-all">
+                              <div className="flex items-center space-x-2">
+                                <span className="flex h-2 w-2 relative">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#0071E3] opacity-75"></span>
+                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#0071E3]"></span>
+                                </span>
+                                <span className="text-xs text-[#86868B] font-medium">
+                                  Ci sono altri <span className="font-extrabold text-[#1D1D1F]">{extraCount}</span> appuntamenti in programma.
+                                </span>
                               </div>
-                            );
-                          })}
+                              <button
+                                onClick={() => setActiveTab('visite')}
+                                className="text-xs text-[#0071E3] hover:text-[#005BB5] hover:underline font-bold transition-all"
+                              >
+                                Apri calendario →
+                              </button>
+                            </div>
+                          )}
                         </div>
                       );
                     })()}
@@ -3911,62 +3954,76 @@ export default function App() {
                   )}
 
 
-                  {/* Calendar Navigation Panel (Only for Month and Week Views) */}
-                  {calendarView !== 'list' && (
-                    <div className="flex items-center justify-between bg-white p-3 rounded-2xl border border-[#E5E5EA] shadow-sm">
-                      <div className="flex items-center space-x-1.5">
-                        <button
-                          onClick={() => {
-                            const d = new Date(currentCalendarDate);
-                            if (calendarView === 'month') {
-                              d.setMonth(d.getMonth() - 1);
-                            } else if (calendarView === 'day') {
-                              d.setDate(d.getDate() - 1);
-                            } else {
-                              d.setDate(d.getDate() - 7);
-                            }
-                            setCurrentCalendarDate(d);
-                          }}
-                          className="p-1.5 bg-[#F5F5F7] hover:bg-[#E5E5EA] rounded-xl text-[#1D1D1F] transition-all font-bold text-xs"
-                        >
-                          ◀ Precedente
-                        </button>
-                        <button
-                          onClick={() => {
-                            const d = new Date(currentCalendarDate);
-                            if (calendarView === 'month') {
-                              d.setMonth(d.getMonth() + 1);
-                            } else if (calendarView === 'day') {
-                              d.setDate(d.getDate() + 1);
-                            } else {
-                              d.setDate(d.getDate() + 7);
-                            }
-                            setCurrentCalendarDate(d);
-                          }}
-                          className="p-1.5 bg-[#F5F5F7] hover:bg-[#E5E5EA] rounded-xl text-[#1D1D1F] transition-all font-bold text-xs"
-                        >
-                          Successivo ▶
-                        </button>
-                      </div>
+                  {/* Calendar Navigation Panel */}
+                  <div className="flex items-center justify-between bg-white p-3 rounded-2xl border border-[#E5E5EA] shadow-sm">
+                    {calendarView !== 'list' ? (
+                      <>
+                        <div className="flex items-center space-x-1.5">
+                          <button
+                            onClick={() => {
+                              const d = new Date(currentCalendarDate);
+                              if (calendarView === 'month') {
+                                d.setMonth(d.getMonth() - 1);
+                              } else if (calendarView === 'day') {
+                                d.setDate(d.getDate() - 1);
+                              } else {
+                                d.setDate(d.getDate() - 7);
+                              }
+                              setCurrentCalendarDate(d);
+                            }}
+                            className="p-1.5 bg-[#F5F5F7] hover:bg-[#E5E5EA] rounded-xl text-[#1D1D1F] transition-all font-bold text-xs"
+                          >
+                            ◀ Precedente
+                          </button>
+                          <button
+                            onClick={() => {
+                              const d = new Date(currentCalendarDate);
+                              if (calendarView === 'month') {
+                                d.setMonth(d.getMonth() + 1);
+                              } else if (calendarView === 'day') {
+                                d.setDate(d.getDate() + 1);
+                              } else {
+                                d.setDate(d.getDate() + 7);
+                              }
+                              setCurrentCalendarDate(d);
+                            }}
+                            className="p-1.5 bg-[#F5F5F7] hover:bg-[#E5E5EA] rounded-xl text-[#1D1D1F] transition-all font-bold text-xs"
+                          >
+                            Successivo ▶
+                          </button>
+                        </div>
 
-                      <div className="text-sm font-bold text-[#1D1D1F] capitalize">
-                        {calendarView === 'month' ? (
-                          `${MONTHS_IT[month]} ${year}`
-                        ) : calendarView === 'day' ? (
-                          currentCalendarDate.toLocaleDateString('it-CH', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
-                        ) : (
-                          `Settimana del ${startOfWeek.toLocaleDateString('it-CH', { day: 'numeric', month: 'short' })} ${startOfWeek.getFullYear()}`
-                        )}
-                      </div>
+                        <div className="text-sm font-bold text-[#1D1D1F] capitalize">
+                          {calendarView === 'month' ? (
+                            `${MONTHS_IT[month]} ${year}`
+                          ) : calendarView === 'day' ? (
+                            currentCalendarDate.toLocaleDateString('it-CH', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+                          ) : (
+                            `Settimana del ${startOfWeek.toLocaleDateString('it-CH', { day: 'numeric', month: 'short' })} ${startOfWeek.getFullYear()}`
+                          )}
+                        </div>
 
-                      <button
-                        onClick={() => setCurrentCalendarDate(new Date())}
-                        className="px-3 py-1 bg-[#F5F5F7] hover:bg-[#E5E5EA] text-xs font-semibold rounded-lg text-gray-700 transition-all"
-                      >
-                        Oggi
-                      </button>
-                    </div>
-                  )}
+                        <button
+                          onClick={() => setCurrentCalendarDate(new Date())}
+                          className="px-3 py-1 bg-[#F5F5F7] hover:bg-[#E5E5EA] text-xs font-semibold rounded-lg text-gray-700 transition-all"
+                        >
+                          Oggi
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-sm font-bold text-[#1D1D1F]">
+                          Elenco Completo Attività
+                        </div>
+                        <button
+                          onClick={handleScrollToListToday}
+                          className="px-3 py-1 bg-[#F5F5F7] hover:bg-[#E5E5EA] text-xs font-semibold rounded-lg text-gray-700 transition-all flex items-center gap-1.5"
+                        >
+                          📅 Vai a Oggi
+                        </button>
+                      </>
+                    )}
+                  </div>
 
                   {/* Month View Grid */}
                   {calendarView === 'month' && (
@@ -4322,108 +4379,116 @@ export default function App() {
 
 {/* List / Timeline View */}
                   {calendarView === 'list' && (
-                    <div className="space-y-4">
+                    <div 
+                      ref={listScrollRef} 
+                      className="space-y-4 max-h-[680px] overflow-y-auto pr-2 custom-scrollbar scroll-smooth"
+                    >
                       {filteredVisite.length === 0 ? (
                         <div className="bg-white rounded-3xl p-8 border border-[#E5E5EA] text-center text-xs text-[#86868B]">
                           Nessuna visita o appuntamento corrispondente ai filtri impostati.
                         </div>
-                      ) : (
-                        filteredVisite
-                          .sort((a, b) => new Date(a.inizio_evento) - new Date(b.inizio_evento))
-                          .map((item) => {
-                            const startObj = new Date(item.inizio_evento);
-                            const endObj = item.fine_evento ? new Date(item.fine_evento) : null;
-                            const fmtTime = (d) => d.toLocaleTimeString('it-CH', { hour: '2-digit', minute: '2-digit' });
-                            const clienteName = getContactName(item.cliente_id);
-                            const immobileName = getImmobileName(item.immobile_di_riferimento_id);
-                            const partecipantiList = item.partecipanti ? item.partecipanti.split(',').map(p => p.trim()).filter(Boolean) : [];
-                            return (
-                              <div
-                                key={item.id}
-                                onClick={() => handleViewVisita(item)}
-                                className="group bg-white border border-[#E5E5EA] rounded-2xl cursor-pointer hover:border-[#0071E3]/40 hover:shadow-lg transition-all duration-200 overflow-hidden"
-                              >
-                                <div className="flex">
-                                  {/* Date column */}
-                                  <div className="w-[72px] shrink-0 flex flex-col items-center justify-center bg-[#F5F5F7] border-r border-[#E5E5EA] py-4 gap-0.5">
-                                    <span className="text-[11px] font-bold uppercase text-[#86868B] tracking-wider leading-none">
-                                      {startObj.toLocaleDateString('it-IT', { month: 'short' })}
-                                    </span>
-                                    <span className="text-[32px] font-black text-[#1D1D1F] leading-none">
-                                      {startObj.toLocaleDateString('it-IT', { day: 'numeric' })}
-                                    </span>
-                                    <span className="text-[10px] font-semibold text-[#86868B] capitalize leading-none">
-                                      {startObj.toLocaleDateString('it-IT', { weekday: 'short' })}
-                                    </span>
-                                  </div>
+                      ) : (() => {
+                        const sortedList = [...filteredVisite].sort((a, b) => new Date(a.inizio_evento) - new Date(b.inizio_evento));
+                        const todayTime = new Date().setHours(0,0,0,0);
+                        const firstTodayOrFutureIdx = sortedList.findIndex(item => new Date(item.inizio_evento).getTime() >= todayTime);
 
-                                  {/* Main content */}
-                                  <div className="flex-1 min-w-0 px-4 py-3.5 flex flex-col gap-2.5">
+                        return sortedList.map((item, idx) => {
+                          const isAnchor = idx === firstTodayOrFutureIdx;
+                          const startObj = new Date(item.inizio_evento);
+                          const endObj = item.fine_evento ? new Date(item.fine_evento) : null;
+                          const fmtTime = (d) => d.toLocaleTimeString('it-CH', { hour: '2-digit', minute: '2-digit' });
+                          const clienteName = getContactName(item.cliente_id);
+                          const immobileName = getImmobileName(item.immobile_di_riferimento_id);
+                          const partecipantiList = item.partecipanti ? item.partecipanti.split(',').map(p => p.trim()).filter(Boolean) : [];
+                          return (
+                            <div
+                              key={item.id}
+                              onClick={() => handleViewVisita(item)}
+                              data-today-anchor={isAnchor ? "true" : undefined}
+                              className="group bg-white border border-[#E5E5EA] rounded-2xl cursor-pointer hover:border-[#0071E3]/40 hover:shadow-lg transition-all duration-200 overflow-hidden"
+                            >
+                              <div className="flex">
+                                {/* Date column */}
+                                <div className="w-[72px] shrink-0 flex flex-col items-center justify-center bg-[#F5F5F7] border-r border-[#E5E5EA] py-4 gap-0.5">
+                                  <span className="text-[11px] font-bold uppercase text-[#86868B] tracking-wider leading-none">
+                                    {startObj.toLocaleDateString('it-IT', { month: 'short' })}
+                                  </span>
+                                  <span className="text-[32px] font-black text-[#1D1D1F] leading-none">
+                                    {startObj.toLocaleDateString('it-IT', { day: 'numeric' })}
+                                  </span>
+                                  <span className="text-[10px] font-semibold text-[#86868B] capitalize leading-none">
+                                    {startObj.toLocaleDateString('it-IT', { weekday: 'short' })}
+                                  </span>
+                                </div>
 
-                                    {/* Title + time */}
-                                    <div className="flex items-start justify-between gap-2">
-                                      <div className="min-w-0 flex-1">
-                                        <h3 className="text-[14px] font-extrabold text-[#1D1D1F] leading-snug group-hover:text-[#0071E3] transition-colors truncate">
-                                          {item.nome_evento || item.tipo_visita || '—'}
-                                        </h3>
-                                        <span className="text-[10px] text-[#86868B] font-medium block mt-0.5">
-                                          Gestito da: <span className="font-bold text-[#555]">{isMyEvent(item) ? 'Me' : (item.creato_da || 'CRM')}</span>
-                                        </span>
-                                      </div>
-                                      <div className="flex items-center gap-1.5 shrink-0">
-                                        <div className={`w-6 h-6 rounded-full flex items-center justify-center font-black text-[9px] uppercase shadow-sm ${
-                                          isMyEvent(item) 
-                                            ? 'bg-gradient-to-tr from-[#0071E3] to-[#5AC8FA] text-white border border-[#0071E3]/20' 
-                                            : 'bg-gradient-to-tr from-[#8E8E93] to-[#D2D2D7] text-white border border-[#8E8E93]/20'
-                                        }`} title={item.creato_da || 'MASSIMILIANO BOLDI'}>
-                                          {isMyEvent(item) ? 'TU' : getCreatorTag(item)}
-                                        </div>
-                                        {item.tutto_giorno ? (
-                                          <span className="shrink-0 inline-flex items-center gap-1 bg-[#FFF3E0] text-[#E65100] text-[11px] font-bold px-2.5 py-1 rounded-full border border-[#FFB74D]/30 whitespace-nowrap">
-                                            ☀️ Tutto il giorno
-                                          </span>
-                                        ) : (
-                                          <span className="shrink-0 inline-flex items-center gap-1 bg-[#E8F4FF] text-[#0071E3] text-[11px] font-bold px-2.5 py-1 rounded-full border border-[#0071E3]/20 whitespace-nowrap">
-                                            🕐 {fmtTime(startObj)}{endObj ? ' → ' + fmtTime(endObj) : ''}
-                                          </span>
-                                        )}
-                                      </div>
-                                    </div>
+                                {/* Main content */}
+                                <div className="flex-1 min-w-0 px-4 py-3.5 flex flex-col gap-2.5">
 
-                                    {/* Pills: cliente + partecipanti + immobile */}
-                                    <div className="flex flex-wrap gap-1.5">
-                                      {/* Cliente */}
-                                      <span className="inline-flex items-center gap-1 bg-[#F5F5F7] border border-[#E5E5EA] rounded-full px-2.5 py-1 text-[11px] font-semibold text-[#374151]">
-                                        👤 {clienteName || '—'}
+                                  {/* Title + time */}
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div className="min-w-0 flex-1">
+                                      <h3 className="text-[14px] font-extrabold text-[#1D1D1F] leading-snug group-hover:text-[#0071E3] transition-colors truncate">
+                                        {item.nome_evento || item.tipo_visita || '—'}
+                                      </h3>
+                                      <span className="text-[10px] text-[#86868B] font-medium block mt-0.5">
+                                        Gestito da: <span className="font-bold text-[#555]">{isMyEvent(item) ? 'Me' : (item.creato_da || 'CRM')}</span>
                                       </span>
-                                      {/* Partecipanti */}
-                                      {partecipantiList.length > 0 ? (
-                                        partecipantiList.map((p, i) => (
-                                          <span key={i} className="inline-flex items-center gap-1 bg-[#EFF6FF] border border-[#BFDBFE] rounded-full px-2.5 py-1 text-[11px] font-semibold text-[#1D4ED8]">
-                                            👥 {p}
-                                          </span>
-                                        ))
-                                      ) : null}
-                                      {/* Immobile */}
-                                      {immobileName && (
-                                        <span className="inline-flex items-center gap-1 bg-[#F0FDF4] border border-[#BBF7D0] rounded-full px-2.5 py-1 text-[11px] font-semibold text-[#15803D]">
-                                          🏠 {immobileName}
+                                    </div>
+                                    <div className="flex items-center gap-1.5 shrink-0">
+                                      <div className={`w-6 h-6 rounded-full flex items-center justify-center font-black text-[9px] uppercase shadow-sm ${
+                                        isMyEvent(item) 
+                                          ? 'bg-gradient-to-tr from-[#0071E3] to-[#5AC8FA] text-white border border-[#0071E3]/20' 
+                                          : 'bg-gradient-to-tr from-[#8E8E93] to-[#D2D2D7] text-white border border-[#8E8E93]/20'
+                                      }`} title={item.creato_da || 'MASSIMILIANO BOLDI'}>
+                                        {isMyEvent(item) ? 'TU' : getCreatorTag(item)}
+                                      </div>
+                                      {item.tutto_giorno ? (
+                                        <span className="shrink-0 inline-flex items-center gap-1 bg-[#FFF3E0] text-[#E65100] text-[11px] font-bold px-2.5 py-1 rounded-full border border-[#FFB74D]/30 whitespace-nowrap">
+                                          ☀️ Tutto il giorno
+                                        </span>
+                                      ) : (
+                                        <span className="shrink-0 inline-flex items-center gap-1 bg-[#E8F4FF] text-[#0071E3] text-[11px] font-bold px-2.5 py-1 rounded-full border border-[#0071E3]/20 whitespace-nowrap">
+                                          🕐 {fmtTime(startObj)}{endObj ? ' → ' + fmtTime(endObj) : ''}
                                         </span>
                                       )}
                                     </div>
+                                  </div>
 
-                                    {/* Note */}
-                                    {item.esito_e_note && (
-                                      <p className="text-[11px] text-[#86868B] leading-relaxed line-clamp-2 border-t border-[#F5F5F7] pt-2">
-                                        <span className="font-semibold text-[#6B7280]">Note: </span>
-                                        {item.esito_e_note}
-                                      </p>
+                                  {/* Pills: cliente + partecipanti + immobile */}
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {/* Cliente */}
+                                    <span className="inline-flex items-center gap-1 bg-[#F5F5F7] border border-[#E5E5EA] rounded-full px-2.5 py-1 text-[11px] font-semibold text-[#374151]">
+                                      👤 {clienteName || '—'}
+                                    </span>
+                                    {/* Partecipanti */}
+                                    {partecipantiList.length > 0 ? (
+                                      partecipantiList.map((p, i) => (
+                                        <span key={i} className="inline-flex items-center gap-1 bg-[#EFF6FF] border border-[#BFDBFE] rounded-full px-2.5 py-1 text-[11px] font-semibold text-[#1D4ED8]">
+                                          👥 {p}
+                                        </span>
+                                      ))
+                                    ) : null}
+                                    {/* Immobile */}
+                                    {immobileName && (
+                                      <span className="inline-flex items-center gap-1 bg-[#F0FDF4] border border-[#BBF7D0] rounded-full px-2.5 py-1 text-[11px] font-semibold text-[#15803D]">
+                                        🏠 {immobileName}
+                                      </span>
                                     )}
                                   </div>
+
+                                  {/* Note */}
+                                  {item.esito_e_note && (
+                                    <p className="text-[11px] text-[#86868B] leading-relaxed line-clamp-2 border-t border-[#F5F5F7] pt-2">
+                                      <span className="font-semibold text-[#6B7280]">Note: </span>
+                                      {item.esito_e_note}
+                                    </p>
+                                  )}
                                 </div>
                               </div>
-                            );                          })
-                      )}
+                            </div>
+                          );
+                        });
+                      })()}
                     </div>
                   )}
                 </div>
@@ -6399,7 +6464,7 @@ export default function App() {
 
             return (
               <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-0 md:p-4">
-                <div className="bg-white w-full max-w-lg rounded-none md:rounded-3xl shadow-2xl border border-[#E5E5EA] overflow-hidden flex flex-col text-[#1D1D1F]">
+                <div className="bg-white w-full h-full md:h-auto max-w-lg rounded-none md:rounded-3xl shadow-2xl border border-[#E5E5EA] overflow-hidden flex flex-col text-[#1D1D1F]">
                   
                   {/* Header */}
                   <div className="px-6 py-5 border-b border-[#E5E5EA] flex justify-between items-center bg-[#F5F5F7]">
@@ -6418,7 +6483,7 @@ export default function App() {
                   </div>
 
                   {/* Body */}
-                  <div className="p-6 space-y-5 overflow-y-auto max-h-[500px] custom-scrollbar">
+                  <div className="p-6 space-y-5 overflow-y-auto flex-1 md:max-h-[500px] custom-scrollbar">
                     
                     {/* Time details */}
                     <div className="flex items-start gap-3 bg-[#F5F5F7] p-4 rounded-2xl border border-transparent">

@@ -517,6 +517,13 @@ export default function App() {
     setFilterBagniMin('Tutti');
   };
 
+  const mainContentRef = useRef(null);
+  useEffect(() => {
+    if (mainContentRef.current) {
+      mainContentRef.current.scrollTop = 0;
+    }
+  }, [activeTab]);
+
   const [searchContact, setSearchContact] = useState('');
   const [filterContactRuolo, setFilterContactRuolo] = useState('Tutti');
   const [sortContactOrder, setSortContactOrder] = useState('nome-cognome');
@@ -552,7 +559,7 @@ export default function App() {
   const isResizingRef = useRef(false);
 
   useEffect(() => {
-    if (activeTab === 'visite' && calendarView === 'week' && calendarScrollRef.current) {
+    if (activeTab === 'visite' && (calendarView === 'week' || calendarView === 'day') && calendarScrollRef.current) {
       // Delay slightly to ensure layout and rendering are fully completed
       setTimeout(() => {
         if (calendarScrollRef.current) {
@@ -2664,7 +2671,7 @@ export default function App() {
           </aside>
 
           {/* MAIN WORKSPACE AREA */}
-          <main className="flex-1 overflow-y-auto bg-transparent p-4 md:p-8 pb-24 md:pb-8">
+          <main ref={mainContentRef} className="flex-1 overflow-y-auto bg-transparent p-4 md:p-8 pb-24 md:pb-8">
 
             {/* TAB 1: DASHBOARD */}
             {activeTab === 'dashboard' && (

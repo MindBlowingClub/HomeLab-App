@@ -446,6 +446,20 @@ export default function App() {
   const [localLogs, setLocalLogs] = useState(INITIAL_IMMOBILI_LOGS);
   const [immobileLogs, setImmobileLogs] = useState([]);
 
+  // Offline support states
+  const [isOffline, setIsOffline] = useState(typeof window !== 'undefined' ? !navigator.onLine : false);
+  const [offlineQueue, setOfflineQueue] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return JSON.parse(localStorage.getItem('homelab_offline_queue') || '[]');
+      } catch (_) {
+        return [];
+      }
+    }
+    return [];
+  });
+
+
   // Search & Filter states
   const [searchProperty, setSearchProperty] = useState('');
   const [filterPropertyType, setFilterPropertyType] = useState('Tutti');
@@ -465,6 +479,43 @@ export default function App() {
   const [filterBagniMin, setFilterBagniMin] = useState('Tutti');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [sortProperty, setSortProperty] = useState('creazione-desc');
+
+  const hasActiveFilters = 
+    searchProperty !== '' ||
+    filterPropertyType !== 'Tutti' ||
+    filterTipo !== 'Tutti' ||
+    filterStato !== 'Tutti' ||
+    filterComune !== 'Tutti' ||
+    filterPrezzoMin !== '' ||
+    filterPrezzoMax !== '' ||
+    filterLocaliMin !== 'Tutti' ||
+    filterSuperficieMin !== '' ||
+    filterVendibileStranieri !== 'Tutti' ||
+    filterResidenza !== 'Tutti' ||
+    filterMandatoFirmato !== 'Tutti' ||
+    filterAgenteId !== 'Tutti' ||
+    filterGarageMin !== '' ||
+    filterPostiAutoMin !== '' ||
+    filterBagniMin !== 'Tutti';
+
+  const resetAllFilters = () => {
+    setSearchProperty('');
+    setFilterPropertyType('Tutti');
+    setFilterTipo('Tutti');
+    setFilterStato('Tutti');
+    setFilterComune('Tutti');
+    setFilterPrezzoMin('');
+    setFilterPrezzoMax('');
+    setFilterLocaliMin('Tutti');
+    setFilterSuperficieMin('');
+    setFilterVendibileStranieri('Tutti');
+    setFilterResidenza('Tutti');
+    setFilterMandatoFirmato('Tutti');
+    setFilterAgenteId('Tutti');
+    setFilterGarageMin('');
+    setFilterPostiAutoMin('');
+    setFilterBagniMin('Tutti');
+  };
 
   const [searchContact, setSearchContact] = useState('');
   const [filterContactRuolo, setFilterContactRuolo] = useState('Tutti');
@@ -531,6 +582,7 @@ export default function App() {
   const [isImmobileModalOpen, setIsImmobileModalOpen] = useState(false);
   const [activeFormTab, setActiveFormTab] = useState('principale');
   const [isUserSettingsModalOpen, setIsUserSettingsModalOpen] = useState(false);
+  const [isProfileEditing, setIsProfileEditing] = useState(false);
   const [tempProfileFotoUrl, setTempProfileFotoUrl] = useState(null);
 
   // Detail inspector (Immobili)
@@ -770,6 +822,350 @@ export default function App() {
     }
   };
 
+  // --- OFFLINE SYNC SYSTEM ---
+  const uploadBase64Field = async (val, bucketName = 'immobili-media') => {
+    if (typeof val === 'string' && val.startsWith('data:')) {
+      try {
+        const match = val.match(/^data:([^;]+);/);
+        const mimeType = match ? match[1] : 'application/octet-stream';
+        const ext = mimeType.split('/')[1] || 'bin';
+        const uniqueName = `offline-${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${ext}`;
+        
+        const response = await fetch(val);
+        const blob = await response.blob();
+        const fileObj = new File([blob], uniqueName, { type: mimeType });
+        
+        const uploadedUrl = await uploadToSupabase(fileObj, bucketName);
+        if (uploadedUrl) {
+          return uploadedUrl;
+        }
+      } catch (uploadErr) {
+        console.error("Errore upload file offline:", uploadErr);
+      }
+    }
+    return val;
+  };
+
+  const syncOfflineQueue = async (queueToSync = null) => {
+    if (!isRealSupabase || !supabase || !navigator.onLine) return;
+    
+    const queue = queueToSync || JSON.parse(localStorage.getItem('homelab_offline_queue') || '[]');
+    if (queue.length === 0) return;
+
+    setLoading(true);
+    let successCount = 0;
+    const tempIdMap = {};
+    const updatedQueue = [...queue];
+
+    for (let i = 0; i < queue.length; i++) {
+      const item = queue[i];
+      try {
+        // Resolve temp ID references
+        if (item.type === 'visita') {
+          if (item.fields.immobile_di_riferimento_id && tempIdMap[item.fields.immobile_di_riferimento_id]) {
+            item.fields.immobile_di_riferimento_id = tempIdMap[item.fields.immobile_di_riferimento_id];
+          }
+          if (item.fields.cliente_id && tempIdMap[item.fields.cliente_id]) {
+            item.fields.cliente_id = tempIdMap[item.fields.cliente_id];
+          }
+        } else if (item.type === 'contatto') {
+          if (item.fields.immobili_posseduti) {
+            item.fields.immobili_posseduti = item.fields.immobili_posseduti.map(id => tempIdMap[id] || id);
+          }
+          if (item.fields.immobili_gestiti) {
+            item.fields.immobili_gestiti = item.fields.immobili_gestiti.map(id => tempIdMap[id] || id);
+          }
+        }
+
+        // Upload base64 files
+        if (item.type === 'immobile') {
+          const fileFields = [
+            'immagine_di_riferimento', 'mandato', 'planimetria', 'estratto_registro_fondiario_doc',
+            'descrittivo_tecnico_doc', 'regolamento_condominiale_doc', 'spese_condominiali_doc',
+            'assicurazione_stabile_doc', 'verbale_ultima_assemblea_doc', 'fondo_rinnovamento_doc',
+            'valore_di_stima_doc', 'piano_assegnazioni_parti_comuni_doc', 'rasi_doc', 'certificato_radon_doc'
+          ];
+          for (const field of fileFields) {
+            if (item.fields[field]) {
+              item.fields[field] = await uploadBase64Field(item.fields[field]);
+            }
+          }
+        }
+
+        if (item.action === 'insert') {
+          const { id, ...insertFields } = item.fields;
+          const { data, error } = await supabase.from(item.table).insert([insertFields]).select();
+          if (error) throw error;
+          const realRecord = data[0];
+          
+          tempIdMap[item.id] = realRecord.id;
+
+          if (item.type === 'immobile') {
+            setImmobili(prev => prev.map(imm => Number(imm.id) === Number(item.id) ? realRecord : imm));
+          } else if (item.type === 'contatto') {
+            setContatti(prev => prev.map(con => Number(con.id) === Number(item.id) ? realRecord : con));
+          } else if (item.type === 'visita') {
+            setVisite(prev => prev.map(vis => Number(vis.id) === Number(item.id) ? realRecord : vis));
+          }
+        } else if (item.action === 'update') {
+          const { data, error } = await supabase.from(item.table).update(item.fields).eq('id', item.targetId).select();
+          if (error) throw error;
+          const realRecord = data[0] || { id: item.targetId, ...item.fields };
+
+          if (item.type === 'immobile') {
+            setImmobili(prev => prev.map(imm => Number(imm.id) === Number(item.targetId) ? realRecord : imm));
+          } else if (item.type === 'contatto') {
+            setContatti(prev => prev.map(con => Number(con.id) === Number(item.targetId) ? realRecord : con));
+          } else if (item.type === 'visita') {
+            setVisite(prev => prev.map(vis => Number(vis.id) === Number(item.targetId) ? realRecord : vis));
+          }
+        } else if (item.action === 'delete') {
+          const { error } = await supabase.from(item.table).delete().eq('id', item.targetId);
+          if (error) throw error;
+        }
+
+        successCount++;
+        updatedQueue.shift();
+        localStorage.setItem('homelab_offline_queue', JSON.stringify(updatedQueue));
+        setOfflineQueue([...updatedQueue]);
+      } catch (err) {
+        console.error(`Errore sincronizzazione elemento offline all'indice ${i}:`, err);
+        triggerToast("Errore durante la sincronizzazione offline: " + err.message, "error");
+        break;
+      }
+    }
+
+    setLoading(false);
+    if (successCount > 0) {
+      triggerToast(`Sincronizzati con successo ${successCount} elementi!`, "success");
+      fetchCRMData();
+    }
+  };
+
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOffline(false);
+      triggerToast("Connessione ripristinata. Avvio sincronizzazione...", "info");
+      const queue = JSON.parse(localStorage.getItem('homelab_offline_queue') || '[]');
+      if (queue.length > 0) {
+        syncOfflineQueue(queue);
+      }
+    };
+    const handleOffline = () => {
+      setIsOffline(true);
+      triggerToast("Sei offline. Le modifiche verranno salvate in locale.", "error");
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    if (navigator.onLine) {
+      const queue = JSON.parse(localStorage.getItem('homelab_offline_queue') || '[]');
+      if (queue.length > 0) {
+        syncOfflineQueue(queue);
+      }
+    }
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [isRealSupabase]);
+
+  const saveImmobileOffline = (id, fields, changes, logDesc, userEmail) => {
+    const finalId = id || Date.now();
+    const localFields = { id: finalId, ...fields };
+    if (id) {
+      setImmobili(immobili.map(item => item.id === id ? localFields : item));
+      triggerToast("Immobile aggiornato localmente");
+      if (viewingImmobile && viewingImmobile.id === id) {
+        setViewingImmobile(localFields);
+      }
+      if (changes.length > 0) {
+        const newLog = {
+          id: Date.now(),
+          immobile_id: id,
+          descrizione: logDesc,
+          utente: userEmail,
+          data_ora: new Date().toISOString()
+        };
+        setLocalLogs(prev => [newLog, ...prev]);
+      }
+    } else {
+      setImmobili([...immobili, localFields]);
+      triggerToast("Immobile aggiunto localmente");
+      const newLog = {
+        id: Date.now(),
+        immobile_id: finalId,
+        descrizione: "Creazione immobile",
+        utente: userEmail,
+        data_ora: new Date().toISOString()
+      };
+      setLocalLogs(prev => [newLog, ...prev]);
+
+      if (addingPropertyForContact) {
+        if (addingPropertyForContact.type === 'posseduti') {
+          setSelectedPosseduti(prev => [...prev, finalId]);
+        } else if (addingPropertyForContact.type === 'gestiti') {
+          setSelectedGestiti(prev => [...prev, finalId]);
+        }
+        setAddingPropertyForContact(null);
+      }
+      if (addingPropertyForVisit) {
+        setSelectedVisitaImmobileId(finalId);
+        setAddingPropertyForVisit(false);
+      }
+    }
+
+    if (isRealSupabase) {
+      const queueItem = {
+        id: finalId,
+        type: 'immobile',
+        table: 'immobili',
+        action: id ? 'update' : 'insert',
+        targetId: id,
+        fields: fields,
+        timestamp: Date.now()
+      };
+      const updatedQueue = [...offlineQueue, queueItem];
+      setOfflineQueue(updatedQueue);
+      localStorage.setItem('homelab_offline_queue', JSON.stringify(updatedQueue));
+      triggerToast("Offline: salvato localmente e in attesa di sincronizzazione", "info");
+    }
+  };
+
+  const saveContattoOffline = (id, fields) => {
+    const finalId = id || Date.now();
+    const localFields = { id: finalId, ...fields };
+    if (id) {
+      setContatti(contatti.map(item => item.id === id ? localFields : item));
+      triggerToast("Contatto aggiornato localmente");
+      if (viewingContatto && viewingContatto.id === id) {
+        setViewingContatto(localFields);
+      }
+
+      setImmobili(prevImmobili => prevImmobili.map(imm => {
+        let updatedImm = { ...imm };
+        if (selectedPosseduti.includes(Number(imm.id))) {
+          updatedImm.proprietario_id = id;
+        } else if (imm.proprietario_id === id) {
+          updatedImm.proprietario_id = null;
+        }
+        if (selectedGestiti.includes(Number(imm.id))) {
+          updatedImm.agente_id = id;
+        } else if (imm.agente_id === id) {
+          updatedImm.agente_id = null;
+        }
+        return updatedImm;
+      }));
+    } else {
+      setContatti([...contatti, localFields]);
+      triggerToast("Contatto aggiunto localmente");
+
+      setImmobili(prevImmobili => prevImmobili.map(imm => {
+        let updatedImm = { ...imm };
+        if (selectedPosseduti.includes(Number(imm.id))) {
+          updatedImm.proprietario_id = finalId;
+        }
+        if (selectedGestiti.includes(Number(imm.id))) {
+          updatedImm.agente_id = finalId;
+        }
+        return updatedImm;
+      }));
+    }
+    if (addingContactForVisit) {
+      if (addingContactForVisit === 'cliente') {
+        setSelectedCalendarClientId(finalId);
+      } else if (addingContactForVisit === 'partecipanti') {
+        setSelectedCalendarParticipantIds(prev => [...prev, finalId]);
+      }
+      setAddingContactForVisit(null);
+    }
+
+    if (isRealSupabase) {
+      const queueItem = {
+        id: finalId,
+        type: 'contatto',
+        table: 'contatti',
+        action: id ? 'update' : 'insert',
+        targetId: id,
+        fields: fields,
+        timestamp: Date.now()
+      };
+      const updatedQueue = [...offlineQueue, queueItem];
+      setOfflineQueue(updatedQueue);
+      localStorage.setItem('homelab_offline_queue', JSON.stringify(updatedQueue));
+      triggerToast("Offline: salvato localmente e in attesa di sincronizzazione", "info");
+    }
+  };
+
+  const saveVisitaOffline = (id, fields) => {
+    const finalId = id || Date.now();
+    const localFields = { id: finalId, ...fields };
+    if (id) {
+      setVisite(visite.map(item => item.id === id ? localFields : item));
+      triggerToast("Appuntamento aggiornato localmente");
+    } else {
+      setVisite([...visite, localFields]);
+      triggerToast("Nuovo evento aggiunto localmente");
+    }
+
+    if (isRealSupabase) {
+      const queueItem = {
+        id: finalId,
+        type: 'visita',
+        table: 'visite',
+        action: id ? 'update' : 'insert',
+        targetId: id,
+        fields: fields,
+        timestamp: Date.now()
+      };
+      const updatedQueue = [...offlineQueue, queueItem];
+      setOfflineQueue(updatedQueue);
+      localStorage.setItem('homelab_offline_queue', JSON.stringify(updatedQueue));
+      triggerToast("Offline: salvato localmente e in attesa di sincronizzazione", "info");
+    }
+  };
+
+  const saveDeleteOffline = (type, table, id) => {
+    if (type === 'immobile') {
+      setImmobili(immobili.filter(item => item.id !== id));
+      if (viewingImmobile && viewingImmobile.id === id) {
+        handleCloseImmobileDetail();
+      }
+    } else if (type === 'contatto') {
+      setContatti(contatti.filter(item => item.id !== id));
+      if (viewingContatto && viewingContatto.id === id) {
+        setIsContactDetailModalOpen(false);
+        setViewingContatto(null);
+      }
+    } else if (type === 'visita') {
+      setVisite(visite.filter(item => item.id !== id));
+      if (viewingVisita && viewingVisita.id === id) {
+        setIsVisitaDetailModalOpen(false);
+        setViewingVisita(null);
+      }
+    }
+
+    if (isRealSupabase) {
+      const queueItem = {
+        id: Date.now(),
+        type,
+        table,
+        action: 'delete',
+        targetId: id,
+        fields: null,
+        timestamp: Date.now()
+      };
+      const updatedQueue = [...offlineQueue, queueItem];
+      setOfflineQueue(updatedQueue);
+      localStorage.setItem('homelab_offline_queue', JSON.stringify(updatedQueue));
+      triggerToast("Offline: eliminazione salvata in locale e in attesa di sincronizzazione", "info");
+    } else {
+      triggerToast("Elemento rimosso localmente", "info");
+    }
+  };
+
   const fetchCRMData = async () => {
     setIsCRMLoading(true);
 
@@ -978,14 +1374,14 @@ export default function App() {
 
   const handleUploadOrBase64 = async (fileField, existingValue) => {
     if (fileField && fileField.size > 0) {
-      if (isRealSupabase) {
+      if (isRealSupabase && !isOffline && navigator.onLine) {
         const url = await uploadToSupabase(fileField);
         if (!url) {
           throw new Error("Impossibile generare l'URL pubblico per il file caricato.");
         }
         return url;
       }
-      // Demo mode: usa base64 locale
+      // Demo mode o offline: usa base64 locale
       return await readAsBase64(fileField);
     }
     return existingValue || "";
@@ -1244,7 +1640,9 @@ export default function App() {
 
     const logDesc = changes.join(', ');
 
-    if (isRealSupabase) {
+    const isActuallyOffline = isOffline || !navigator.onLine;
+
+    if (isRealSupabase && !isActuallyOffline) {
       try {
         if (id) {
           const { data, error } = await supabase
@@ -1321,52 +1719,11 @@ export default function App() {
         }
       } catch (err) {
         console.error(err);
-        triggerToast("Errore salvataggio Supabase", "error");
+        triggerToast("Errore salvataggio Supabase. Salvataggio offline...", "warning");
+        saveImmobileOffline(id, fields, changes, logDesc, userEmail);
       }
     } else {
-      const finalId = id || Date.now();
-      const localFields = { id: finalId, ...fields };
-      if (id) {
-        setImmobili(immobili.map(item => item.id === id ? localFields : item));
-        triggerToast("Immobile aggiornato localmente");
-        if (viewingImmobile && viewingImmobile.id === id) {
-          setViewingImmobile(localFields);
-        }
-        if (changes.length > 0) {
-          const newLog = {
-            id: Date.now(),
-            immobile_id: id,
-            descrizione: logDesc,
-            utente: userEmail,
-            data_ora: new Date().toISOString()
-          };
-          setLocalLogs(prev => [newLog, ...prev]);
-        }
-      } else {
-        setImmobili([...immobili, localFields]);
-        triggerToast("Immobile aggiunto localmente");
-        const newLog = {
-          id: Date.now(),
-          immobile_id: finalId,
-          descrizione: "Creazione immobile",
-          utente: userEmail,
-          data_ora: new Date().toISOString()
-        };
-        setLocalLogs(prev => [newLog, ...prev]);
-
-        if (addingPropertyForContact) {
-          if (addingPropertyForContact.type === 'posseduti') {
-            setSelectedPosseduti(prev => [...prev, finalId]);
-          } else if (addingPropertyForContact.type === 'gestiti') {
-            setSelectedGestiti(prev => [...prev, finalId]);
-          }
-          setAddingPropertyForContact(null);
-        }
-        if (addingPropertyForVisit) {
-          setSelectedVisitaImmobileId(finalId);
-          setAddingPropertyForVisit(false);
-        }
-      }
+      saveImmobileOffline(id, fields, changes, logDesc, userEmail);
     }
     setIsImmobileModalOpen(false);
     setCurrentImmobile(null);
@@ -1452,7 +1809,8 @@ export default function App() {
 
   const handleDeleteImmobile = async (id) => {
     if (window.confirm("Sei sicuro di voler eliminare questo immobile?")) {
-      if (isRealSupabase) {
+      const isActuallyOffline = isOffline || !navigator.onLine;
+      if (isRealSupabase && !isActuallyOffline) {
         try {
           const { error } = await supabase
             .from('immobili')
@@ -1466,14 +1824,11 @@ export default function App() {
           }
         } catch (err) {
           console.error(err);
-          triggerToast("Errore eliminazione Supabase", "error");
+          triggerToast("Errore eliminazione Supabase. Eliminazione offline...", "warning");
+          saveDeleteOffline('immobile', 'immobili', id);
         }
       } else {
-        setImmobili(immobili.filter(item => item.id !== id));
-        triggerToast("Immobile rimosso localmente", "info");
-        if (viewingImmobile && viewingImmobile.id === id) {
-          handleCloseImmobileDetail();
-        }
+        saveDeleteOffline('immobile', 'immobili', id);
       }
     }
   };
@@ -1506,7 +1861,9 @@ export default function App() {
       immobili_gestiti: selectedGestiti
     };
 
-    if (isRealSupabase) {
+    const isActuallyOffline = isOffline || !navigator.onLine;
+
+    if (isRealSupabase && !isActuallyOffline) {
       try {
         if (id) {
           const { data, error } = await supabase
@@ -1611,57 +1968,11 @@ export default function App() {
         }
       } catch (err) {
         console.error(err);
-        triggerToast("Errore salvataggio contatto", "error");
+        triggerToast("Errore salvataggio contatto. Salvataggio offline...", "warning");
+        saveContattoOffline(id, fields);
       }
     } else {
-      const finalId = id || Date.now();
-      const localFields = { id: finalId, ...fields };
-      if (id) {
-        setContatti(contatti.map(item => item.id === id ? localFields : item));
-        triggerToast("Contatto aggiornato localmente");
-        if (viewingContatto && viewingContatto.id === id) {
-          setViewingContatto(localFields);
-        }
-
-        // Aggiorna lo stato locale degli immobili
-        setImmobili(prevImmobili => prevImmobili.map(imm => {
-          let updatedImm = { ...imm };
-          if (selectedPosseduti.includes(Number(imm.id))) {
-            updatedImm.proprietario_id = id;
-          } else if (imm.proprietario_id === id) {
-            updatedImm.proprietario_id = null;
-          }
-          if (selectedGestiti.includes(Number(imm.id))) {
-            updatedImm.agente_id = id;
-          } else if (imm.agente_id === id) {
-            updatedImm.agente_id = null;
-          }
-          return updatedImm;
-        }));
-      } else {
-        setContatti([...contatti, localFields]);
-        triggerToast("Contatto aggiunto localmente");
-
-        // Aggiorna lo stato locale degli immobili
-        setImmobili(prevImmobili => prevImmobili.map(imm => {
-          let updatedImm = { ...imm };
-          if (selectedPosseduti.includes(Number(imm.id))) {
-            updatedImm.proprietario_id = finalId;
-          }
-          if (selectedGestiti.includes(Number(imm.id))) {
-            updatedImm.agente_id = finalId;
-          }
-          return updatedImm;
-        }));
-      }
-      if (addingContactForVisit) {
-        if (addingContactForVisit === 'cliente') {
-          setSelectedCalendarClientId(finalId);
-        } else if (addingContactForVisit === 'partecipanti') {
-          setSelectedCalendarParticipantIds(prev => [...prev, finalId]);
-        }
-        setAddingContactForVisit(null);
-      }
+      saveContattoOffline(id, fields);
     }
     setIsContattoModalOpen(false);
     setCurrentContatto(null);
@@ -1692,7 +2003,8 @@ export default function App() {
 
   const handleDeleteContatto = async (id) => {
     if (window.confirm("Rimuovere definitivamente questo contatto dalle anagrafiche?")) {
-      if (isRealSupabase) {
+      const isActuallyOffline = isOffline || !navigator.onLine;
+      if (isRealSupabase && !isActuallyOffline) {
         try {
           const { error } = await supabase
             .from('contatti')
@@ -1714,22 +2026,11 @@ export default function App() {
           }
         } catch (err) {
           console.error(err);
-          triggerToast("Errore eliminazione contatto", "error");
+          triggerToast("Errore eliminazione contatto. Eliminazione offline...", "warning");
+          saveDeleteOffline('contatto', 'contatti', id);
         }
       } else {
-        setContatti(contatti.filter(item => item.id !== id));
-        // Reset delle associazioni locali
-        setImmobili(prevImmobili => prevImmobili.map(imm => {
-          let updated = { ...imm };
-          if (imm.proprietario_id === id) updated.proprietario_id = null;
-          if (imm.agente_id === id) updated.agente_id = null;
-          return updated;
-        }));
-        triggerToast("Contatto eliminato localmente", "info");
-        if (viewingContatto && viewingContatto.id === id) {
-          setIsContactDetailModalOpen(false);
-          setViewingContatto(null);
-        }
+        saveDeleteOffline('contatto', 'contatti', id);
       }
     }
   };
@@ -1787,7 +2088,9 @@ export default function App() {
       tutto_giorno: formData.get('tutto_giorno') === 'on'
     };
 
-    if (isRealSupabase) {
+    const isActuallyOffline = isOffline || !navigator.onLine;
+
+    if (isRealSupabase && !isActuallyOffline) {
       try {
         if (id) {
           const { data, error } = await supabase
@@ -1809,18 +2112,11 @@ export default function App() {
         }
       } catch (err) {
         console.error(err);
-        triggerToast("Errore salvataggio visita", "error");
+        triggerToast("Errore salvataggio visita. Salvataggio offline...", "warning");
+        saveVisitaOffline(id, fields);
       }
     } else {
-      const finalId = id || Date.now();
-      const localFields = { id: finalId, ...fields };
-      if (id) {
-        setVisite(visite.map(item => item.id === id ? localFields : item));
-        triggerToast("Appuntamento aggiornato localmente");
-      } else {
-        setVisite([...visite, localFields]);
-        triggerToast("Nuovo evento aggiunto localmente");
-      }
+      saveVisitaOffline(id, fields);
     }
     setIsVisitaModalOpen(false);
     setCurrentVisita(null);
@@ -1874,7 +2170,8 @@ export default function App() {
       return;
     }
     if (window.confirm("Annullare questo appuntamento a calendario?")) {
-      if (isRealSupabase) {
+      const isActuallyOffline = isOffline || !navigator.onLine;
+      if (isRealSupabase && !isActuallyOffline) {
         try {
           const { error } = await supabase
             .from('visite')
@@ -1885,11 +2182,11 @@ export default function App() {
           triggerToast("Visita rimossa dal database");
         } catch (err) {
           console.error(err);
-          triggerToast("Errore eliminazione visita", "error");
+          triggerToast("Errore eliminazione visita. Eliminazione offline...", "warning");
+          saveDeleteOffline('visita', 'visite', id);
         }
       } else {
-        setVisite(visite.filter(item => item.id !== id));
-        triggerToast("Visita rimossa localmente", "info");
+        saveDeleteOffline('visita', 'visite', id);
       }
     }
   };
@@ -2190,9 +2487,8 @@ export default function App() {
               <h1 className="text-sm font-bold tracking-tight text-[#1D1D1F]">HomeLab CRM</h1>
             </div>
             
-            {/* Clickable Avatar to open settings */}
             <div 
-              onClick={() => { setIsUserSettingsModalOpen(true); setTempProfileFotoUrl(null); }}
+              onClick={() => { setIsUserSettingsModalOpen(true); setTempProfileFotoUrl(null); setIsProfileEditing(false); }}
               className="w-7 h-7 rounded-full bg-gradient-to-tr from-indigo-500 to-pink-500 text-white flex items-center justify-center font-bold text-[10px] cursor-pointer hover:scale-105 transition-transform"
             >
               {profile?.foto && profile.foto.trim() !== '' ? (
@@ -2217,7 +2513,36 @@ export default function App() {
                 </div>
               </div>
 
-              {isCRMLoading && (
+              {isOffline && (
+                <div className="flex flex-col space-y-1 mb-6 px-3">
+                  <div className="flex items-center space-x-2 py-1.5 bg-amber-500/10 rounded-xl border border-amber-500/15 text-amber-600 text-[11px] font-semibold w-fit px-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                    <span>Sei Offline</span>
+                  </div>
+                  {offlineQueue.length > 0 && (
+                    <span className="text-[10px] text-slate-500 font-medium">
+                      {offlineQueue.length} modifiche in attesa
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {!isOffline && offlineQueue.length > 0 && (
+                <div className="flex flex-col space-y-2 mb-6 px-3">
+                  <button
+                    onClick={() => syncOfflineQueue()}
+                    disabled={loading}
+                    className="flex items-center justify-center space-x-2 w-full py-2 bg-[#0071E3] hover:bg-[#0077ED] active:bg-[#0062C2] text-white text-xs font-semibold rounded-xl shadow-sm transition-all"
+                  >
+                    <svg className={`h-3 w-3 text-white ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24">
+                      <path fill="currentColor" d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm-6 8c0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3c-3.31 0-6-2.69-6-6z" />
+                    </svg>
+                    <span>Sincronizza ({offlineQueue.length})</span>
+                  </button>
+                </div>
+              )}
+
+              {isCRMLoading && !isOffline && (
                 <div className="flex items-center space-x-2 px-3 py-1.5 mb-6 bg-[#0071E3]/5 rounded-xl border border-[#0071E3]/15 text-[#0071E3] animate-pulse text-[11px] font-semibold w-fit">
                   <svg className="animate-spin h-3.5 w-3.5 text-[#0071E3]" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -2310,7 +2635,7 @@ export default function App() {
 
                {/* Profile card */}
                <div
-                 onClick={() => { setIsUserSettingsModalOpen(true); setTempProfileFotoUrl(null); }}
+                 onClick={() => { setIsUserSettingsModalOpen(true); setTempProfileFotoUrl(null); setIsProfileEditing(false); }}
                  className="bg-white/80 hover:bg-white p-3 rounded-2xl border border-[#E5E5EA] shadow-sm flex items-center space-x-3 cursor-pointer hover:scale-[1.01] transition-all"
                  title="Impostazioni Profilo"
                >
@@ -2351,7 +2676,12 @@ export default function App() {
                     <span className="text-xs font-semibold uppercase tracking-wider text-[#86868B]">Panoramica Globale</span>
                     <div className="flex items-center gap-3">
                       <h2 className="text-3xl font-bold tracking-tight text-[#1D1D1F]">Bentornato in HomeLab Real Estate</h2>
-                      {isCRMLoading && (
+                      {isOffline ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                          Offline
+                        </span>
+                      ) : isCRMLoading && (
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#0071E3]/10 text-[#0071E3] animate-pulse">
                           <svg className="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -2369,61 +2699,129 @@ export default function App() {
                 </div>
 
                 {/* macOS Widget Style Statistics cards */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                  <div className="glass-panel p-5 rounded-3xl flex flex-col justify-between h-36 hover:scale-[1.02] hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300">
-                    <span className="text-xs font-semibold text-[#86868B] uppercase tracking-wider">Immobili Attivi</span>
-                    <div className="my-2" key={isCRMLoading ? 'loading' : 'ready'}>
-                      {isCRMLoading ? (
-                        <div className="h-9 w-16 bg-gradient-to-r from-[#F5F5F7] via-[#EBEBEB] to-[#F5F5F7] rounded-lg animate-pulse" />
-                      ) : (
-                        <span className="text-4xl font-bold tracking-tight text-[#1D1D1F]">{immobili.length}</span>
-                      )}
+                <div className="space-y-6">
+                  {/* Prima riga: Immobili Attivi e Portafoglio */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Immobili in Vendita */}
+                    <div className="glass-panel p-6 rounded-3xl flex flex-col justify-between h-36 hover:scale-[1.01] hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300">
+                      <div className="flex justify-between items-start">
+                        <span className="text-xs font-semibold text-[#86868B] uppercase tracking-wider">Immobili in Vendita</span>
+                        <span className="p-1.5 rounded-lg bg-blue-50 text-blue-600 text-xs">🏷️ In Vendita</span>
+                      </div>
+                      <div className="my-1" key={isCRMLoading ? 'loading' : 'ready'}>
+                        {isCRMLoading ? (
+                          <div className="h-9 w-16 bg-gradient-to-r from-[#F5F5F7] via-[#EBEBEB] to-[#F5F5F7] rounded-lg animate-pulse" />
+                        ) : (
+                          <span className="text-4xl font-bold tracking-tight text-[#1D1D1F]">
+                            {immobili.filter(imm => imm.immobile_in && imm.immobile_in.includes('Vendita') && imm.stato !== 'Venduto').length}
+                          </span>
+                        )}
+                      </div>
+                      <button onClick={() => { setActiveTab('immobili'); setFilterPropertyType('Vendita'); setFilterStato('Disponibile'); }} className="text-xs text-[#0071E3] hover:underline flex items-center self-start">
+                        Vedi archivio →
+                      </button>
                     </div>
-                    <button onClick={() => setActiveTab('immobili')} className="text-xs text-[#0071E3] hover:underline flex items-center">
-                      Vedi archivio →
-                    </button>
+
+                    {/* Immobili in Affitto */}
+                    <div className="glass-panel p-6 rounded-3xl flex flex-col justify-between h-36 hover:scale-[1.01] hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300">
+                      <div className="flex justify-between items-start">
+                        <span className="text-xs font-semibold text-[#86868B] uppercase tracking-wider">Immobili in Affitto</span>
+                        <span className="p-1.5 rounded-lg bg-green-50 text-green-600 text-xs">🔑 In Affitto</span>
+                      </div>
+                      <div className="my-1" key={isCRMLoading ? 'loading' : 'ready'}>
+                        {isCRMLoading ? (
+                          <div className="h-9 w-16 bg-gradient-to-r from-[#F5F5F7] via-[#EBEBEB] to-[#F5F5F7] rounded-lg animate-pulse" />
+                        ) : (
+                          <span className="text-4xl font-bold tracking-tight text-[#1D1D1F]">
+                            {immobili.filter(imm => imm.immobile_in && imm.immobile_in.includes('Affitto') && imm.stato !== 'Affittato').length}
+                          </span>
+                        )}
+                      </div>
+                      <button onClick={() => { setActiveTab('immobili'); setFilterPropertyType('Affitto'); setFilterStato('Disponibile'); }} className="text-xs text-[#0071E3] hover:underline flex items-center self-start">
+                        Vedi archivio →
+                      </button>
+                    </div>
+
+                    {/* Portafoglio Stimato (Somma del valore degli immobili in Vendita) */}
+                    <div className="glass-panel p-6 rounded-3xl flex flex-col justify-between h-36 hover:scale-[1.01] hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300 border border-blue-500/10 bg-gradient-to-br from-white to-blue-50/20">
+                      <div className="flex justify-between items-start">
+                        <span className="text-xs font-semibold text-blue-800 uppercase tracking-wider">Portafoglio Stimato</span>
+                        <span className="p-1.5 rounded-lg bg-[#0071E3]/10 text-[#0071E3] text-xs font-semibold">💰 Valore</span>
+                      </div>
+                      <div className="my-1" key={isCRMLoading ? 'loading' : 'ready'}>
+                        {isCRMLoading ? (
+                          <div className="h-9 w-28 bg-gradient-to-r from-[#F5F5F7] via-[#EBEBEB] to-[#F5F5F7] rounded-lg animate-pulse" />
+                        ) : (
+                          <span className="inline-block text-2xl font-bold text-[#0071E3] whitespace-nowrap overflow-visible">
+                            CHF {(immobili.filter(imm => imm.immobile_in && imm.immobile_in.includes('Vendita') && imm.stato !== 'Venduto').reduce((acc, curr) => acc + (Number(curr.prezzo_di_vendita) || 0), 0) / 1000000).toFixed(2)}M
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[10px] text-[#86868B]">Somma del valore di vendita attivo</span>
+                    </div>
                   </div>
 
-                  <div className="glass-panel p-5 rounded-3xl flex flex-col justify-between h-36 hover:scale-[1.02] hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300">
-                    <span className="text-xs font-semibold text-[#86868B] uppercase tracking-wider">Portafoglio Stimato</span>
-                    <div className="my-2" key={isCRMLoading ? 'loading' : 'ready'}>
-                      {isCRMLoading ? (
-                        <div className="h-9 w-28 bg-gradient-to-r from-[#F5F5F7] via-[#EBEBEB] to-[#F5F5F7] rounded-lg animate-pulse" />
-                      ) : (
-                        <span className="inline-block text-xl sm:text-2xl font-bold text-[#1D1D1F] whitespace-nowrap overflow-visible">
-                          CHF {(immobili.reduce((acc, curr) => acc + (Number(curr.prezzo_di_vendita) || 0), 0) / 1000000).toFixed(2)}M
-                        </span>
-                      )}
+                  {/* Seconda riga: Pipeline e Chiusure */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Immobili in Trattativa */}
+                    <div className="glass-panel p-6 rounded-3xl flex flex-col justify-between h-36 hover:scale-[1.01] hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300">
+                      <div className="flex justify-between items-start">
+                        <span className="text-xs font-semibold text-[#86868B] uppercase tracking-wider">Immobili in Trattativa</span>
+                        <span className="p-1.5 rounded-lg bg-amber-50 text-amber-600 text-xs">🤝 Trattativa</span>
+                      </div>
+                      <div className="my-1" key={isCRMLoading ? 'loading' : 'ready'}>
+                        {isCRMLoading ? (
+                          <div className="h-9 w-16 bg-gradient-to-r from-[#F5F5F7] via-[#EBEBEB] to-[#F5F5F7] rounded-lg animate-pulse" />
+                        ) : (
+                          <span className="text-4xl font-bold tracking-tight text-[#1D1D1F]">
+                            {immobili.filter(imm => imm.stato === 'In Trattativa').length}
+                          </span>
+                        )}
+                      </div>
+                      <button onClick={() => { setActiveTab('immobili'); setFilterPropertyType('Tutti'); setFilterStato('In Trattativa'); }} className="text-xs text-[#0071E3] hover:underline flex items-center self-start">
+                        Vedi trattative →
+                      </button>
                     </div>
-                    <span className="text-xs text-[#86868B]">Valore degli immobili in vendita</span>
-                  </div>
 
-                  <div className="glass-panel p-5 rounded-3xl flex flex-col justify-between h-36 hover:scale-[1.02] hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300">
-                    <span className="text-xs font-semibold text-[#86868B] uppercase tracking-wider">Contatti in CRM</span>
-                    <div className="my-2" key={isCRMLoading ? 'loading' : 'ready'}>
-                      {isCRMLoading ? (
-                        <div className="h-9 w-16 bg-gradient-to-r from-[#F5F5F7] via-[#EBEBEB] to-[#F5F5F7] rounded-lg animate-pulse" />
-                      ) : (
-                        <span className="text-4xl font-bold tracking-tight text-[#1D1D1F]">{contatti.length}</span>
-                      )}
+                    {/* Immobili Venduti */}
+                    <div className="glass-panel p-6 rounded-3xl flex flex-col justify-between h-36 hover:scale-[1.01] hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300">
+                      <div className="flex justify-between items-start">
+                        <span className="text-xs font-semibold text-[#86868B] uppercase tracking-wider">Immobili Venduti</span>
+                        <span className="p-1.5 rounded-lg bg-indigo-50 text-indigo-600 text-xs">✨ Venduti</span>
+                      </div>
+                      <div className="my-1" key={isCRMLoading ? 'loading' : 'ready'}>
+                        {isCRMLoading ? (
+                          <div className="h-9 w-16 bg-gradient-to-r from-[#F5F5F7] via-[#EBEBEB] to-[#F5F5F7] rounded-lg animate-pulse" />
+                        ) : (
+                          <span className="text-4xl font-bold tracking-tight text-[#1D1D1F]">
+                            {immobili.filter(imm => imm.stato === 'Venduto').length}
+                          </span>
+                        )}
+                      </div>
+                      <button onClick={() => { setActiveTab('immobili'); setFilterPropertyType('Vendita'); setFilterStato('Venduto'); }} className="text-xs text-[#0071E3] hover:underline flex items-center self-start">
+                        Vedi venduti →
+                      </button>
                     </div>
-                    <button onClick={() => setActiveTab('contatti')} className="text-xs text-[#0071E3] hover:underline flex items-center">
-                      Gestisci contatti →
-                    </button>
-                  </div>
 
-                  <div className="glass-panel p-5 rounded-3xl flex flex-col justify-between h-36 hover:scale-[1.02] hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300">
-                    <span className="text-xs font-semibold text-[#86868B] uppercase tracking-wider">Eventi a Calendario</span>
-                    <div className="my-2" key={isCRMLoading ? 'loading' : 'ready'}>
-                      {isCRMLoading ? (
-                        <div className="h-9 w-16 bg-gradient-to-r from-[#F5F5F7] via-[#EBEBEB] to-[#F5F5F7] rounded-lg animate-pulse" />
-                      ) : (
-                        <span className="text-4xl font-bold tracking-tight text-[#1D1D1F]">{visite.length}</span>
-                      )}
+                    {/* Immobili Affittati */}
+                    <div className="glass-panel p-6 rounded-3xl flex flex-col justify-between h-36 hover:scale-[1.01] hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300">
+                      <div className="flex justify-between items-start">
+                        <span className="text-xs font-semibold text-[#86868B] uppercase tracking-wider">Immobili Affittati</span>
+                        <span className="p-1.5 rounded-lg bg-teal-50 text-teal-600 text-xs">🏡 Affittati</span>
+                      </div>
+                      <div className="my-1" key={isCRMLoading ? 'loading' : 'ready'}>
+                        {isCRMLoading ? (
+                          <div className="h-9 w-16 bg-gradient-to-r from-[#F5F5F7] via-[#EBEBEB] to-[#F5F5F7] rounded-lg animate-pulse" />
+                        ) : (
+                          <span className="text-4xl font-bold tracking-tight text-[#1D1D1F]">
+                            {immobili.filter(imm => imm.stato === 'Affittato').length}
+                          </span>
+                        )}
+                      </div>
+                      <button onClick={() => { setActiveTab('immobili'); setFilterPropertyType('Affitto'); setFilterStato('Affittato'); }} className="text-xs text-[#0071E3] hover:underline flex items-center self-start">
+                        Vedi affittati →
+                      </button>
                     </div>
-                    <button onClick={() => setActiveTab('visite')} className="text-xs text-[#0071E3] hover:underline flex items-center">
-                      Apri calendario →
-                    </button>
                   </div>
                 </div>
 
@@ -2633,7 +3031,12 @@ export default function App() {
                     <span className="text-xs font-semibold uppercase tracking-wider text-[#86868B]">Portafoglio</span>
                     <div className="flex items-center gap-3">
                       <h2 className="text-3xl font-bold tracking-tight text-[#1D1D1F]">Immobili</h2>
-                      {isCRMLoading && (
+                      {isOffline ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                          Offline
+                        </span>
+                      ) : isCRMLoading && (
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#0071E3]/10 text-[#0071E3] animate-pulse">
                           <svg className="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -2644,16 +3047,16 @@ export default function App() {
                       )}
                     </div>
                   </div>
-                  <button
-                    onClick={() => { setIsImmobileModalOpen(true); setCurrentImmobile(null); setActiveFormTab('principale'); }}
-                    className="bg-[#0071E3] hover:bg-[#0077ED] text-white px-4 py-2 rounded-full text-sm font-medium transition-all shadow-sm flex items-center self-start"
-                  >
-                    <IconPlus /> Nuovo Immobile
-                  </button>
                 </div>
 
+
+
                 {/* Filters Bar */}
-                <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white p-4 rounded-2xl border border-[#E5E5EA] shadow-sm">
+                <div className={`flex flex-col sm:flex-row gap-4 items-center justify-between bg-white p-4 rounded-2xl border transition-all duration-300 shadow-sm ${
+                  hasActiveFilters 
+                    ? 'border-blue-500/30 shadow-md shadow-blue-500/5 bg-gradient-to-r from-white via-blue-50/10 to-white' 
+                    : 'border-[#E5E5EA]'
+                }`}>
                   {/* Search and Advanced Filters Button */}
                   <div className="flex gap-2 w-full sm:w-auto flex-1 max-w-lg">
                     <div className="relative flex-1">
@@ -2672,49 +3075,49 @@ export default function App() {
                       onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
                       className={`px-3 py-2 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all shrink-0 ${
                         showAdvancedFilters
-                          ? 'bg-[#0071E3] text-white border-transparent'
-                          : 'bg-[#F5F5F7] hover:bg-[#E5E5EA]/50 border-transparent text-[#1D1D1F]'
+                          ? 'bg-[#0071E3] text-white border-transparent shadow-sm'
+                          : hasActiveFilters
+                            ? 'bg-blue-50 hover:bg-blue-100/70 border-blue-200 text-[#0071E3] font-bold'
+                            : 'bg-[#F5F5F7] hover:bg-[#E5E5EA]/50 border-transparent text-[#1D1D1F]'
                       }`}
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
                       </svg>
                       <span>Filtri</span>
-                      {(filterTipo !== 'Tutti' || filterStato !== 'Tutti' || filterComune !== 'Tutti' || filterPrezzoMin || filterPrezzoMax || filterLocaliMin !== 'Tutti' || filterSuperficieMin || filterVendibileStranieri !== 'Tutti' || filterResidenza !== 'Tutti' || filterMandatoFirmato !== 'Tutti' || filterAgenteId !== 'Tutti' || filterGarageMin || filterPostiAutoMin || filterBagniMin !== 'Tutti') && (
-                        <span className={`w-2 h-2 rounded-full ${showAdvancedFilters ? 'bg-white' : 'bg-[#0071E3]'}`}></span>
+                      {hasActiveFilters && (
+                        <span className={`w-2 h-2 rounded-full ${showAdvancedFilters ? 'bg-white' : 'bg-[#0071E3] animate-pulse'}`}></span>
                       )}
                     </button>
-
-                    <select
-                      value={sortProperty}
-                      onChange={(e) => setSortProperty(e.target.value)}
-                      className="px-3 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs font-semibold focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] cursor-pointer shrink-0 transition-all"
-                    >
-                      <option value="creazione-desc">Ultimo creato (Default)</option>
-                      <option value="prezzo-asc">Prezzo Crescente</option>
-                      <option value="prezzo-desc">Prezzo decrescente</option>
-                      <option value="superficie-asc">Superficie Crescente</option>
-                      <option value="superficie-desc">Superficie Decrescente</option>
-                      <option value="creazione-asc">Creazione Crescente</option>
-                      <option value="modifica-asc">Modifica Crescente</option>
-                      <option value="modifica-desc">Modifica Decrescente</option>
-                    </select>
                   </div>
 
-                  {/* Segmented filter */}
-                  <div className="flex bg-[#F5F5F7] p-1 rounded-xl w-full sm:w-auto overflow-x-auto">
-                    {['Tutti', 'Vendita', 'Affitto'].map((type) => (
+                  {/* Segmented filter and Reset button */}
+                  <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+                    {hasActiveFilters && (
                       <button
-                        key={type}
-                        onClick={() => setFilterPropertyType(type)}
-                        className={`flex-1 sm:flex-initial px-4 py-1.5 rounded-lg text-xs font-semibold tracking-tight transition-all ${filterPropertyType === type
-                            ? 'bg-white text-[#1D1D1F] shadow-sm'
-                            : 'text-[#86868B] hover:text-[#1D1D1F]'
-                          }`}
+                        onClick={resetAllFilters}
+                        className="text-xs font-semibold text-red-500 hover:text-red-600 transition-colors px-2 py-1 flex items-center gap-1 hover:underline cursor-pointer shrink-0"
                       >
-                        {type}
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        <span>Azzera filtri</span>
                       </button>
-                    ))}
+                    )}
+                    <div className="flex bg-[#F5F5F7] p-1 rounded-xl overflow-x-auto shrink-0">
+                      {['Tutti', 'Vendita', 'Affitto'].map((type) => (
+                        <button
+                          key={type}
+                          onClick={() => setFilterPropertyType(type)}
+                          className={`px-4 py-1.5 rounded-lg text-xs font-semibold tracking-tight transition-all ${filterPropertyType === type
+                              ? 'bg-white text-[#1D1D1F] shadow-sm'
+                              : 'text-[#86868B] hover:text-[#1D1D1F]'
+                            }`}
+                        >
+                          {type}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
@@ -2750,9 +3153,10 @@ export default function App() {
                           className="w-full px-3 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] transition-all"
                         >
                           <option value="Tutti">Tutti gli stati</option>
-                          <option value="Disponibile">Disponibile</option>
+                          <option value="Disponibile">Disponibile (incl. in Trattativa)</option>
                           <option value="In Trattativa">In Trattativa</option>
                           <option value="Venduto">Venduto</option>
+                          <option value="Affittato">Affittato</option>
                         </select>
                       </div>
 
@@ -2948,22 +3352,7 @@ export default function App() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => {
-                            setFilterTipo('Tutti');
-                            setFilterStato('Tutti');
-                            setFilterComune('Tutti');
-                            setFilterPrezzoMin('');
-                            setFilterPrezzoMax('');
-                            setFilterLocaliMin('Tutti');
-                            setFilterSuperficieMin('');
-                            setFilterVendibileStranieri('Tutti');
-                            setFilterResidenza('Tutti');
-                            setFilterMandatoFirmato('Tutti');
-                            setFilterAgenteId('Tutti');
-                            setFilterGarageMin('');
-                            setFilterPostiAutoMin('');
-                            setFilterBagniMin('Tutti');
-                          }}
+                          onClick={resetAllFilters}
                           className="flex-1 py-2 bg-white hover:bg-gray-100 border border-[#D2D2D7] text-[#1D1D1F] text-xs font-semibold rounded-xl transition-all text-center flex items-center justify-center"
                         >
                           Reset Filtri
@@ -2972,6 +3361,78 @@ export default function App() {
                     </div>
                   </div>
                 )}
+
+                {/* Properties Toolbar (Counters & Sorting) */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center text-xs text-[#86868B] gap-2 pt-2 px-1">
+                  <div>
+                    {isCRMLoading ? (
+                      <span>Calcolo immobili in corso...</span>
+                    ) : (
+                      <span>
+                        Trovati <span className="font-bold text-[#1D1D1F]">{
+                          immobili.filter(item => {
+                            const propName = (item.nome_immobile || '').toLowerCase();
+                            const propComune = (item.comune || '').toLowerCase();
+                            const matchSearch = propName.includes(searchProperty.toLowerCase()) || propComune.includes(searchProperty.toLowerCase());
+                            
+                            const matchType = filterPropertyType === 'Tutti' || (item.immobile_in && item.immobile_in.includes(filterPropertyType));
+                            
+                            const matchTipo = filterTipo === 'Tutti' || (item.tipo && item.tipo.some(t => t.toLowerCase() === filterTipo.toLowerCase()));
+                            
+                            const matchStato = filterStato === 'Tutti' ||
+                              (filterStato === 'Disponibile' && (item.stato === 'Disponibile' || item.stato === 'In Trattativa')) ||
+                              (item.stato && item.stato.toLowerCase() === filterStato.toLowerCase());
+                            
+                            const matchComune = filterComune === 'Tutti' || (item.comune && item.comune.toLowerCase() === filterComune.toLowerCase());
+                            
+                            const matchVendibileStranieri = filterVendibileStranieri === 'Tutti' || (item.vendibile_a_stranieri && item.vendibile_a_stranieri.toLowerCase() === filterVendibileStranieri.toLowerCase());
+                            
+                            const matchResidenza = filterResidenza === 'Tutti' || (item.tipo_di_residenza && item.tipo_di_residenza.some(r => r.toLowerCase() === filterResidenza.toLowerCase()));
+                            
+                            const matchMandatoFirmato = filterMandatoFirmato === 'Tutti' || (item.mandato_firmato && item.mandato_firmato.toLowerCase() === filterMandatoFirmato.toLowerCase());
+                            
+                            const matchAgenteId = filterAgenteId === 'Tutti' || String(item.agente_id) === String(filterAgenteId);
+                            
+                            const isRent = item.immobile_in && item.immobile_in.includes('Affitto');
+                            const price = isRent ? Number(item.prezzo_di_affitto || 0) : Number(item.prezzo_di_vendita || 0);
+                            const matchPrezzoMin = !filterPrezzoMin || price >= Number(filterPrezzoMin);
+                            const matchPrezzoMax = !filterPrezzoMax || price <= Number(filterPrezzoMax);
+                            
+                            const matchLocali = filterLocaliMin === 'Tutti' || Number(item.numero_di_locali || 0) >= Number(filterLocaliMin);
+                            const matchBagni = filterBagniMin === 'Tutti' || Number(item.numero_bagni || 0) >= Number(filterBagniMin);
+                            
+                            const matchSuperficie = !filterSuperficieMin || Number(item.superficie_abitabile || item.superficie_sul || 0) >= Number(filterSuperficieMin);
+                            
+                            const matchGarage = !filterGarageMin || Number(item.garage || 0) >= Number(filterGarageMin);
+                            const matchPostiAuto = !filterPostiAutoMin || Number(item.parcheggio || 0) >= Number(filterPostiAutoMin);
+                            
+                            return matchSearch && matchType && matchTipo && matchStato && matchComune && 
+                                   matchVendibileStranieri && matchResidenza && matchMandatoFirmato && matchAgenteId &&
+                                   matchPrezzoMin && matchPrezzoMax && matchLocali && matchBagni && matchSuperficie &&
+                                   matchGarage && matchPostiAuto;
+                          }).length
+                        }</span> immobili
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto justify-between sm:justify-end">
+                    <span className="font-semibold text-[#86868B]">Ordina per:</span>
+                    <select
+                      value={sortProperty}
+                      onChange={(e) => setSortProperty(e.target.value)}
+                      className="px-3 py-1.5 bg-[#F5F5F7] border border-transparent rounded-xl text-xs font-semibold focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] cursor-pointer transition-all"
+                    >
+                      <option value="creazione-desc">Ultimo creato (Default)</option>
+                      <option value="prezzo-asc">Prezzo Crescente</option>
+                      <option value="prezzo-desc">Prezzo decrescente</option>
+                      <option value="superficie-asc">Superficie Crescente</option>
+                      <option value="superficie-desc">Superficie Decrescente</option>
+                      <option value="creazione-asc">Creazione Crescente</option>
+                      <option value="modifica-asc">Modifica Crescente</option>
+                      <option value="modifica-desc">Modifica Decrescente</option>
+                    </select>
+                  </div>
+                </div>
 
                 {/* Properties Grid */}
                 {(isCRMLoading || (isRealSupabase && immobili.length === 0)) ? (
@@ -3010,7 +3471,9 @@ export default function App() {
                         
                         const matchTipo = filterTipo === 'Tutti' || (item.tipo && item.tipo.some(t => t.toLowerCase() === filterTipo.toLowerCase()));
                         
-                        const matchStato = filterStato === 'Tutti' || (item.stato && item.stato.toLowerCase() === filterStato.toLowerCase());
+                        const matchStato = filterStato === 'Tutti' ||
+                          (filterStato === 'Disponibile' && (item.stato === 'Disponibile' || item.stato === 'In Trattativa')) ||
+                          (item.stato && item.stato.toLowerCase() === filterStato.toLowerCase());
                         
                         const matchComune = filterComune === 'Tutti' || (item.comune && item.comune.toLowerCase() === filterComune.toLowerCase());
                         
@@ -3230,7 +3693,12 @@ export default function App() {
                     <span className="text-xs font-semibold uppercase tracking-wider text-[#86868B]">Anagrafiche</span>
                     <div className="flex items-center gap-3">
                       <h2 className="text-3xl font-bold tracking-tight text-[#1D1D1F]">Contatti</h2>
-                      {isCRMLoading && (
+                      {isOffline ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                          Offline
+                        </span>
+                      ) : isCRMLoading && (
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#0071E3]/10 text-[#0071E3] animate-pulse">
                           <svg className="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -3241,12 +3709,7 @@ export default function App() {
                       )}
                     </div>
                   </div>
-                  <button
-                    onClick={handleCreateContatto}
-                    className="bg-[#0071E3] hover:bg-[#0077ED] text-white px-4 py-2 rounded-full text-sm font-medium transition-all shadow-sm flex items-center self-start"
-                  >
-                    <IconPlus /> Nuovo Contatto
-                  </button>
+
                 </div>
 
                 {/* Filters */}
@@ -3759,7 +4222,12 @@ export default function App() {
                       <span className="text-xs font-semibold uppercase tracking-wider text-[#86868B]">Pannello CRM</span>
                       <div className="flex items-center gap-3">
                         <h2 className="text-3xl font-bold tracking-tight text-[#1D1D1F]">Calendario Attività</h2>
-                        {isCRMLoading && (
+                        {isOffline ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                            Offline
+                          </span>
+                        ) : isCRMLoading && (
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#0071E3]/10 text-[#0071E3] animate-pulse">
                             Aggiornamento...
                           </span>
@@ -3767,12 +4235,7 @@ export default function App() {
                       </div>
                     </div>
 
-                    <button
-                      onClick={handleCreateVisita}
-                      className="bg-[#0071E3] hover:bg-[#0077ED] text-white px-4 py-2 rounded-full text-sm font-medium transition-all shadow-sm flex items-center self-start"
-                    >
-                      <IconPlus /> Nuovo Appuntamento
-                    </button>
+
                   </div>
 
                   {/* CRM Stats Widgets */}
@@ -4495,6 +4958,40 @@ export default function App() {
               );
             })()}
 
+            {/* Global FAB (Apple Liquid Style) */}
+            {['immobili', 'contatti', 'visite'].includes(activeTab) && (
+              <div className="fixed bottom-24 right-6 md:bottom-8 md:right-8 z-50 flex items-center justify-center group">
+                {/* Liquid glow aura */}
+                <div className="absolute inset-0 bg-gradient-to-tr from-[#0071E3] to-[#00C7FF] rounded-full blur-xl opacity-40 scale-95 group-hover:scale-125 transition-all duration-700 pointer-events-none animate-pulse" />
+                
+                <button
+                  onClick={() => {
+                    if (activeTab === 'immobili') {
+                      setIsImmobileModalOpen(true);
+                      setCurrentImmobile(null);
+                      setActiveFormTab('principale');
+                    } else if (activeTab === 'contatti') {
+                      handleCreateContatto();
+                    } else if (activeTab === 'visite') {
+                      handleCreateVisita();
+                    }
+                  }}
+                  className="relative w-14 h-14 rounded-full bg-gradient-to-tr from-[#0071E3] via-[#0077ED] to-[#00C7FF] border border-white/20 text-white shadow-[0_10px_35px_rgba(0,113,227,0.35)] hover:shadow-[0_16px_40px_rgba(0,113,227,0.55)] flex items-center justify-center transition-all duration-500 hover:scale-110 active:scale-95 hover:-translate-y-1"
+                  title={
+                    activeTab === 'immobili'
+                      ? "Registra Nuovo Immobile"
+                      : activeTab === 'contatti'
+                      ? "Nuovo Contatto"
+                      : "Nuovo Appuntamento"
+                  }
+                >
+                  <svg className="w-6 h-6 transition-transform group-hover:rotate-90 duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+                  </svg>
+                </button>
+              </div>
+            )}
+
           </main>
 
           {/* ========================================================= */}
@@ -5131,20 +5628,88 @@ export default function App() {
                     <h4 className="text-xs font-bold text-[#86868B] uppercase tracking-wider border-b pb-1">Attività e Visite Relazionate</h4>
                     {visite.filter(v => v.cliente_id === viewingContatto.id || (v.partecipanti || '').toLowerCase().includes((viewingContatto.cognome || '').toLowerCase())).length > 0 ? (
                       <div className="space-y-2">
-                        {visite.filter(v => v.cliente_id === viewingContatto.id || (v.partecipanti || '').toLowerCase().includes((viewingContatto.cognome || '').toLowerCase())).map(v => {
-                          const dateObj = new Date(v.inizio_evento);
+                        {visite.filter(v => v.cliente_id === viewingContatto.id || (v.partecipanti || '').toLowerCase().includes((viewingContatto.cognome || '').toLowerCase())).map(item => {
+                          const startObj = new Date(item.inizio_evento);
+                          const endObj = item.fine_evento ? new Date(item.fine_evento) : null;
+                          const fmtTime = (d) => d.toLocaleTimeString('it-CH', { hour: '2-digit', minute: '2-digit' });
+                          const clienteName = getContactName(item.cliente_id);
+                          const immobileName = getImmobileName(item.immobile_di_riferimento_id);
+                          const partecipantiList = item.partecipanti ? item.partecipanti.split(',').map(p => p.trim()).filter(Boolean) : [];
                           return (
-                            <div key={v.id} className="bg-white p-3.5 rounded-xl border border-[#E5E5EA] flex items-center justify-between">
-                              <div>
-                                <span className="block text-[9px] uppercase font-bold text-[#86868B]">
-                                  {v.tipo_visita} • Esito: {v.esito_e_note}
-                                </span>
-                                <span className="font-bold text-sm">
-                                  {getImmobileName(v.immobile_di_riferimento_id)}
-                                </span>
-                                <p className="text-xs text-[#86868B]">
-                                  Pianificato il: {dateObj.toLocaleDateString('it-CH')} alle {dateObj.toLocaleTimeString('it-CH', { hour: '2-digit', minute: '2-digit' })}
-                                </p>
+                            <div
+                              key={item.id}
+                              onClick={() => {
+                                setIsContactDetailModalOpen(false);
+                                handleViewVisita(item);
+                              }}
+                              className="group bg-white border border-[#E5E5EA] rounded-2xl cursor-pointer hover:border-[#0071E3]/40 hover:shadow-lg transition-all duration-200 overflow-hidden"
+                            >
+                              <div className="flex">
+                                {/* Date column */}
+                                <div className="w-[68px] shrink-0 flex flex-col items-center justify-center bg-[#F5F5F7] border-r border-[#E5E5EA] py-3 gap-0.5">
+                                  <span className="text-[9px] font-bold uppercase text-[#86868B] tracking-wider leading-none">
+                                    {startObj.toLocaleDateString('it-IT', { month: 'short' })}
+                                  </span>
+                                  <span className="text-[24px] font-black text-[#1D1D1F] leading-none">
+                                    {startObj.toLocaleDateString('it-IT', { day: 'numeric' })}
+                                  </span>
+                                  <span className="text-[9px] font-semibold text-[#86868B] capitalize leading-none">
+                                    {startObj.toLocaleDateString('it-IT', { weekday: 'short' })}
+                                  </span>
+                                </div>
+
+                                {/* Main content */}
+                                <div className="flex-1 min-w-0 px-3.5 py-3 flex flex-col gap-2">
+                                  {/* Title + time */}
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div className="min-w-0 flex-1">
+                                      <h5 className="text-[12px] font-extrabold text-[#1D1D1F] leading-snug group-hover:text-[#0071E3] transition-colors truncate">
+                                        {item.nome_evento || item.tipo_visita || '—'}
+                                      </h5>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 shrink-0">
+                                      {item.tutto_giorno ? (
+                                        <span className="shrink-0 inline-flex items-center gap-0.5 bg-[#FFF3E0] text-[#E65100] text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-[#FFB74D]/30 whitespace-nowrap">
+                                          ☀️ Tutto
+                                        </span>
+                                      ) : (
+                                        <span className="shrink-0 inline-flex items-center gap-0.5 bg-[#E8F4FF] text-[#0071E3] text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-[#0071E3]/20 whitespace-nowrap">
+                                          🕐 {fmtTime(startObj)}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* Pills: cliente + partecipanti + immobile */}
+                                  <div className="flex flex-wrap gap-1">
+                                    {/* Cliente */}
+                                    <span className="inline-flex items-center gap-0.5 bg-[#F5F5F7] border border-[#E5E5EA] rounded-full px-2 py-0.5 text-[9px] font-semibold text-[#374151]">
+                                      👤 {clienteName || '—'}
+                                    </span>
+                                    {/* Partecipanti */}
+                                    {partecipantiList.length > 0 ? (
+                                      partecipantiList.map((p, i) => (
+                                        <span key={i} className="inline-flex items-center gap-0.5 bg-[#EFF6FF] border border-[#BFDBFE] rounded-full px-2 py-0.5 text-[9px] font-semibold text-[#1D4ED8]">
+                                          👥 {p}
+                                        </span>
+                                      ))
+                                    ) : null}
+                                    {/* Immobile */}
+                                    {immobileName && (
+                                      <span className="inline-flex items-center gap-0.5 bg-[#F0FDF4] border border-[#BBF7D0] rounded-full px-2 py-0.5 text-[9px] font-semibold text-[#15803D]">
+                                        🏠 {immobileName}
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {/* Note */}
+                                  {item.esito_e_note && (
+                                    <p className="text-[10px] text-[#86868B] leading-relaxed line-clamp-1 border-t border-[#F5F5F7] pt-1.5">
+                                      <span className="font-semibold text-[#6B7280]">Note: </span>
+                                      {item.esito_e_note}
+                                    </p>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           );
@@ -5180,8 +5745,8 @@ export default function App() {
 
           {/* MODALE IMPOSTAZIONI UTENTE (Apple style) */}
           {isUserSettingsModalOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-0 md:p-4">
-              <div className="glass-modal w-full max-w-md rounded-none md:rounded-3xl shadow-2xl overflow-hidden h-full md:h-auto md:max-h-[90vh] flex flex-col text-[#1D1D1F]">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-0 lg:p-4">
+              <div className="glass-modal w-full lg:max-w-md rounded-none lg:rounded-3xl shadow-2xl overflow-hidden h-full lg:h-auto lg:max-h-[90vh] flex flex-col text-[#1D1D1F]">
                 
                 {/* Header */}
                 <div className="px-6 py-4 border-b border-[#E5E5EA] flex justify-between items-center bg-[#F5F5F7]">
@@ -5191,125 +5756,163 @@ export default function App() {
                     </h3>
                     <p className="text-[10px] text-[#86868B]">Gestisci i tuoi dettagli anagrafici e la foto profilo</p>
                   </div>
-                  <button
-                    onClick={() => { setIsUserSettingsModalOpen(false); setTempProfileFotoUrl(null); }}
-                    className="w-6 h-6 bg-white rounded-full border border-[#D2D2D7] flex items-center justify-center font-bold text-xs text-[#86868B] hover:text-[#1D1D1F] transition-all shadow-sm"
-                  >
-                    ✕
-                  </button>
+                  <div className="flex items-center space-x-2">
+                    {!isProfileEditing && (
+                      <button
+                        type="button"
+                        onClick={() => setIsProfileEditing(true)}
+                        className="px-3 py-1 bg-[#0071E3] hover:bg-[#0077ED] text-white text-xs font-semibold rounded-full transition-all shadow-sm"
+                      >
+                        Modifica
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => { setIsUserSettingsModalOpen(false); setTempProfileFotoUrl(null); }}
+                      className="w-6 h-6 bg-white rounded-full border border-[#D2D2D7] flex items-center justify-center font-bold text-xs text-[#86868B] hover:text-[#1D1D1F] transition-all shadow-sm"
+                    >
+                      ✕
+                    </button>
+                  </div>
                 </div>
 
                 {/* Form */}
                 <form onSubmit={handleSaveUserSettings} className="flex-1 flex flex-col overflow-hidden">
                   <div className="flex-1 overflow-y-auto p-6 space-y-6">
                     {/* Photo Section */}
-                  <div className="flex flex-col items-center space-y-3">
-                    <div className="relative group">
-                      {tempProfileFotoUrl || (profile?.foto && profile.foto.trim() !== '') ? (
-                        <img
-                          src={tempProfileFotoUrl || profile.foto}
-                          alt="Avatar"
-                          className="w-20 h-20 rounded-full object-cover border border-white/50 shadow-md"
-                        />
-                      ) : (
-                        <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-indigo-500 to-pink-500 text-white flex items-center justify-center font-bold text-2xl shadow-md border border-white/50">
-                          {profile?.nome?.[0] || 'U'}{profile?.cognome?.[0] || ''}
-                        </div>
-                      )}
-                      <label className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center text-white text-[10px] font-semibold opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                        Carica Foto
-                        <input
-                          type="file"
-                          name="foto_file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(e) => {
-                            if (e.target.files && e.target.files[0]) {
-                              const file = e.target.files[0];
-                              setTempProfileFotoUrl(URL.createObjectURL(file));
-                              triggerToast("Nuova immagine selezionata", "success");
-                            }
+                    <div className="flex flex-col items-center space-y-3">
+                      <div className="relative group">
+                        {tempProfileFotoUrl || (profile?.foto && profile.foto.trim() !== '') ? (
+                          <img
+                            src={tempProfileFotoUrl || profile.foto}
+                            alt="Avatar"
+                            className="w-20 h-20 rounded-full object-cover border border-white/50 shadow-md"
+                          />
+                        ) : (
+                          <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-indigo-500 to-pink-500 text-white flex items-center justify-center font-bold text-2xl shadow-md border border-white/50">
+                            {profile?.nome?.[0] || 'U'}{profile?.cognome?.[0] || ''}
+                          </div>
+                        )}
+                        {isProfileEditing && (
+                          <label className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center text-white text-[10px] font-semibold opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                            Carica Foto
+                            <input
+                              type="file"
+                              name="foto_file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                if (e.target.files && e.target.files[0]) {
+                                  const file = e.target.files[0];
+                                  setTempProfileFotoUrl(URL.createObjectURL(file));
+                                  triggerToast("Nuova immagine selezionata", "success");
+                                }
+                              }}
+                            />
+                          </label>
+                        )}
+                      </div>
+                      {isProfileEditing && (tempProfileFotoUrl || (profile?.foto && profile.foto.trim() !== '')) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTempProfileFotoUrl('');
+                            triggerToast("Immagine profilo rimossa. Salva per confermare.", "info");
                           }}
-                        />
-                      </label>
+                          className="text-xs text-[#FF3B30] hover:underline font-semibold"
+                        >
+                          Rimuovi foto
+                        </button>
+                      )}
+                      {isProfileEditing && (
+                        <span className="text-[10px] text-[#86868B]">Clicca sull'avatar per caricare una nuova foto</span>
+                      )}
                     </div>
-                    {(tempProfileFotoUrl || (profile?.foto && profile.foto.trim() !== '')) && (
+
+                    {/* Name and Surname Inputs */}
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-[#86868B] mb-1">Nome</label>
+                        <input
+                          type="text"
+                          name="nome"
+                          required
+                          defaultValue={profile?.nome || ''}
+                          disabled={!isProfileEditing}
+                          className={`w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none focus:bg-white text-[#1D1D1F] ${
+                            !isProfileEditing ? 'bg-gray-100/50 cursor-not-allowed border-transparent shadow-none text-gray-500' : ''
+                          }`}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-[#86868B] mb-1">Cognome</label>
+                        <input
+                          type="text"
+                          name="cognome"
+                          required
+                          defaultValue={profile?.cognome || ''}
+                          disabled={!isProfileEditing}
+                          className={`w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none focus:bg-white text-[#1D1D1F] ${
+                            !isProfileEditing ? 'bg-gray-100/50 cursor-not-allowed border-transparent shadow-none text-gray-500' : ''
+                          }`}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-[#86868B] mb-1">Ruolo</label>
+                        <input
+                          type="text"
+                          disabled
+                          value={profile?.ruolo || 'User'}
+                          className="w-full px-3.5 py-2 bg-gray-100/70 border border-transparent rounded-xl text-sm text-gray-500 cursor-not-allowed"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Logout Button */}
+                    {!isProfileEditing && (
+                      <div className="pt-2 border-t border-[#E5E5EA]">
+                        <button
+                          type="button"
+                          onClick={handleLogout}
+                          className="w-full py-2.5 bg-red-50 hover:bg-red-100 active:scale-[0.98] text-red-600 rounded-xl text-xs font-semibold transition-all text-center flex items-center justify-center space-x-1 border border-red-100"
+                        >
+                          <span>Logout Account</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Actions / Buttons */}
+                  <div className="p-6 border-t border-[#E5E5EA] bg-[#F5F5F7] flex space-x-2">
+                    {isProfileEditing ? (
+                      <>
+                        <button
+                          type="submit"
+                          disabled={loading}
+                          className="flex-1 btn-glossy text-white py-3 rounded-full font-bold text-sm transition-all text-center shadow-sm"
+                        >
+                          Salva Impostazioni
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsProfileEditing(false);
+                            setTempProfileFotoUrl(null);
+                          }}
+                          className="flex-1 bg-white hover:bg-gray-100 border border-[#D2D2D7] text-[#1D1D1F] py-3 rounded-full font-semibold text-sm transition-all text-center"
+                        >
+                          Annulla
+                        </button>
+                      </>
+                    ) : (
                       <button
                         type="button"
-                        onClick={() => {
-                          setTempProfileFotoUrl('');
-                          triggerToast("Immagine profilo rimossa. Salva per confermare.", "info");
-                        }}
-                        className="text-xs text-[#FF3B30] hover:underline font-semibold"
+                        onClick={() => setIsUserSettingsModalOpen(false)}
+                        className="w-full bg-[#0071E3] hover:bg-[#0077ED] text-white py-3 rounded-full font-semibold text-sm transition-all text-center shadow-sm"
                       >
-                        Rimuovi foto
+                        Chiudi
                       </button>
                     )}
-                    <span className="text-[10px] text-[#86868B]">Clicca sull'avatar per caricare una nuova foto</span>
-                  </div>
-
-                  {/* Name and Surname Inputs */}
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-[#86868B] mb-1">Nome</label>
-                      <input
-                        type="text"
-                        name="nome"
-                        required
-                        defaultValue={profile?.nome || ''}
-                        className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none focus:bg-white text-[#1D1D1F]"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-[#86868B] mb-1">Cognome</label>
-                      <input
-                        type="text"
-                        name="cognome"
-                        required
-                        defaultValue={profile?.cognome || ''}
-                        className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none focus:bg-white text-[#1D1D1F]"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-[#86868B] mb-1">Ruolo</label>
-                      <input
-                        type="text"
-                        disabled
-                        value={profile?.ruolo || 'User'}
-                        className="w-full px-3.5 py-2 bg-gray-100/70 border border-transparent rounded-xl text-sm text-gray-500 cursor-not-allowed"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Logout Button */}
-                  <div className="pt-2 border-t border-[#E5E5EA]">
-                    <button
-                      type="button"
-                      onClick={handleLogout}
-                      className="w-full py-2.5 bg-red-50 hover:bg-red-100 active:scale-[0.98] text-red-600 rounded-xl text-xs font-semibold transition-all text-center flex items-center justify-center space-x-1 border border-red-100"
-                    >
-                      <span>Logout Account</span>
-                    </button>
-                  </div>
-
-                  </div>
-
-                  {/* Actions */}
-                  <div className="p-6 border-t border-[#E5E5EA] bg-[#F5F5F7] flex space-x-2">
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className="flex-1 btn-glossy text-white py-3 rounded-full font-bold text-sm transition-all text-center shadow-sm"
-                    >
-                      Salva Impostazioni
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => { setIsUserSettingsModalOpen(false); setTempProfileFotoUrl(null); }}
-                      className="flex-1 bg-white hover:bg-gray-100 border border-[#D2D2D7] text-[#1D1D1F] py-3 rounded-full font-semibold text-sm transition-all text-center"
-                    >
-                      Annulla
-                    </button>
                   </div>
 
                 </form>
@@ -7236,28 +7839,31 @@ export default function App() {
             </div>
           )}
 
-          {/* MOBILE BOTTOM TAB BAR */}
-          <nav className="flex md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/75 backdrop-blur-xl border-t border-white/30 justify-around items-center z-30 px-2 shadow-lg">
+          <nav className="flex md:hidden fixed bottom-4 left-4 right-4 h-16 bg-[#1C1C1E]/65 backdrop-blur-2xl border border-white/15 rounded-full justify-around items-center z-40 px-2 shadow-2xl max-w-lg mx-auto">
             {[
               { id: 'dashboard', label: 'Dashboard', icon: <IconDashboard /> },
               { id: 'immobili', label: 'Immobili', icon: <IconImmobili /> },
               { id: 'contatti', label: 'Contatti', icon: <IconContatti /> },
               { id: 'visite', label: 'Visite', icon: <IconCalendario /> },
-            ].map(tab => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex flex-col items-center justify-center flex-1 py-1 transition-all ${
-                  activeTab === tab.id ? 'text-[#0071E3] font-semibold scale-105' : 'text-[#86868B]'
-                }`}
-              >
-                <div className="w-5 h-5 mb-0.5 flex items-center justify-center">
-                  {tab.icon}
-                </div>
-                <span className="text-[10px] tracking-tight">{tab.label}</span>
-              </button>
-            ))}
+            ].map(tab => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`relative flex flex-col items-center justify-center py-1.5 px-3 rounded-full transition-all duration-300 ${
+                    isActive ? 'text-white font-bold scale-105 bg-white/10 shadow-sm' : 'text-[#8E8E93] hover:text-white'
+                  }`}
+                  style={{ minWidth: '70px' }}
+                >
+                  <div className="w-5 h-5 flex items-center justify-center">
+                    {tab.icon}
+                  </div>
+                  <span className="text-[9px] font-medium tracking-tight mt-0.5">{tab.label}</span>
+                </button>
+              );
+            })}
           </nav>
 
         </div>

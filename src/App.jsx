@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase, isRealSupabase } from './supabaseClient';
 
 // --- INLINE BEAUTIFUL SVG ICONS (Apple Style) ---
@@ -340,33 +340,36 @@ const INITIAL_IMMOBILI = [
 const INITIAL_VISITE = [
   {
     id: 30,
-    immobile_id: 102,
-    data_ora: "2026-05-12T10:00",
+    immobile_di_riferimento_id: 102,
+    inizio_evento: "2026-05-12T10:00",
+    fine_evento: "2026-05-12T11:00",
+    nome_evento: "Shooting Fotografico",
     tipo_visita: "Shooting Fotografico",
-    esito: "NEUTRO",
-    feedback: "Realizzazione dello shooting fotografico d'interni ed esterni completata con successo.",
+    esito_e_note: "Realizzazione dello shooting fotografico d'interni ed esterni completata con successo.",
     cliente_id: 4, // Stefano Cau
     partecipanti: "Olga Honchar, Massimiliano Boldi, Stefano Cau",
     creato_da: "MASSIMILIANO BOLDI"
   },
   {
     id: 31,
-    immobile_id: 103,
-    data_ora: "2026-05-12T13:00",
+    immobile_di_riferimento_id: 103,
+    inizio_evento: "2026-05-12T13:00",
+    fine_evento: "2026-05-12T14:00",
+    nome_evento: "Shooting Fotografico",
     tipo_visita: "Shooting Fotografico",
-    esito: "NEUTRO",
-    feedback: "Foto aeree tramite drone per valorizzare la vista lago e la terrazza rooftop.",
+    esito_e_note: "Foto aeree tramite drone per valorizzare la vista lago e la terrazza rooftop.",
     cliente_id: 4,
     partecipanti: "Olga Honchar, Stefano Cau",
     creato_da: "MASSIMILIANO BOLDI"
   },
   {
     id: 32,
-    immobile_id: 101,
-    data_ora: "2026-06-18T15:30",
+    immobile_di_riferimento_id: 101,
+    inizio_evento: "2026-06-18T15:30",
+    fine_evento: "2026-06-18T16:30",
+    nome_evento: "Visita Cliente",
     tipo_visita: "Visita Cliente",
-    esito: "POSITIVO",
-    feedback: "Il cliente è rimasto entusiasta della zona giorno e della vista. Ha richiesto planimetria e rasi.",
+    esito_e_note: "Il cliente è rimasto entusiasta della zona giorno e della vista. Ha richiesto planimetria e rasi.",
     cliente_id: 5, // Julio Kogan
     partecipanti: "Olga Honchar, Julio Kogan Amaro",
     creato_da: "OLGA HONCHAR"
@@ -437,6 +440,47 @@ export default function App() {
   const [filterContactRuolo, setFilterContactRuolo] = useState('Tutti');
   const [sortContactOrder, setSortContactOrder] = useState('nome-cognome');
   const [searchVisit, setSearchVisit] = useState('');
+  const [calendarView, setCalendarView] = useState('week'); // 'day' | 'week' | 'month' | 'list'
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setCalendarView(window.innerWidth < 768 ? 'day' : 'week');
+    }
+  }, []);
+  const [currentCalendarDate, setCurrentCalendarDate] = useState(new Date());
+  const [filterVisitAgent, setFilterVisitAgent] = useState('Tutti');
+  const [filterVisitClient, setFilterVisitClient] = useState('Tutti');
+  const [filterVisitProperty, setFilterVisitProperty] = useState('Tutti');
+  const [filterVisitType, setFilterVisitType] = useState('Tutti');
+  const [filterVisitOutcome, setFilterVisitOutcome] = useState('Tutti');
+  const [showAdvancedCalendarFilters, setShowAdvancedCalendarFilters] = useState(false);
+  const [selectedVisitaImmobileId, setSelectedVisitaImmobileId] = useState('');
+  const [searchVisitaPropertyQuery, setSearchVisitaPropertyQuery] = useState('');
+  const [selectedCalendarClientId, setSelectedCalendarClientId] = useState('');
+  const [selectedCalendarParticipantIds, setSelectedCalendarParticipantIds] = useState([]);
+  const [addingContactForVisit, setAddingContactForVisit] = useState(null); // 'cliente' | 'partecipanti' | null
+  const [addingPropertyForVisit, setAddingPropertyForVisit] = useState(false);
+  const [isCalendarAllDay, setIsCalendarAllDay] = useState(false);
+  const [searchVisitClientQuery, setSearchVisitClientQuery] = useState('');
+  const [searchVisitParticipantQuery, setSearchVisitParticipantQuery] = useState('');
+  const [isClientSearchFocused, setIsClientSearchFocused] = useState(false);
+  const [isParticipantSearchFocused, setIsParticipantSearchFocused] = useState(false);
+  const [isPropertySearchFocused, setIsPropertySearchFocused] = useState(false);
+
+  const calendarScrollRef = useRef(null);
+  const isResizingRef = useRef(false);
+
+  useEffect(() => {
+    if (activeTab === 'visite' && calendarView === 'week' && calendarScrollRef.current) {
+      // Delay slightly to ensure layout and rendering are fully completed
+      setTimeout(() => {
+        if (calendarScrollRef.current) {
+          const currentHour = new Date().getHours();
+          const scrollTopPosition = Math.max(0, currentHour * 60 - 150);
+          calendarScrollRef.current.scrollTop = scrollTopPosition;
+        }
+      }, 50);
+    }
+  }, [activeTab, calendarView]);
 
   // Editing modals
   const [currentImmobile, setCurrentImmobile] = useState(null);
@@ -449,10 +493,15 @@ export default function App() {
   const [viewingImmobile, setViewingImmobile] = useState(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [activeDetailTab, setActiveDetailTab] = useState('generale');
+  const [previousModalContext, setPreviousModalContext] = useState(null);
 
   // Detail inspector (Contatti)
   const [viewingContatto, setViewingContatto] = useState(null);
   const [isContactDetailModalOpen, setIsContactDetailModalOpen] = useState(false);
+
+  // Detail inspector (Visite/Calendario)
+  const [viewingVisita, setViewingVisita] = useState(null);
+  const [isVisitaDetailModalOpen, setIsVisitaDetailModalOpen] = useState(false);
 
   // Modals for Contatti and Visite
   const [currentContatto, setCurrentContatto] = useState(null);
@@ -464,6 +513,20 @@ export default function App() {
   const [searchGestitiQuery, setSearchGestitiQuery] = useState('');
   const [currentVisita, setCurrentVisita] = useState(null);
   const [isVisitaModalOpen, setIsVisitaModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (isVisitaModalOpen) {
+      setSearchVisitClientQuery('');
+      setSearchVisitParticipantQuery('');
+      if (!currentVisita) {
+        setSelectedVisitaImmobileId('');
+        setSelectedCalendarClientId('');
+        setSelectedCalendarParticipantIds([]);
+        setSearchVisitaPropertyQuery('');
+        setIsCalendarAllDay(false);
+      }
+    }
+  }, [isVisitaModalOpen, currentVisita]);
 
   // Toast feedback
   const [toast, setToast] = useState(null);
@@ -1207,6 +1270,10 @@ export default function App() {
             }
             setAddingPropertyForContact(null);
           }
+          if (addingPropertyForVisit) {
+            setSelectedVisitaImmobileId(record.id);
+            setAddingPropertyForVisit(false);
+          }
         }
       } catch (err) {
         console.error(err);
@@ -1251,10 +1318,55 @@ export default function App() {
           }
           setAddingPropertyForContact(null);
         }
+        if (addingPropertyForVisit) {
+          setSelectedVisitaImmobileId(finalId);
+          setAddingPropertyForVisit(false);
+        }
       }
     }
     setIsImmobileModalOpen(false);
     setCurrentImmobile(null);
+  };
+
+  const canModifyEvent = (event) => {
+    if (!profile) return false;
+    const userRole = String(profile.ruolo || '').toLowerCase();
+    if (userRole.includes('admin')) {
+      return true;
+    }
+    if (userRole.includes('editor')) {
+      const userDisplayName = `${profile.nome || ''} ${profile.cognome || ''}`.trim().toUpperCase();
+      const eventCreator = String(event?.creato_da || '').trim().toUpperCase();
+      if (eventCreator === userDisplayName) return true;
+      if (userDisplayName === 'MASSIMILIANO BOLDI' && !eventCreator) return true;
+      return false;
+    }
+    return false;
+  };
+
+  const canAddEvent = () => {
+    if (!profile) return false;
+    const userRole = String(profile.ruolo || '').toLowerCase();
+    return userRole.includes('admin') || userRole.includes('editor');
+  };
+
+  const isMyEvent = (event) => {
+    if (!profile) return false;
+    const userDisplayName = `${profile.nome || ''} ${profile.cognome || ''}`.trim().toUpperCase();
+    const eventCreator = String(event?.creato_da || '').trim().toUpperCase();
+    if (eventCreator === userDisplayName) return true;
+    if (userDisplayName === 'MASSIMILIANO BOLDI' && !eventCreator) return true;
+    return false;
+  };
+
+  const getCreatorTag = (event) => {
+    const creator = String(event?.creato_da || '').trim();
+    if (!creator) return 'CRM';
+    const parts = creator.split(' ');
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return creator.substring(0, 3).toUpperCase();
   };
 
   const handleEditImmobile = (item) => {
@@ -1263,10 +1375,26 @@ export default function App() {
     setIsImmobileModalOpen(true);
   };
 
-  const handleViewImmobile = (item) => {
+  const handleViewImmobile = (item, context = null) => {
+    setPreviousModalContext(context);
     setViewingImmobile(item);
     setActiveDetailTab('generale');
     setIsDetailModalOpen(true);
+  };
+
+  const handleCloseImmobileDetail = () => {
+    setIsDetailModalOpen(false);
+    setViewingImmobile(null);
+    if (previousModalContext) {
+      if (previousModalContext.type === 'visita') {
+        setViewingVisita(previousModalContext.item);
+        setIsVisitaDetailModalOpen(true);
+      } else if (previousModalContext.type === 'contatto') {
+        setViewingContatto(previousModalContext.item);
+        setIsContactDetailModalOpen(true);
+      }
+      setPreviousModalContext(null);
+    }
   };
 
   const handleDeleteImmobile = async (id) => {
@@ -1281,8 +1409,7 @@ export default function App() {
           setImmobili(immobili.filter(item => item.id !== id));
           triggerToast("Immobile rimosso dal database");
           if (viewingImmobile && viewingImmobile.id === id) {
-            setIsDetailModalOpen(false);
-            setViewingImmobile(null);
+            handleCloseImmobileDetail();
           }
         } catch (err) {
           console.error(err);
@@ -1292,8 +1419,7 @@ export default function App() {
         setImmobili(immobili.filter(item => item.id !== id));
         triggerToast("Immobile rimosso localmente", "info");
         if (viewingImmobile && viewingImmobile.id === id) {
-          setIsDetailModalOpen(false);
-          setViewingImmobile(null);
+          handleCloseImmobileDetail();
         }
       }
     }
@@ -1421,6 +1547,14 @@ export default function App() {
             }
             return updatedImm;
           }));
+          if (addingContactForVisit) {
+            if (addingContactForVisit === 'cliente') {
+              setSelectedCalendarClientId(newId);
+            } else if (addingContactForVisit === 'partecipanti') {
+              setSelectedCalendarParticipantIds(prev => [...prev, newId]);
+            }
+            setAddingContactForVisit(null);
+          }
         }
       } catch (err) {
         console.error(err);
@@ -1466,6 +1600,14 @@ export default function App() {
           }
           return updatedImm;
         }));
+      }
+      if (addingContactForVisit) {
+        if (addingContactForVisit === 'cliente') {
+          setSelectedCalendarClientId(finalId);
+        } else if (addingContactForVisit === 'partecipanti') {
+          setSelectedCalendarParticipantIds(prev => [...prev, finalId]);
+        }
+        setAddingContactForVisit(null);
       }
     }
     setIsContattoModalOpen(false);
@@ -1546,15 +1688,50 @@ export default function App() {
     const idVal = formData.get('id');
     const id = idVal ? parseInt(idVal) : null;
 
+    if (id) {
+      const existing = visite.find(v => v.id === id);
+      if (!canModifyEvent(existing)) {
+        triggerToast("Non hai i permessi per modificare questo evento", "error");
+        return;
+      }
+    } else {
+      if (!canAddEvent()) {
+        triggerToast("Non hai i permessi per aggiungere eventi", "error");
+        return;
+      }
+    }
+
+    const participantNames = selectedCalendarParticipantIds
+      .map(cid => {
+        const match = contatti.find(c => String(c.id) === String(cid));
+        return match ? `${match.nome || ''} ${match.cognome || ''}` : '';
+      })
+      .filter(Boolean)
+      .join(', ');
+
+    const rawStart = formData.get('inizio_evento');
+    const rawEnd = formData.get('fine_evento');
+
+    if (rawStart && rawEnd) {
+      const start = new Date(rawStart);
+      const end = new Date(rawEnd);
+      if (end < start) {
+        triggerToast("La data di fine non può essere precedente all'inizio", "error");
+        return;
+      }
+    }
+
     const fields = {
-      immobile_id: Number(formData.get('immobile_id')),
-      data_ora: formData.get('data_ora'),
-      tipo_visita: formData.get('tipo_visita'),
-      esito: formData.get('esito'),
-      feedback: formData.get('feedback'),
-      cliente_id: Number(formData.get('cliente_id')) || null,
-      partecipanti: formData.get('partecipanti'),
-      creato_da: formData.get('creato_da') || "MASSIMILIANO BOLDI"
+      immobile_di_riferimento_id: selectedVisitaImmobileId ? Number(selectedVisitaImmobileId) : null,
+      inizio_evento: rawStart ? new Date(rawStart).toISOString() : null,
+      fine_evento: rawEnd ? new Date(rawEnd).toISOString() : null,
+      nome_evento: formData.get('nome_evento'),
+      tipo_visita: formData.get('nome_evento') || 'Visita',
+      esito_e_note: formData.get('esito_e_note') || '',
+      cliente_id: selectedCalendarClientId ? Number(selectedCalendarClientId) : null,
+      partecipanti: participantNames,
+      creato_da: formData.get('creato_da') || "MASSIMILIANO BOLDI",
+      tutto_giorno: formData.get('tutto_giorno') === 'on'
     };
 
     if (isRealSupabase) {
@@ -1596,12 +1773,53 @@ export default function App() {
     setCurrentVisita(null);
   };
 
+  const handleViewVisita = (item) => {
+    if (isResizingRef.current) return;
+    setViewingVisita(item);
+    setIsVisitaDetailModalOpen(true);
+  };
+
+  const handleCreateVisita = () => {
+    if (!canAddEvent()) {
+      triggerToast("Non hai i permessi per aggiungere eventi", "error");
+      return;
+    }
+    setCurrentVisita(null);
+    setSelectedVisitaImmobileId('');
+    setSearchVisitaPropertyQuery('');
+    setSelectedCalendarClientId('');
+    setSelectedCalendarParticipantIds([]);
+    setIsCalendarAllDay(false);
+    setIsVisitaModalOpen(true);
+  };
+
   const handleEditVisita = (item) => {
+    if (!canModifyEvent(item)) {
+      triggerToast("Non hai i permessi per modificare questo evento", "error");
+      return;
+    }
     setCurrentVisita(item);
+    setSelectedVisitaImmobileId(item.immobile_di_riferimento_id || '');
+    setSelectedCalendarClientId(item.cliente_id || '');
+    setIsCalendarAllDay(!!item.tutto_giorno);
+    
+    const participantNames = (item.partecipanti || '').split(',').map(n => n.trim().toLowerCase());
+    const matchedIds = contatti.filter(c => {
+      const name = `${c.nome} ${c.cognome}`.toLowerCase();
+      return participantNames.includes(name);
+    }).map(c => c.id);
+    setSelectedCalendarParticipantIds(matchedIds);
+
+    setSearchVisitaPropertyQuery('');
     setIsVisitaModalOpen(true);
   };
 
   const handleDeleteVisita = async (id) => {
+    const event = visite.find(v => v.id === id);
+    if (!canModifyEvent(event)) {
+      triggerToast("Non hai i permessi per eliminare questo evento", "error");
+      return;
+    }
     if (window.confirm("Annullare questo appuntamento a calendario?")) {
       if (isRealSupabase) {
         try {
@@ -1623,6 +1841,137 @@ export default function App() {
     }
   };
 
+  const handleDropEvent = async (e, day, month, year, hour) => {
+    e.preventDefault();
+    const eventId = e.dataTransfer.getData("text/plain");
+    if (!eventId) return;
+
+    const event = visite.find(v => String(v.id) === String(eventId));
+    if (!event) return;
+
+    if (!canModifyEvent(event)) {
+      triggerToast("Non hai i permessi per spostare questo evento", "error");
+      return;
+    }
+
+    // Calculate duration
+    const start = new Date(event.inizio_evento);
+    const end = event.fine_evento ? new Date(event.fine_evento) : new Date(start.getTime() + 60 * 60 * 1000);
+    const duration = end.getTime() - start.getTime();
+
+    // Create new start and end times
+    const monthStr = String(month + 1).padStart(2, '0');
+    const dayStr = String(day).padStart(2, '0');
+    const hourStr = String(hour).padStart(2, '0');
+    
+    // Maintain old minutes if any
+    const minutesStr = String(start.getMinutes()).padStart(2, '0');
+
+    const newStartStr = `${year}-${monthStr}-${dayStr}T${hourStr}:${minutesStr}:00`;
+    const newStartDate = new Date(newStartStr);
+    const newEndDate = new Date(newStartDate.getTime() + duration);
+
+    const fields = {
+      inizio_evento: newStartDate.toISOString(),
+      fine_evento: newEndDate.toISOString()
+    };
+
+    if (isRealSupabase) {
+      try {
+        const { data, error } = await supabase
+          .from('visite')
+          .update(fields)
+          .eq('id', event.id)
+          .select();
+        if (error) throw error;
+        setVisite(visite.map(item => item.id === event.id ? { ...item, ...fields } : item));
+        triggerToast("Appuntamento spostato");
+      } catch (err) {
+        console.error(err);
+        triggerToast("Errore durante lo spostamento", "error");
+      }
+    } else {
+      setVisite(visite.map(item => item.id === event.id ? { ...item, ...fields } : item));
+      triggerToast("Appuntamento spostato localmente");
+    }
+  };
+
+  const handleResizeMouseDown = (e, event) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!canModifyEvent(event)) {
+      triggerToast("Non hai i permessi per modificare questo evento", "error");
+      return;
+    }
+    isResizingRef.current = true;
+
+    const startY = e.clientY;
+    const originalEnd = event.fine_evento ? new Date(event.fine_evento) : new Date(new Date(event.inizio_evento).getTime() + 60 * 60 * 1000);
+    const originalEndTime = originalEnd.getTime();
+
+    const onMouseMove = (moveEvent) => {
+      const deltaY = moveEvent.clientY - startY;
+      const deltaMinutes = deltaY; // 1px = 1 min
+      const roundedDeltaMinutes = Math.round(deltaMinutes / 15) * 15;
+      
+      const newEndTime = originalEndTime + roundedDeltaMinutes * 60 * 1000;
+      const newEndDate = new Date(newEndTime);
+
+      const startTime = new Date(event.inizio_evento).getTime();
+      if (newEndDate.getTime() < startTime + 30 * 60 * 1000) {
+        return;
+      }
+
+      setVisite(prev => prev.map(item => 
+        item.id === event.id 
+          ? { ...item, fine_evento: newEndDate.toISOString() } 
+          : item
+      ));
+    };
+
+    const onMouseUp = async (upEvent) => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+
+      const deltaY = upEvent.clientY - startY;
+      const roundedDeltaMinutes = Math.round(deltaY / 15) * 15;
+      let newEndTime = originalEndTime + roundedDeltaMinutes * 60 * 1000;
+      const startTime = new Date(event.inizio_evento).getTime();
+      
+      if (newEndTime < startTime + 30 * 60 * 1000) {
+        newEndTime = startTime + 30 * 60 * 1000;
+      }
+      
+      const finalEndDate = new Date(newEndTime);
+      const updatedFields = {
+        fine_evento: finalEndDate.toISOString()
+      };
+
+      if (isRealSupabase) {
+        try {
+          const { error } = await supabase
+            .from('visite')
+            .update(updatedFields)
+            .eq('id', event.id);
+          if (error) throw error;
+          triggerToast("Durata aggiornata");
+        } catch (err) {
+          console.error(err);
+          triggerToast("Errore aggiornamento durata", "error");
+        }
+      } else {
+        triggerToast("Durata aggiornata localmente");
+      }
+
+      setTimeout(() => {
+        isResizingRef.current = false;
+      }, 50);
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  };
+
   // Helpers to get related data easily
   const getContactName = (id) => {
     const contact = contatti.find(c => c.id === id);
@@ -1640,8 +1989,9 @@ export default function App() {
   };
 
   const getImmobileName = (id) => {
-    const imm = immobili.find(i => i.id === id);
-    return imm ? imm.nome : 'Immobile sconosciuto';
+    if (!id) return 'Nessun immobile';
+    const imm = immobili.find(i => Number(i.id) === Number(id));
+    return imm ? (imm.nome || imm.nome_immobile) : 'Immobile sconosciuto';
   };
 
   return (
@@ -2041,7 +2391,7 @@ export default function App() {
                       <IconPlus /> <span>Aggiungi Contatto</span>
                     </button>
                     <button
-                      onClick={() => { setIsVisitaModalOpen(true); setCurrentVisita(null); }}
+                      onClick={handleCreateVisita}
                       className="bg-white/45 backdrop-blur hover:bg-white/70 text-[#1D1D1F] p-4 rounded-2xl font-medium text-sm border border-white/40 shadow-sm transition-all flex items-center justify-center space-x-2 hover:scale-[1.01]"
                     >
                       <IconPlus /> <span>Pianifica Visita/Shooting</span>
@@ -2084,18 +2434,18 @@ export default function App() {
                               <IconCalendario />
                             </div>
                             <div>
-                              <h4 className="text-sm font-semibold text-[#1D1D1F]">{getImmobileName(v.immobile_id)}</h4>
+                              <h4 className="text-sm font-semibold text-[#1D1D1F]">{getImmobileName(v.immobile_di_riferimento_id)}</h4>
                               <p className="text-xs text-[#86868B]">
-                                {v.tipo_visita} • Con: <span className="font-medium text-[#1D1D1F]">{v.partecipanti}</span>
+                                {v.nome_evento || v.tipo_visita} • Con: <span className="font-medium text-[#1D1D1F]">{v.partecipanti}</span>
                               </p>
                             </div>
                           </div>
                           <div className="text-right">
                             <span className="text-xs font-semibold text-[#1D1D1F]">
-                              {new Date(v.data_ora).toLocaleDateString('it-CH', { day: 'numeric', month: 'short' })}
+                              {new Date(v.inizio_evento).toLocaleDateString('it-CH', { day: 'numeric', month: 'short' })}
                             </span>
                             <p className="text-[11px] text-[#86868B]">
-                              {new Date(v.data_ora).toLocaleTimeString('it-CH', { hour: '2-digit', minute: '2-digit' })}
+                              {new Date(v.inizio_evento).toLocaleTimeString('it-CH', { hour: '2-digit', minute: '2-digit' })}
                             </p>
                           </div>
                         </div>
@@ -3076,160 +3426,886 @@ export default function App() {
             )}
 
             {/* TAB 4: CALENDARIO / VISITE */}
-            {activeTab === 'visite' && (
-              <div className="space-y-6 max-w-6xl mx-auto">
+            {activeTab === 'visite' && (() => {
+              // Get all unique agents (creato_da) for filter
+              const uniqueAgents = Array.from(new Set([
+                ...visite.map(v => v.creato_da).filter(Boolean),
+                ...contatti.filter(c => {
+                  const roles = Array.isArray(c.ruolo) ? c.ruolo : [c.ruolo];
+                  return roles.some(r => String(r).toLowerCase().includes('agente'));
+                }).map(c => `${c.nome} ${c.cognome}`.toUpperCase())
+              ])).sort();
 
-                {/* Header */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E5E5EA] pb-5">
-                  <div>
-                    <span className="text-xs font-semibold uppercase tracking-wider text-[#86868B]">Calendario</span>
-                    <div className="flex items-center gap-3">
-                      <h2 className="text-3xl font-bold tracking-tight text-[#1D1D1F]">Attività e Visite</h2>
-                      {isCRMLoading && (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#0071E3]/10 text-[#0071E3] animate-pulse">
-                          <svg className="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                          </svg>
-                          Aggiornamento...
-                        </span>
-                      )}
+              // Filtered visits based on CRM filters
+              const filteredVisite = visite.filter(item => {
+                const immName = getImmobileName(item.immobile_di_riferimento_id).toLowerCase();
+                const clientName = getContactName(item.cliente_id).toLowerCase();
+                const query = searchVisit.toLowerCase();
+                const matchesSearch = !query || 
+                  immName.includes(query) || 
+                  clientName.includes(query) ||
+                  (item.tipo_visita || '').toLowerCase().includes(query) ||
+                  (item.esito_e_note || '').toLowerCase().includes(query);
+
+                const matchesAgent = filterVisitAgent === 'Tutti' || 
+                  item.creato_da === filterVisitAgent || 
+                  (item.partecipanti || '').includes(filterVisitAgent);
+
+                const matchesClient = filterVisitClient === 'Tutti' || String(item.cliente_id) === String(filterVisitClient);
+                const matchesProperty = filterVisitProperty === 'Tutti' || String(item.immobile_di_riferimento_id) === String(filterVisitProperty);
+                const matchesType = filterVisitType === 'Tutti' || item.tipo_visita === filterVisitType;
+                const matchesOutcome = filterVisitOutcome === 'Tutti' || item.esito_e_note === filterVisitOutcome;
+
+                return matchesSearch && matchesAgent && matchesClient && matchesProperty && matchesType && matchesOutcome;
+              });
+
+              // CRM Statistics calculations
+              const totalActivities = filteredVisite.length;
+              const customerVisits = filteredVisite.filter(v => v.tipo_visita === 'Visita Cliente').length;
+              const withOutcome = filteredVisite.filter(v => v.esito_e_note === 'POSITIVO' || v.esito_e_note === 'NEGATIVO');
+              const positiveCount = filteredVisite.filter(v => v.esito_e_note === 'POSITIVO').length;
+              const successRate = withOutcome.length > 0 ? Math.round((positiveCount / withOutcome.length) * 100) : 0;
+
+              const agentCounts = {};
+              filteredVisite.forEach(v => {
+                if (v.creato_da) {
+                  agentCounts[v.creato_da] = (agentCounts[v.creato_da] || 0) + 1;
+                }
+              });
+              let mostActiveAgent = 'Nessuno';
+              let maxAgentActivities = 0;
+              Object.entries(agentCounts).forEach(([agent, count]) => {
+                if (count > maxAgentActivities) {
+                  maxAgentActivities = count;
+                  mostActiveAgent = agent;
+                }
+              });
+
+              // Month View Calculations
+              const year = currentCalendarDate.getFullYear();
+              const month = currentCalendarDate.getMonth();
+              const firstDayOfMonth = new Date(year, month, 1);
+              const startDayOffset = (firstDayOfMonth.getDay() + 6) % 7; // Monday start
+              const totalDaysInMonth = new Date(year, month + 1, 0).getDate();
+
+              const monthDays = [];
+              const prevMonthDaysTotal = new Date(year, month, 0).getDate();
+              for (let i = startDayOffset - 1; i >= 0; i--) {
+                monthDays.push({
+                  day: prevMonthDaysTotal - i,
+                  month: month === 0 ? 11 : month - 1,
+                  year: month === 0 ? year - 1 : year,
+                  isCurrentMonth: false,
+                });
+              }
+              for (let i = 1; i <= totalDaysInMonth; i++) {
+                monthDays.push({
+                  day: i,
+                  month: month,
+                  year: year,
+                  isCurrentMonth: true,
+                });
+              }
+              const remainingCells = 42 - monthDays.length;
+              for (let i = 1; i <= remainingCells; i++) {
+                monthDays.push({
+                  day: i,
+                  month: month === 11 ? 0 : month + 1,
+                  year: month === 11 ? year + 1 : year,
+                  isCurrentMonth: false,
+                });
+              }
+
+              const isEventOnDay = (event, dayDate) => {
+                const start = new Date(event.inizio_evento);
+                const end = event.fine_evento ? new Date(event.fine_evento) : new Date(start.getTime() + 60 * 60 * 1000);
+                
+                const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate()).getTime();
+                const endDay = new Date(end.getFullYear(), end.getMonth(), end.getDate()).getTime();
+                const targetDay = new Date(dayDate.getFullYear(), dayDate.getMonth(), dayDate.getDate()).getTime();
+                
+                return targetDay >= startDay && targetDay <= endDay;
+              };
+
+              // Week View Calculations
+              const getStartOfWeek = (d) => {
+                const date = new Date(d);
+                const day = date.getDay();
+                const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+                return new Date(date.setDate(diff));
+              };
+              const startOfWeek = getStartOfWeek(currentCalendarDate);
+              const weekDays = [];
+              for (let i = 0; i < 7; i++) {
+                const d = new Date(startOfWeek);
+                d.setDate(startOfWeek.getDate() + i);
+                weekDays.push({
+                  date: d,
+                  dayName: d.toLocaleDateString('it-CH', { weekday: 'short' }),
+                  dayNum: d.getDate(),
+                  month: d.getMonth(),
+                  year: d.getFullYear()
+                });
+              }
+              const displayDays = calendarView === 'day' ? [{
+                date: currentCalendarDate,
+                dayName: currentCalendarDate.toLocaleDateString('it-CH', { weekday: 'short' }),
+                dayNum: currentCalendarDate.getDate(),
+                month: currentCalendarDate.getMonth(),
+                year: currentCalendarDate.getFullYear()
+              }] : weekDays;
+              const hoursList = Array.from({ length: 24 }, (_, i) => i);
+
+              const handleAddOnDate = (d, m, y, h = 9) => {
+                if (!canAddEvent()) {
+                  triggerToast("Non hai i permessi per aggiungere eventi", "error");
+                  return;
+                }
+                const monthStr = String(m + 1).padStart(2, '0');
+                const dayStr = String(d).padStart(2, '0');
+                const hourStr = String(h).padStart(2, '0');
+                const formattedDate = `${y}-${monthStr}-${dayStr}T${hourStr}:00`;
+                setCurrentVisita({
+                  inizio_evento: formattedDate,
+                  immobile_di_riferimento_id: '',
+                  tipo_visita: 'Visita Cliente',
+                  esito_e_note: 'NEUTRO',
+                  cliente_id: '',
+                  partecipanti: '',
+                  creato_da: profile?.nome ? `${profile.nome.toUpperCase()} ${profile.cognome ? profile.cognome.toUpperCase() : ''}`.trim() : 'MASSIMILIANO BOLDI'
+                });
+                setSelectedVisitaImmobileId('');
+                setSearchVisitaPropertyQuery('');
+                setIsVisitaModalOpen(true);
+              };
+
+              const WEEKDAYS_IT = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
+              const MONTHS_IT = [
+                'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
+                'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'
+              ];
+
+              return (
+                <div className="space-y-6 max-w-6xl mx-auto">
+                  {/* Header */}
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#E5E5EA] pb-5">
+                    <div>
+                      <span className="text-xs font-semibold uppercase tracking-wider text-[#86868B]">Pannello CRM</span>
+                      <div className="flex items-center gap-3">
+                        <h2 className="text-3xl font-bold tracking-tight text-[#1D1D1F]">Calendario Attività</h2>
+                        {isCRMLoading && (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#0071E3]/10 text-[#0071E3] animate-pulse">
+                            Aggiornamento...
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={handleCreateVisita}
+                      className="bg-[#0071E3] hover:bg-[#0077ED] text-white px-4 py-2 rounded-full text-sm font-medium transition-all shadow-sm flex items-center self-start"
+                    >
+                      <IconPlus /> Nuovo Appuntamento
+                    </button>
+                  </div>
+
+                  {/* CRM Stats Widgets */}
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="glass-panel p-4 rounded-2xl border border-[#E5E5EA] bg-white flex flex-col justify-between shadow-sm">
+                      <span className="text-[10px] uppercase font-bold tracking-wider text-[#86868B]">Attività Totali</span>
+                      <span className="text-2xl font-black text-[#1D1D1F] mt-1">{totalActivities}</span>
+                      <span className="text-[10px] text-gray-400 mt-0.5">Nel periodo selezionato</span>
+                    </div>
+                    <div className="glass-panel p-4 rounded-2xl border border-[#E5E5EA] bg-white flex flex-col justify-between shadow-sm">
+                      <span className="text-[10px] uppercase font-bold tracking-wider text-[#86868B]">Visite Clienti</span>
+                      <span className="text-2xl font-black text-[#0071E3] mt-1">{customerVisits}</span>
+                      <span className="text-[10px] text-gray-400 mt-0.5">Sopralluoghi di vendita/affitto</span>
+                    </div>
+                    <div className="glass-panel p-4 rounded-2xl border border-[#E5E5EA] bg-white flex flex-col justify-between shadow-sm">
+                      <span className="text-[10px] uppercase font-bold tracking-wider text-[#86868B]">Tasso Successo</span>
+                      <span className="text-2xl font-black text-[#34C759] mt-1">{successRate}%</span>
+                      <span className="text-[10px] text-gray-400 mt-0.5">Esiti POSITIVI su conclusi</span>
+                    </div>
+                    <div className="glass-panel p-4 rounded-2xl border border-[#E5E5EA] bg-white flex flex-col justify-between shadow-sm">
+                      <span className="text-[10px] uppercase font-bold tracking-wider text-[#86868B]">Agente Più Attivo</span>
+                      <span className="text-base font-bold text-[#1D1D1F] mt-1 truncate" title={mostActiveAgent}>
+                        {mostActiveAgent}
+                      </span>
+                      <span className="text-[10px] text-gray-400 mt-0.5">{maxAgentActivities} attività registrate</span>
                     </div>
                   </div>
-                  <button
-                    onClick={() => { setIsVisitaModalOpen(true); setCurrentVisita(null); }}
-                    className="bg-[#0071E3] hover:bg-[#0077ED] text-white px-4 py-2 rounded-full text-sm font-medium transition-all shadow-sm flex items-center self-start"
-                  >
-                    <IconPlus /> Nuovo Appuntamento
-                  </button>
-                </div>
 
-                {/* Filter */}
-                <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white p-4 rounded-2xl border border-[#E5E5EA] shadow-sm">
-                  <div className="relative w-full sm:w-80">
-                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
-                      <IconSearch />
-                    </span>
-                    <input
-                      type="text"
-                      placeholder="Filtra per immobile, esito..."
-                      value={searchVisit}
-                      onChange={(e) => setSearchVisit(e.target.value)}
-                      className="w-full pl-9 pr-4 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all"
-                    />
+                  {/* Search Bar Row & Toggle */}
+                  <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white p-4 rounded-3xl border border-[#E5E5EA] shadow-sm">
+                    <div className="flex items-center gap-3 w-full sm:flex-1">
+                      <div className="relative flex-1">
+                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                          <IconSearch />
+                        </span>
+                        <input
+                          type="text"
+                          placeholder="Cerca per immobile, esito, note..."
+                          value={searchVisit}
+                          onChange={(e) => setSearchVisit(e.target.value)}
+                          className="w-full pl-9 pr-4 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all text-[#1D1D1F]"
+                        />
+                      </div>
+                      <button
+                        onClick={() => setShowAdvancedCalendarFilters(!showAdvancedCalendarFilters)}
+                        className={`px-3 py-2 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all shrink-0 ${
+                          showAdvancedCalendarFilters
+                            ? 'bg-[#0071E3] text-white border-transparent'
+                            : 'bg-[#F5F5F7] hover:bg-[#E5E5EA]/50 border-transparent text-[#1D1D1F]'
+                        }`}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                        </svg>
+                        <span>Filtri</span>
+                        {(filterVisitAgent !== 'Tutti' || filterVisitClient !== 'Tutti' || filterVisitProperty !== 'Tutti' || filterVisitType !== 'Tutti' || filterVisitOutcome !== 'Tutti') && (
+                          <span className={`w-2 h-2 rounded-full ${showAdvancedCalendarFilters ? 'bg-white' : 'bg-[#0071E3]'}`}></span>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* View Toggles */}
+                    <div className="flex bg-[#F5F5F7] p-1 rounded-xl w-full sm:w-auto overflow-x-auto shrink-0">
+                      {[{ id: 'day', label: 'Giorno' }, { id: 'week', label: 'Settimana' }, { id: 'month', label: 'Mese' }, { id: 'list', label: 'Lista' }].map((view) => (
+                        <button
+                          key={view.id}
+                          onClick={() => setCalendarView(view.id)}
+                          className={`flex-1 sm:flex-initial px-4 py-1.5 rounded-lg text-xs font-semibold tracking-tight transition-all whitespace-nowrap ${calendarView === view.id
+                              ? 'bg-white text-[#1D1D1F] shadow-sm'
+                              : 'text-[#86868B] hover:text-[#1D1D1F]'
+                            }`}
+                        >
+                          {view.id === 'day' ? '☀️ ' : view.id === 'week' ? '🗓️ ' : view.id === 'month' ? '📅 ' : '📝 '}
+                          {view.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
-                  <div className="text-xs text-[#86868B] font-medium">
-                    Pianificazioni per l'anno di esercizio <span className="text-[#1D1D1F] font-bold">2026</span>
-                  </div>
-                </div>
-
-                {/* Timeline List */}
-                <div className="space-y-4">
-                  {isCRMLoading ? (
-                    [1, 2, 3].map((n) => (
-                      <div key={n} className="bg-white rounded-3xl p-5 border border-[#E5E5EA] shadow-sm animate-pulse flex flex-col md:flex-row justify-between gap-4 items-start md:items-center">
-                        <div className="flex items-center space-x-4 min-w-[150px]">
-                          <div className="text-center bg-[#F5F5F7] py-2 px-3.5 rounded-2xl border border-[#E5E5EA] w-14 h-14 shrink-0" />
-                          <div className="space-y-1.5 w-16">
-                            <div className="h-3 bg-[#E5E5EA] rounded-full w-2/3" />
-                            <div className="h-4 bg-[#E5E5EA] rounded-full w-full" />
-                          </div>
+                  {/* Advanced Filters Panel */}
+                  {showAdvancedCalendarFilters && (
+                    <div className="bg-white p-5 rounded-2xl border border-[#E5E5EA] shadow-sm animate-fade-in space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                        {/* Agente / Dipendente */}
+                        <div>
+                          <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868B] mb-1">Agente / Dipendente</label>
+                          <select
+                            value={filterVisitAgent}
+                            onChange={(e) => setFilterVisitAgent(e.target.value)}
+                            className="w-full px-3 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] transition-all"
+                          >
+                            <option value="Tutti">Tutti gli agenti</option>
+                            {uniqueAgents.map(a => (
+                              <option key={a} value={a}>{a}</option>
+                            ))}
+                          </select>
                         </div>
 
-                        <div className="flex-1 space-y-2">
-                          <div className="flex items-center space-x-2">
-                            <div className="h-4 bg-[#E5E5EA] rounded-full w-20" />
-                            <div className="h-4 bg-[#E5E5EA] rounded-full w-16" />
-                          </div>
-                          <div className="h-4 bg-[#E5E5EA] rounded-full w-3/4" />
-                          <div className="h-3 bg-[#E5E5EA] rounded-full w-1/2" />
-                          <div className="h-3 bg-[#E5E5EA] rounded-full w-1/3" />
+                        {/* Cliente / Lead */}
+                        <div>
+                          <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868B] mb-1">Cliente / Lead</label>
+                          <select
+                            value={filterVisitClient}
+                            onChange={(e) => setFilterVisitClient(e.target.value)}
+                            className="w-full px-3 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] transition-all"
+                          >
+                            <option value="Tutti">Tutti i contatti</option>
+                            {contatti.map(c => (
+                              <option key={c.id} value={c.id}>{c.cognome} {c.nome}</option>
+                            ))}
+                          </select>
                         </div>
 
-                        <div className="flex items-center space-x-2 w-full md:w-auto justify-end shrink-0">
-                          <div className="w-20 h-7 bg-[#E5E5EA] rounded-xl" />
-                          <div className="w-8 h-8 bg-[#E5E5EA] rounded-xl" />
+                        {/* Proprietà */}
+                        <div>
+                          <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868B] mb-1">Proprietà</label>
+                          <select
+                            value={filterVisitProperty}
+                            onChange={(e) => setFilterVisitProperty(e.target.value)}
+                            className="w-full px-3 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] transition-all"
+                          >
+                            <option value="Tutti">Tutte le proprietà</option>
+                            {immobili.map(i => (
+                              <option key={i.id} value={i.id}>{i.nome || i.nome_immobile}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Tipologia */}
+                        <div>
+                          <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868B] mb-1">Tipologia</label>
+                          <select
+                            value={filterVisitType}
+                            onChange={(e) => setFilterVisitType(e.target.value)}
+                            className="w-full px-3 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] transition-all"
+                          >
+                            <option value="Tutti">Tutte le tipologie</option>
+                            <option value="Shooting Fotografico">Shooting Fotografico</option>
+                            <option value="Visita Cliente">Visita Cliente</option>
+                            <option value="Primo Incontro">Primo Incontro</option>
+                            <option value="Sopralluogo Tecnico">Sopralluogo Tecnico</option>
+                          </select>
+                        </div>
+
+                        {/* Esito */}
+                        <div>
+                          <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868B] mb-1">Esito</label>
+                          <select
+                            value={filterVisitOutcome}
+                            onChange={(e) => setFilterVisitOutcome(e.target.value)}
+                            className="w-full px-3 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] transition-all"
+                          >
+                            <option value="Tutti">Tutti gli esiti</option>
+                            <option value="NEUTRO">Neutro</option>
+                            <option value="POSITIVO">Positivo</option>
+                            <option value="NEGATIVO">Negativo</option>
+                          </select>
                         </div>
                       </div>
-                    ))
-                  ) : visite.length === 0 ? (
-                    <div className="bg-white rounded-3xl p-8 border border-[#E5E5EA] text-center text-xs text-[#86868B]">
-                      Nessuna visita o appuntamento in programma.
+
+                      {(searchVisit || filterVisitAgent !== 'Tutti' || filterVisitClient !== 'Tutti' || filterVisitProperty !== 'Tutti' || filterVisitType !== 'Tutti' || filterVisitOutcome !== 'Tutti') && (
+                        <div className="flex justify-end">
+                          <button
+                            onClick={() => {
+                              setSearchVisit('');
+                              setFilterVisitAgent('Tutti');
+                              setFilterVisitClient('Tutti');
+                              setFilterVisitProperty('Tutti');
+                              setFilterVisitType('Tutti');
+                              setFilterVisitOutcome('Tutti');
+                            }}
+                            className="text-xs text-[#0071E3] hover:underline font-bold"
+                          >
+                            Resetta tutti i filtri ✕
+                          </button>
+                        </div>
+                      )}
                     </div>
-                  ) : (
-                    visite
-                      .filter(item => {
-                        const immName = getImmobileName(item.immobile_id).toLowerCase();
-                        const matchSearch = immName.includes(searchVisit.toLowerCase()) || (item.esito || '').toLowerCase().includes(searchVisit.toLowerCase()) || (item.tipo_visita || '').toLowerCase().includes(searchVisit.toLowerCase());
-                        return matchSearch;
-                      })
-                      .map((item) => {
-                        const dateObj = new Date(item.data_ora);
-                        return (
-                           <div key={item.id} className="glass-panel rounded-3xl p-5 hover:scale-[1.01] hover:shadow-xl transition-all duration-300 flex flex-col md:flex-row justify-between gap-4 items-start md:items-center">
+                  )}
 
-                            <div className="flex items-center space-x-4 min-w-[150px]">
-                              <div className="text-center bg-[#F5F5F7] py-2 px-3.5 rounded-2xl border border-[#E5E5EA]">
-                                <span className="block text-xs uppercase text-[#86868B] font-bold">
-                                  {dateObj.toLocaleDateString('it-CH', { month: 'short' })}
-                                </span>
-                                <span className="block text-2xl font-extrabold text-[#1D1D1F] tracking-tight leading-none">
-                                  {dateObj.toLocaleDateString('it-CH', { day: 'numeric' })}
-                                </span>
-                              </div>
-                              <div>
-                                <span className="block text-xs font-semibold text-[#86868B]">Ora d'inizio</span>
-                                <span className="text-base font-bold text-[#1D1D1F]">
-                                  {dateObj.toLocaleTimeString('it-CH', { hour: '2-digit', minute: '2-digit' })}
-                                </span>
-                              </div>
-                            </div>
 
-                            <div className="flex-1 space-y-1">
-                              <div className="flex items-center space-x-2">
-                                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-[#E5E5EA] text-[#86868B]">
-                                  Codice ID: {item.id}
-                                </span>
-                                <span className={`text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full ${item.esito === 'POSITIVO' ? 'bg-[#34C759]/10 text-[#34C759]' : item.esito === 'NEGATIVO' ? 'bg-[#FF3B30]/10 text-[#FF3B30]' : 'bg-gray-100 text-gray-500'
-                                  }`}>
-                                  Esito {item.esito}
-                                </span>
-                              </div>
-                              <h3 className="font-bold text-base text-[#1D1D1F] hover:text-[#0071E3] transition-all">
-                                {getImmobileName(item.immobile_id)}
-                              </h3>
-                              <p className="text-xs text-[#86868B] max-w-xl">
-                                <span className="font-semibold text-[#1D1D1F]">{item.tipo_visita}</span> • Feedback: {item.feedback || "In attesa dell'appuntamento"}
-                              </p>
-                              <p className="text-[11px] text-[#86868B]">
-                                Partecipanti: <span className="font-medium text-[#1D1D1F]">{item.partecipanti}</span> • Creato da: <span className="font-medium">{item.creato_da}</span>
-                              </p>
-                            </div>
+                  {/* Calendar Navigation Panel (Only for Month and Week Views) */}
+                  {calendarView !== 'list' && (
+                    <div className="flex items-center justify-between bg-white p-3 rounded-2xl border border-[#E5E5EA] shadow-sm">
+                      <div className="flex items-center space-x-1.5">
+                        <button
+                          onClick={() => {
+                            const d = new Date(currentCalendarDate);
+                            if (calendarView === 'month') {
+                              d.setMonth(d.getMonth() - 1);
+                            } else if (calendarView === 'day') {
+                              d.setDate(d.getDate() - 1);
+                            } else {
+                              d.setDate(d.getDate() - 7);
+                            }
+                            setCurrentCalendarDate(d);
+                          }}
+                          className="p-1.5 bg-[#F5F5F7] hover:bg-[#E5E5EA] rounded-xl text-[#1D1D1F] transition-all font-bold text-xs"
+                        >
+                          ◀ Precedente
+                        </button>
+                        <button
+                          onClick={() => {
+                            const d = new Date(currentCalendarDate);
+                            if (calendarView === 'month') {
+                              d.setMonth(d.getMonth() + 1);
+                            } else if (calendarView === 'day') {
+                              d.setDate(d.getDate() + 1);
+                            } else {
+                              d.setDate(d.getDate() + 7);
+                            }
+                            setCurrentCalendarDate(d);
+                          }}
+                          className="p-1.5 bg-[#F5F5F7] hover:bg-[#E5E5EA] rounded-xl text-[#1D1D1F] transition-all font-bold text-xs"
+                        >
+                          Successivo ▶
+                        </button>
+                      </div>
 
-                            <div className="flex items-center space-x-2 self-end md:self-auto border-t md:border-t-0 pt-3 md:pt-0 w-full md:w-auto justify-end">
-                              <button
-                                onClick={() => handleEditVisita(item)}
-                                className="px-3 py-1.5 bg-[#F5F5F7] hover:bg-[#E5E5EA] text-xs font-semibold rounded-xl text-gray-700 transition-all flex items-center"
-                              >
-                                <IconEdit /> Modifica
-                              </button>
-                              <button
-                                onClick={() => handleDeleteVisita(item.id)}
-                                className="p-1.5 bg-red-50 hover:bg-red-100 rounded-xl text-red-600 transition-all"
-                              >
-                                <IconTrash />
-                              </button>
-                            </div>
+                      <div className="text-sm font-bold text-[#1D1D1F] capitalize">
+                        {calendarView === 'month' ? (
+                          `${MONTHS_IT[month]} ${year}`
+                        ) : calendarView === 'day' ? (
+                          currentCalendarDate.toLocaleDateString('it-CH', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+                        ) : (
+                          `Settimana del ${startOfWeek.toLocaleDateString('it-CH', { day: 'numeric', month: 'short' })} ${startOfWeek.getFullYear()}`
+                        )}
+                      </div>
 
+                      <button
+                        onClick={() => setCurrentCalendarDate(new Date())}
+                        className="px-3 py-1 bg-[#F5F5F7] hover:bg-[#E5E5EA] text-xs font-semibold rounded-lg text-gray-700 transition-all"
+                      >
+                        Oggi
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Month View Grid */}
+                  {calendarView === 'month' && (
+                    <div className="bg-white rounded-3xl border border-[#E5E5EA] shadow-sm overflow-hidden">
+                      <div className="grid grid-cols-7 border-b border-[#E5E5EA] bg-[#F5F5F7]">
+                        {WEEKDAYS_IT.map(day => (
+                          <div key={day} className="py-2 text-center text-xs font-bold text-[#86868B]">
+                            {day}
                           </div>
-                        );
-                      })
+                        ))}
+                      </div>
+                      <div className="grid grid-cols-7 grid-rows-6 divide-x divide-y divide-[#E5E5EA] min-h-[500px]">
+                        {monthDays.map((dayObj, index) => {
+                          const isToday = new Date().toDateString() === new Date(dayObj.year, dayObj.month, dayObj.day).toDateString();
+                          
+                          // Events for this day
+                          const dayEvents = filteredVisite.filter(item => {
+                            return isEventOnDay(item, new Date(dayObj.year, dayObj.month, dayObj.day));
+                          });
+
+                          return (
+                            <div
+                              key={index}
+                              className={`p-1.5 flex flex-col group min-h-[85px] transition-colors relative ${
+                                dayObj.isCurrentMonth ? 'bg-white' : 'bg-gray-50/50 text-gray-400'
+                              } hover:bg-[#F5F5F7]`}
+                            >
+                              <div className="flex justify-between items-center mb-1">
+                                <span className={`text-xs font-bold ${
+                                  isToday ? 'bg-[#0071E3] text-white w-5 h-5 rounded-full flex items-center justify-center' : 'text-gray-700'
+                                }`}>
+                                  {dayObj.day}
+                                </span>
+
+                                <button
+                                  onClick={() => handleAddOnDate(dayObj.day, dayObj.month, dayObj.year)}
+                                  className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-bold text-[#0071E3] hover:underline"
+                                  title="Aggiungi appuntamento in questo giorno"
+                                >
+                                  ＋
+                                </button>
+                              </div>
+
+                              <div className="flex-1 space-y-1 overflow-y-auto max-h-[70px] custom-scrollbar">
+                                 {dayEvents.map(event => {
+                                   const dateObj = new Date(event.inizio_evento);
+                                   const timeStr = dateObj.toLocaleTimeString('it-CH', { hour: '2-digit', minute: '2-digit' });
+                                   const outcomeColor = event.esito_e_note === 'POSITIVO' ? 'bg-emerald-500' : event.esito_e_note === 'NEGATIVO' ? 'bg-rose-500' : 'bg-blue-500';
+                                   return (
+                                     <div
+                                       key={event.id}
+                                       onClick={() => handleViewVisita(event)}
+                                       className={`text-[9px] font-bold leading-tight px-1.5 py-0.5 rounded-md text-white cursor-pointer ${outcomeColor} truncate hover:brightness-95 transition-all flex items-center justify-between`}
+                                       title={`${event.tutto_giorno ? 'Tutto il giorno' : timeStr} - ${getImmobileName(event.immobile_di_riferimento_id)} (${event.nome_evento || event.tipo_visita})`}
+                                     >
+                                        <span className="truncate flex items-center">
+                                          <span className="bg-white/30 px-1 py-0.2 rounded-[3px] text-[7.5px] mr-1 font-black shrink-0 leading-none">
+                                            {isMyEvent(event) ? 'TU' : getCreatorTag(event)}
+                                          </span>
+                                          <span className="truncate">
+                                            {event.tutto_giorno ? '⭐ ' : `${timeStr} `}
+                                            {event.nome_evento || event.tipo_visita}{event.partecipanti ? ` (${event.partecipanti})` : ''}
+                                          </span>
+                                        </span>
+                                     </div>
+                                   );
+                                 })}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Week/Day View Grid */}
+                  {(calendarView === 'week' || calendarView === 'day') && (
+                    <div className="bg-white rounded-3xl border border-[#E5E5EA] shadow-sm overflow-hidden flex flex-col">
+                      {/* Grid Header */}
+                      <div className={`grid border-b border-[#E5E5EA] bg-[#F5F5F7] text-center shrink-0 ${calendarView === 'day' ? 'grid-cols-2' : 'grid-cols-8'}`}>
+                        <div className="py-3 text-[10px] font-bold text-[#86868B] border-r border-[#E5E5EA] flex items-center justify-center">
+                          Ora
+                        </div>
+                        {displayDays.map((wDay, idx) => {
+                          const isToday = new Date().toDateString() === wDay.date.toDateString();
+                          return (
+                            <div key={idx} className={`py-2 text-xs font-semibold ${isToday ? 'text-red-500' : 'text-[#1D1D1F]'}`}>
+                              <div className="text-[10px] uppercase font-bold text-[#86868B]">{wDay.dayName}</div>
+                              <div className={`mt-0.5 text-sm font-bold w-7 h-7 flex items-center justify-center mx-auto rounded-full ${
+                                isToday ? 'bg-red-500 text-white shadow-sm' : ''
+                              }`}>
+                                {wDay.dayNum}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* All Day Events Row (Apple macOS Style) */}
+                      <div className={`grid border-b border-[#E5E5EA] bg-gray-50/70 text-center shrink-0 divide-x divide-[#E5E5EA] ${calendarView === 'day' ? 'grid-cols-2' : 'grid-cols-8'}`}>
+                        <div className="py-2 text-[9px] font-bold text-gray-400 flex items-center justify-center bg-gray-100/50 select-none">
+                          tutto il giorno
+                        </div>
+                        {displayDays.map((wDay, dayIdx) => {
+                          const isToday = new Date().toDateString() === wDay.date.toDateString();
+                          
+                          // All-day events for this specific day
+                          const dayAllDayEvents = filteredVisite.filter(item => {
+                            if (!item.tutto_giorno) return false;
+                            return isEventOnDay(item, wDay.date);
+                          });
+
+                          return (
+                            <div 
+                              key={dayIdx} 
+                              className={`p-1 min-h-[36px] flex flex-col gap-1 justify-center relative ${
+                                isToday ? 'bg-[#0071E3]/2' : ''
+                              }`}
+                            >
+                              {dayAllDayEvents.map(event => {
+                                const outcomeStyles = event.esito_e_note === 'POSITIVO' 
+                                  ? 'border-l-4 border-emerald-500 bg-emerald-500/10 text-emerald-800' 
+                                  : event.esito_e_note === 'NEGATIVO' 
+                                  ? 'border-l-4 border-rose-500 bg-rose-500/10 text-rose-800' 
+                                  : 'border-l-4 border-blue-500 bg-blue-500/10 text-blue-800';
+
+                                return (
+                                  <div
+                                    key={event.id}
+                                    onClick={() => handleViewVisita(event)}
+                                    className={`text-[8.5px] font-bold px-1.5 py-0.5 rounded cursor-pointer ${outcomeStyles} shadow-sm flex items-center gap-1 hover:scale-[0.98] transition-all truncate`}
+                                    title={`Tutto il giorno: ${event.nome_evento || event.tipo_visita} - ${getImmobileName(event.immobile_di_riferimento_id)}`}
+                                  >
+                                    <span className="shrink-0 text-[6.5px] tracking-wider uppercase font-black px-1.5 py-0.25 bg-black/5 text-black/70 rounded-full border border-black/5 leading-none">
+                                      {isMyEvent(event) ? 'Tu' : getCreatorTag(event)}
+                                    </span>
+                                    <span className="truncate flex-1">⭐ {event.nome_evento || event.tipo_visita}{event.partecipanti ? ` (${event.partecipanti})` : ''}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Scrollable grid body */}
+                      <div ref={calendarScrollRef} className="h-[550px] overflow-y-auto custom-scrollbar relative bg-white border-t border-[#E5E5EA]">
+                        
+                        <div className={`grid divide-x divide-[#E5E5EA] relative min-h-[1440px] ${calendarView === 'day' ? 'grid-cols-2' : 'grid-cols-8'}`}>
+                          
+                          {/* Column 0: Hours Labels */}
+                          <div className="flex flex-col bg-gray-50/30 select-none divide-y divide-[#E5E5EA]">
+                            {hoursList.map(hour => (
+                              <div key={hour} className="h-[60px] py-3 text-right pr-2 text-[10px] font-semibold text-gray-400 flex items-center justify-end">
+                                {String(hour).padStart(2, '0')}:00
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Columns 1-7: Day Columns */}
+                          {displayDays.map((wDay, dayIdx) => {
+                            const isToday = new Date().toDateString() === wDay.date.toDateString();
+                            
+                            // Filter and position events for this specific day
+                            const dayEvents = filteredVisite.filter(item => {
+                              if (item.tutto_giorno) return false;
+                              return isEventOnDay(item, wDay.date);
+                            });
+
+                            const positionedEvents = dayEvents.map(event => {
+                              const start = new Date(event.inizio_evento);
+                              const end = event.fine_evento ? new Date(event.fine_evento) : new Date(start.getTime() + 60 * 60 * 1000);
+                              
+                              const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate()).getTime();
+                              const endDay = new Date(end.getFullYear(), end.getMonth(), end.getDate()).getTime();
+                              const targetDay = new Date(wDay.year, wDay.month, wDay.dayNum).getTime();
+
+                              let startMin = 0;
+                              let endMin = 1440;
+
+                              if (targetDay === startDay && targetDay === endDay) {
+                                startMin = start.getHours() * 60 + start.getMinutes();
+                                endMin = end.getHours() * 60 + end.getMinutes();
+                              } else if (targetDay === startDay) {
+                                startMin = start.getHours() * 60 + start.getMinutes();
+                                endMin = 1440;
+                              } else if (targetDay === endDay) {
+                                startMin = 0;
+                                endMin = end.getHours() * 60 + end.getMinutes();
+                              } else {
+                                startMin = 0;
+                                endMin = 1440;
+                              }
+
+                              const finalEndMin = Math.max(startMin + 30, endMin);
+                              return {
+                                event,
+                                startMin,
+                                endMin: finalEndMin,
+                                width: 100,
+                                left: 0,
+                                colIdx: 0
+                              };
+                            });
+
+                            positionedEvents.sort((a, b) => a.startMin - b.startMin);
+
+                            // Overlap grouping and column distribution
+                            let groups = [];
+                            positionedEvents.forEach(evt => {
+                              let merged = false;
+                              for (let group of groups) {
+                                const overlaps = group.some(ge => !(evt.endMin <= ge.startMin || evt.startMin >= ge.endMin));
+                                if (overlaps) {
+                                  group.push(evt);
+                                  merged = true;
+                                  break;
+                                }
+                              }
+                              if (!merged) {
+                                groups.push([evt]);
+                              }
+                            });
+
+                            groups.forEach(group => {
+                              const groupCols = [];
+                              group.forEach(evt => {
+                                let colIdx = 0;
+                                while (true) {
+                                  if (!groupCols[colIdx]) {
+                                    groupCols[colIdx] = [];
+                                  }
+                                  const col = groupCols[colIdx];
+                                  const overlaps = col.some(ce => !(evt.endMin <= ce.startMin || evt.startMin >= ce.endMin));
+                                  if (!overlaps) {
+                                    col.push(evt);
+                                    evt.colIdx = colIdx;
+                                    break;
+                                  }
+                                  colIdx++;
+                                }
+                              });
+                              const totalCols = groupCols.length;
+                              group.forEach(evt => {
+                                evt.width = 100 / totalCols;
+                                evt.left = evt.colIdx * evt.width;
+                              });
+                            });
+
+                            // Current time line calculations
+                            const currentHour = new Date().getHours();
+                            const currentMinute = new Date().getMinutes();
+                            const lineTop = (currentHour * 60 + currentMinute);
+
+                            return (
+                              <div key={dayIdx} className={`relative min-h-[1440px] divide-y divide-[#E5E5EA]/40 ${isToday ? 'bg-[#0071E3]/2' : ''}`}>
+                                
+                                {/* Background click grid and lines */}
+                                {hoursList.map(hour => (
+                                  <div
+                                    key={hour}
+                                    className="h-[60px] relative border-b border-[#E5E5EA] group"
+                                    onDragOver={(e) => e.preventDefault()}
+                                    onDrop={(e) => handleDropEvent(e, wDay.dayNum, wDay.month, wDay.year, hour)}
+                                  >
+                                    <button
+                                      onClick={() => handleAddOnDate(wDay.dayNum, wDay.month, wDay.year, hour)}
+                                      className="absolute inset-0 opacity-0 group-hover:opacity-100 flex items-center justify-center text-xs font-bold text-[#0071E3] hover:bg-[#0071E3]/5 transition-all z-0"
+                                      title={`Pianifica appuntamento alle ${hour}:00`}
+                                    >
+                                      ＋
+                                    </button>
+                                  </div>
+                                ))}
+
+                                {/* Red Time indicator line */}
+                                {isToday && (
+                                  <div 
+                                    className="absolute left-0 right-0 border-t-2 border-red-500 pointer-events-none z-20 flex items-center"
+                                    style={{ top: `${lineTop}px` }}
+                                    title={`Ora corrente: ${new Date().toLocaleTimeString('it-CH', { hour: '2-digit', minute: '2-digit' })}`}
+                                  >
+                                    <span className="w-2 h-2 rounded-full bg-red-500 -ml-1"></span>
+                                  </div>
+                                )}
+
+                                {/* Absolutely Positioned Events */}
+                                {positionedEvents.map(({ event, startMin, endMin, width, left }) => {
+                                  const top = startMin;
+                                  const height = endMin - startMin;
+
+                                  const outcomeStyles = event.esito_e_note === 'POSITIVO' 
+                                    ? 'border-l-4 border-emerald-500 bg-emerald-500/10 text-emerald-800' 
+                                    : event.esito_e_note === 'NEGATIVO' 
+                                    ? 'border-l-4 border-rose-500 bg-rose-500/10 text-rose-800' 
+                                    : 'border-l-4 border-blue-500 bg-blue-500/10 text-blue-800';
+
+                                  return (
+                                    <div
+                                      key={event.id}
+                                      draggable={true}
+                                      onDragStart={(e) => {
+                                        if (!canModifyEvent(event)) {
+                                          e.preventDefault();
+                                          triggerToast("Non hai i permessi per spostare questo evento", "error");
+                                          return;
+                                        }
+                                        e.dataTransfer.setData("text/plain", event.id);
+                                        e.dataTransfer.effectAllowed = "move";
+                                      }}
+                                      onClick={() => handleViewVisita(event)}
+                                      className={`absolute rounded-lg cursor-pointer ${outcomeStyles} shadow-sm overflow-hidden p-2 hover:scale-[0.98] transition-all flex flex-col justify-start z-10 border border-[#E5E5EA]/20 select-none`}
+                                      style={{
+                                        top: `${top + 1}px`,
+                                        height: `${height - 2}px`,
+                                        left: `${left}%`,
+                                        width: `calc(${width}% - 2px)`
+                                      }}
+                                      title={`${event.nome_evento || event.tipo_visita} - ${getImmobileName(event.immobile_di_riferimento_id)} - Partecipanti: ${event.partecipanti || 'Nessuno'}`}
+                                    >
+                                      <div className="flex items-center gap-1 min-w-0 mb-0.5">
+                                        <span className="shrink-0 text-[6.5px] tracking-wider uppercase font-black px-1.5 py-0.25 bg-black/5 text-black/70 rounded-full border border-black/5 leading-none">
+                                          {isMyEvent(event) ? 'Tu' : getCreatorTag(event)}
+                                        </span>
+                                        <div className="font-bold text-[10px] leading-tight truncate flex-1">{event.nome_evento || event.tipo_visita}</div>
+                                      </div>
+                                      <div className="text-[8px] opacity-80 mt-0.5 truncate leading-none">{event.partecipanti || 'Senza partecipanti'}</div>
+                                      {height > 40 && (
+                                        <div className="text-[8px] opacity-75 mt-1 truncate leading-none font-medium">
+                                          🏢 {getImmobileName(event.immobile_di_riferimento_id)}
+                                        </div>
+                                      )}
+
+                                      {/* Resize Handle */}
+                                      <div 
+                                        className="absolute bottom-0 left-0 right-0 h-1.5 cursor-ns-resize hover:bg-[#0071E3]/20 bg-transparent flex items-center justify-center select-none z-20"
+                                        onMouseDown={(e) => handleResizeMouseDown(e, event)}
+                                      >
+                                        <div className="w-5 h-0.5 bg-gray-400/30 rounded-full"></div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+
+                              </div>
+                            );
+                          })}
+
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+{/* List / Timeline View */}
+                  {calendarView === 'list' && (
+                    <div className="space-y-4">
+                      {filteredVisite.length === 0 ? (
+                        <div className="bg-white rounded-3xl p-8 border border-[#E5E5EA] text-center text-xs text-[#86868B]">
+                          Nessuna visita o appuntamento corrispondente ai filtri impostati.
+                        </div>
+                      ) : (
+                        filteredVisite
+                          .sort((a, b) => new Date(a.inizio_evento) - new Date(b.inizio_evento))
+                          .map((item) => {
+                            const startObj = new Date(item.inizio_evento);
+                            const endObj = item.fine_evento ? new Date(item.fine_evento) : null;
+                            const fmtTime = (d) => d.toLocaleTimeString('it-CH', { hour: '2-digit', minute: '2-digit' });
+                            const clienteName = getContactName(item.cliente_id);
+                            const immobileName = getImmobileName(item.immobile_di_riferimento_id);
+                            const partecipantiList = item.partecipanti ? item.partecipanti.split(',').map(p => p.trim()).filter(Boolean) : [];
+                            return (
+                              <div
+                                key={item.id}
+                                onClick={() => handleViewVisita(item)}
+                                className="group bg-white border border-[#E5E5EA] rounded-2xl cursor-pointer hover:border-[#0071E3]/40 hover:shadow-lg transition-all duration-200 overflow-hidden"
+                              >
+                                <div className="flex">
+                                  {/* Date column */}
+                                  <div className="w-[72px] shrink-0 flex flex-col items-center justify-center bg-[#F5F5F7] border-r border-[#E5E5EA] py-4 gap-0.5">
+                                    <span className="text-[11px] font-bold uppercase text-[#86868B] tracking-wider leading-none">
+                                      {startObj.toLocaleDateString('it-IT', { month: 'short' })}
+                                    </span>
+                                    <span className="text-[32px] font-black text-[#1D1D1F] leading-none">
+                                      {startObj.toLocaleDateString('it-IT', { day: 'numeric' })}
+                                    </span>
+                                    <span className="text-[10px] font-semibold text-[#86868B] capitalize leading-none">
+                                      {startObj.toLocaleDateString('it-IT', { weekday: 'short' })}
+                                    </span>
+                                  </div>
+
+                                  {/* Main content */}
+                                  <div className="flex-1 min-w-0 px-4 py-3.5 flex flex-col gap-2.5">
+
+                                    {/* Title + time */}
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div className="min-w-0 flex-1">
+                                        <h3 className="text-[14px] font-extrabold text-[#1D1D1F] leading-snug group-hover:text-[#0071E3] transition-colors truncate">
+                                          {item.nome_evento || item.tipo_visita || '—'}
+                                        </h3>
+                                        <span className="text-[10px] text-[#86868B] font-medium block mt-0.5">
+                                          Gestito da: <span className="font-bold text-[#555]">{isMyEvent(item) ? 'Me' : (item.creato_da || 'CRM')}</span>
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center gap-1.5 shrink-0">
+                                        <div className={`w-6 h-6 rounded-full flex items-center justify-center font-black text-[9px] uppercase shadow-sm ${
+                                          isMyEvent(item) 
+                                            ? 'bg-gradient-to-tr from-[#0071E3] to-[#5AC8FA] text-white border border-[#0071E3]/20' 
+                                            : 'bg-gradient-to-tr from-[#8E8E93] to-[#D2D2D7] text-white border border-[#8E8E93]/20'
+                                        }`} title={item.creato_da || 'MASSIMILIANO BOLDI'}>
+                                          {isMyEvent(item) ? 'TU' : getCreatorTag(item)}
+                                        </div>
+                                        {item.tutto_giorno ? (
+                                          <span className="shrink-0 inline-flex items-center gap-1 bg-[#FFF3E0] text-[#E65100] text-[11px] font-bold px-2.5 py-1 rounded-full border border-[#FFB74D]/30 whitespace-nowrap">
+                                            ☀️ Tutto il giorno
+                                          </span>
+                                        ) : (
+                                          <span className="shrink-0 inline-flex items-center gap-1 bg-[#E8F4FF] text-[#0071E3] text-[11px] font-bold px-2.5 py-1 rounded-full border border-[#0071E3]/20 whitespace-nowrap">
+                                            🕐 {fmtTime(startObj)}{endObj ? ' → ' + fmtTime(endObj) : ''}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    {/* Pills: cliente + partecipanti + immobile */}
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {/* Cliente */}
+                                      <span className="inline-flex items-center gap-1 bg-[#F5F5F7] border border-[#E5E5EA] rounded-full px-2.5 py-1 text-[11px] font-semibold text-[#374151]">
+                                        👤 {clienteName || '—'}
+                                      </span>
+                                      {/* Partecipanti */}
+                                      {partecipantiList.length > 0 ? (
+                                        partecipantiList.map((p, i) => (
+                                          <span key={i} className="inline-flex items-center gap-1 bg-[#EFF6FF] border border-[#BFDBFE] rounded-full px-2.5 py-1 text-[11px] font-semibold text-[#1D4ED8]">
+                                            👥 {p}
+                                          </span>
+                                        ))
+                                      ) : null}
+                                      {/* Immobile */}
+                                      {immobileName && (
+                                        <span className="inline-flex items-center gap-1 bg-[#F0FDF4] border border-[#BBF7D0] rounded-full px-2.5 py-1 text-[11px] font-semibold text-[#15803D]">
+                                          🏠 {immobileName}
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    {/* Note */}
+                                    {item.esito_e_note && (
+                                      <p className="text-[11px] text-[#86868B] leading-relaxed line-clamp-2 border-t border-[#F5F5F7] pt-2">
+                                        <span className="font-semibold text-[#6B7280]">Note: </span>
+                                        {item.esito_e_note}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );                          })
+                      )}
+                    </div>
                   )}
                 </div>
-
-              </div>
-            )}
+              );
+            })()}
 
           </main>
 
@@ -3238,7 +4314,7 @@ export default function App() {
           {/* ========================================================= */}
           {isDetailModalOpen && viewingImmobile && (
             <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/20 backdrop-blur-sm transition-all">
-              <div className="absolute inset-0 -z-10" onClick={() => setIsDetailModalOpen(false)}></div>
+              <div className="absolute inset-0 -z-10" onClick={handleCloseImmobileDetail}></div>
 
               <div className="w-full max-w-2xl h-full bg-white/70 backdrop-blur-2xl shadow-2xl border-l border-white/30 flex flex-col animate-slide-left overflow-hidden">
 
@@ -3254,7 +4330,7 @@ export default function App() {
                       />
                       {/* Floating close button */}
                       <button
-                        onClick={() => setIsDetailModalOpen(false)}
+                        onClick={handleCloseImmobileDetail}
                         className="absolute top-4 right-4 w-7 h-7 bg-white/90 hover:bg-white rounded-full border border-[#D2D2D7]/50 flex items-center justify-center font-bold text-sm text-[#86868B] transition-colors shadow-md z-10 animate-fade-in"
                       >
                         ✕
@@ -3287,7 +4363,7 @@ export default function App() {
                     {/* Fallback close button if no image */}
                     {!viewingImmobile.immagine_di_riferimento && (
                       <button
-                        onClick={() => setIsDetailModalOpen(false)}
+                        onClick={handleCloseImmobileDetail}
                         className="w-7 h-7 bg-white/80 hover:bg-white rounded-full border border-[#D2D2D7] flex items-center justify-center font-bold text-sm text-[#86868B] transition-colors shadow-sm ml-4"
                       >
                         ✕
@@ -3718,7 +4794,7 @@ export default function App() {
                     <IconEdit /> <span>Modifica Scheda</span>
                   </button>
                   <button
-                    onClick={() => setIsDetailModalOpen(false)}
+                    onClick={handleCloseImmobileDetail}
                     className="flex-1 bg-white hover:bg-gray-100 border border-[#D2D2D7] text-[#1D1D1F] py-3 rounded-full font-semibold text-sm transition-all text-center"
                   >
                     Chiudi Inspector
@@ -3820,7 +4896,7 @@ export default function App() {
                             key={imm.id}
                             onClick={() => {
                               setIsContactDetailModalOpen(false);
-                              handleViewImmobile(imm);
+                              handleViewImmobile(imm, { type: 'contatto', item: viewingContatto });
                             }}
                             className="bg-white p-3.5 rounded-xl border border-[#E5E5EA] flex justify-between items-center hover:border-[#0071E3] cursor-pointer transition-all group shadow-sm"
                           >
@@ -3848,7 +4924,7 @@ export default function App() {
                             key={imm.id}
                             onClick={() => {
                               setIsContactDetailModalOpen(false);
-                              handleViewImmobile(imm);
+                              handleViewImmobile(imm, { type: 'contatto', item: viewingContatto });
                             }}
                             className="bg-white p-3.5 rounded-xl border border-[#E5E5EA] flex justify-between items-center hover:border-[#0071E3] cursor-pointer transition-all group shadow-sm"
                           >
@@ -3868,15 +4944,15 @@ export default function App() {
                     {visite.filter(v => v.cliente_id === viewingContatto.id || (v.partecipanti || '').toLowerCase().includes((viewingContatto.cognome || '').toLowerCase())).length > 0 ? (
                       <div className="space-y-2">
                         {visite.filter(v => v.cliente_id === viewingContatto.id || (v.partecipanti || '').toLowerCase().includes((viewingContatto.cognome || '').toLowerCase())).map(v => {
-                          const dateObj = new Date(v.data_ora);
+                          const dateObj = new Date(v.inizio_evento);
                           return (
                             <div key={v.id} className="bg-white p-3.5 rounded-xl border border-[#E5E5EA] flex items-center justify-between">
                               <div>
                                 <span className="block text-[9px] uppercase font-bold text-[#86868B]">
-                                  {v.tipo_visita} • Esito: {v.esito}
+                                  {v.tipo_visita} • Esito: {v.esito_e_note}
                                 </span>
                                 <span className="font-bold text-sm">
-                                  {getImmobileName(v.immobile_id)}
+                                  {getImmobileName(v.immobile_di_riferimento_id)}
                                 </span>
                                 <p className="text-xs text-[#86868B]">
                                   Pianificato il: {dateObj.toLocaleDateString('it-CH')} alle {dateObj.toLocaleTimeString('it-CH', { hour: '2-digit', minute: '2-digit' })}
@@ -4055,7 +5131,7 @@ export default function App() {
 
           {/* 1. MODALE IMMOBILI (FORM COMPLETO PER CREAZIONE/MODIFICA) */}
           {isImmobileModalOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-0 md:p-4">
+            <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 backdrop-blur-sm p-0 md:p-4">
               <div className="glass-modal w-full max-w-3xl rounded-none md:rounded-3xl shadow-2xl overflow-hidden my-0 md:my-8 h-full md:h-[680px] flex flex-col text-[#1D1D1F]">
 
                 <div className="px-6 py-4 border-b border-[#E5E5EA] flex justify-between items-center bg-[#F5F5F7]">
@@ -4753,7 +5829,7 @@ export default function App() {
 
           {/* 2. MODALE CONTATTI (CREAZIONE E MODIFICA) */}
           {isContattoModalOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-0 md:p-4">
+            <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 backdrop-blur-sm p-0 md:p-4">
               <div className="bg-white w-full max-w-lg rounded-none md:rounded-3xl shadow-2xl border border-[#E5E5EA] overflow-hidden h-full md:h-[600px] flex flex-col text-[#1D1D1F]">
 
                 <div className="px-6 py-4 border-b border-[#E5E5EA] flex justify-between items-center bg-[#F5F5F7]">
@@ -5184,12 +6260,191 @@ export default function App() {
 
               </div>
             </div>
-          )}
+           )}
+
+          {/* Dettaglio inspector (Visite/Calendario) */}
+          {isVisitaDetailModalOpen && viewingVisita && (() => {
+            const dateObj = new Date(viewingVisita.inizio_evento);
+            const endDateObj = viewingVisita.fine_evento ? new Date(viewingVisita.fine_evento) : null;
+            const dateStr = dateObj.toLocaleDateString('it-CH', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+            const timeStr = viewingVisita.tutto_giorno 
+              ? 'Tutto il giorno' 
+              : `${dateObj.toLocaleTimeString('it-CH', { hour: '2-digit', minute: '2-digit' })}${endDateObj ? ` - ${endDateObj.toLocaleTimeString('it-CH', { hour: '2-digit', minute: '2-digit' })}` : ''}`;
+
+            const clientObj = contatti.find(c => String(c.id) === String(viewingVisita.cliente_id));
+            const propertyObj = immobili.find(imm => Number(imm.id) === Number(viewingVisita.immobile_di_riferimento_id));
+
+            return (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-0 md:p-4">
+                <div className="bg-white w-full max-w-lg rounded-none md:rounded-3xl shadow-2xl border border-[#E5E5EA] overflow-hidden flex flex-col text-[#1D1D1F]">
+                  
+                  {/* Header */}
+                  <div className="px-6 py-5 border-b border-[#E5E5EA] flex justify-between items-center bg-[#F5F5F7]">
+                    <div>
+                      <span className="text-[10px] uppercase font-bold tracking-wider text-[#86868B]">Dettaglio Evento</span>
+                      <h3 className="text-xl font-bold tracking-tight text-[#1D1D1F] mt-0.5">
+                        {viewingVisita.nome_evento || viewingVisita.tipo_visita}
+                      </h3>
+                    </div>
+                    <button
+                      onClick={() => setIsVisitaDetailModalOpen(false)}
+                      className="w-7 h-7 bg-white rounded-full border border-[#D2D2D7] flex items-center justify-center font-bold text-sm text-[#86868B] hover:text-[#1D1D1F] transition-all"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  {/* Body */}
+                  <div className="p-6 space-y-5 overflow-y-auto max-h-[500px] custom-scrollbar">
+                    
+                    {/* Time details */}
+                    <div className="flex items-start gap-3 bg-[#F5F5F7] p-4 rounded-2xl border border-transparent">
+                      <div className="text-2xl mt-0.5">📅</div>
+                      <div>
+                        <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Data e Ora</span>
+                        <span className="text-sm font-bold text-[#1D1D1F] block mt-0.5">{dateStr}</span>
+                        <span className="text-xs text-[#86868B] block mt-0.5">{timeStr}</span>
+                      </div>
+                    </div>
+
+                    {/* Cliente details */}
+                    {clientObj && (
+                      <div className="space-y-2">
+                        <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Cliente</span>
+                        <div className="flex items-center justify-between p-3.5 bg-white border border-[#E5E5EA] rounded-2xl shadow-sm">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-[#0071E3]/10 text-[#0071E3] flex items-center justify-center font-bold text-sm uppercase">
+                              {(clientObj.nome || 'C')[0]}{(clientObj.cognome || 'L')[0]}
+                            </div>
+                            <div>
+                              <div className="text-sm font-bold text-[#1D1D1F]">
+                                {clientObj.nome} {clientObj.cognome}
+                              </div>
+                              {clientObj.societa && (
+                                <div className="text-xs text-[#86868B]">{clientObj.societa}</div>
+                              )}
+                              {(clientObj.telefono || clientObj.mail) && (
+                                <div className="text-[11px] text-[#86868B] mt-0.5">
+                                  {clientObj.telefono} {clientObj.telefono && clientObj.mail ? ' • ' : ''} {clientObj.mail}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Partecipanti details */}
+                    {viewingVisita.partecipanti && (
+                      <div className="space-y-2">
+                        <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Partecipanti</span>
+                        <div className="flex flex-wrap gap-1.5 p-3.5 bg-[#F5F5F7] rounded-2xl">
+                          {viewingVisita.partecipanti.split(',').map((p, idx) => (
+                            <span key={idx} className="bg-white border border-[#E5E5EA] text-[#1D1D1F] text-xs px-2.5 py-1 rounded-full font-medium shadow-sm">
+                              👤 {p.trim()}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Property details */}
+                    {propertyObj && (
+                      <div className="space-y-2">
+                        <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Immobile Collegato</span>
+                        <div 
+                          onClick={() => {
+                            handleViewImmobile(propertyObj, { type: 'visita', item: viewingVisita });
+                            setIsVisitaDetailModalOpen(false);
+                          }}
+                          className="bg-white rounded-2xl border border-[#E5E5EA] overflow-hidden group shadow-sm flex flex-col cursor-pointer hover:border-[#0071E3]/40 hover:shadow-md transition-all duration-200"
+                        >
+                          <div 
+                            className="h-36 bg-cover bg-center relative flex items-end"
+                            style={{
+                              backgroundImage: propertyObj.immagine_di_riferimento 
+                                ? `url(${propertyObj.immagine_di_riferimento})` 
+                                : 'linear-gradient(to bottom right, #E5E5EA, #D2D2D7)'
+                            }}
+                          >
+                            <div className="absolute inset-0 bg-black/15 group-hover:bg-black/10 transition-colors"></div>
+                            <div className="absolute top-2 left-2 flex gap-1 z-10">
+                              <span className={`px-2 py-0.5 rounded text-[8px] font-bold tracking-wide uppercase shadow-sm bg-[#0071E3] text-white`}>
+                                {propertyObj.stato}
+                              </span>
+                            </div>
+                            <div className="absolute bottom-2 left-2 text-white text-xs font-bold drop-shadow-md z-10">
+                              {propertyObj.comune}{propertyObj.nazione ? `, ${propertyObj.nazione}` : ''}
+                            </div>
+                          </div>
+                          <div className="p-3.5">
+                            <h4 className="font-bold text-sm text-[#1D1D1F] line-clamp-1 leading-tight group-hover:text-[#0071E3] transition-colors">
+                              {propertyObj.nome_immobile}
+                            </h4>
+                            <p className="text-[10px] text-[#86868B] mt-0.5 truncate">
+                              {propertyObj.codice_immobile} • {propertyObj.categoria}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Esito e Note details */}
+                    {viewingVisita.esito_e_note && (
+                      <div className="space-y-2">
+                        <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Esito e Note Operative</span>
+                        <div className="bg-[#F5F5F7] p-4 rounded-2xl text-xs text-gray-700 leading-relaxed whitespace-pre-wrap border border-transparent">
+                          {viewingVisita.esito_e_note}
+                        </div>
+                      </div>
+                    )}
+
+                  </div>
+
+                  {/* Footer */}
+                  <div className="p-6 border-t border-[#E5E5EA] bg-[#F5F5F7] flex space-x-2">
+                    {canModifyEvent(viewingVisita) && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleDeleteVisita(viewingVisita.id);
+                            setIsVisitaDetailModalOpen(false);
+                          }}
+                          className="flex-1 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 py-3 rounded-full font-semibold text-sm transition-all text-center"
+                        >
+                          Elimina
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsVisitaDetailModalOpen(false);
+                            handleEditVisita(viewingVisita);
+                          }}
+                          className="flex-1 bg-[#0071E3] hover:bg-[#0077ED] text-white py-3 rounded-full font-bold text-sm transition-all text-center shadow-sm"
+                        >
+                          Modifica
+                        </button>
+                      </>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setIsVisitaDetailModalOpen(false)}
+                      className="flex-1 bg-white hover:bg-gray-100 border border-[#D2D2D7] text-[#1D1D1F] py-3 rounded-full font-semibold text-sm transition-all text-center"
+                    >
+                      Chiudi
+                    </button>
+                  </div>
+
+                </div>
+              </div>
+            );
+          })()}
 
           {/* 3. MODALE VISITE E APPUNTAMENTI (CALENDARIO) */}
           {isVisitaModalOpen && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-0 md:p-4">
-              <div className="bg-white w-full max-w-lg rounded-none md:rounded-3xl shadow-2xl border border-[#E5E5EA] overflow-hidden h-full md:h-[600px] flex flex-col text-[#1D1D1F]">
+              <div className="bg-white w-full max-w-2xl rounded-none md:rounded-3xl shadow-2xl border border-[#E5E5EA] overflow-hidden h-full md:h-[660px] flex flex-col text-[#1D1D1F]">
 
                 <div className="px-6 py-4 border-b border-[#E5E5EA] flex justify-between items-center bg-[#F5F5F7]">
                   <h3 className="text-lg font-bold tracking-tight">
@@ -5204,112 +6459,571 @@ export default function App() {
                 </div>
 
                 <form onSubmit={handleSaveVisita} className="flex-1 flex flex-col overflow-hidden">
-                  <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                  <div className="flex-1 overflow-y-auto p-6">
                     {currentVisita && <input type="hidden" name="id" value={currentVisita.id} />}
 
-                  <div>
-                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Immobile Visitato / Target *</label>
-                    <select
-                      name="immobile_id"
-                      required
-                      defaultValue={currentVisita ? currentVisita.immobile_id : ''}
-                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                    >
-                      <option value="">Seleziona l'immobile...</option>
-                      {immobili.map(i => (
-                        <option key={i.id} value={i.id}>{i.nome}</option>
-                      ))}
-                    </select>
-                  </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      
+                      {/* COLONNA SINISTRA: Informazioni Base */}
+                      <div className="space-y-4">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-[#86868B] pb-1 border-b border-gray-100">Dettagli Attività</h4>
+                        
+                        {/* Nome Evento */}
+                        <div>
+                          <label className="block text-xs font-semibold text-[#86868B] mb-1">Nome Evento *</label>
+                          <input
+                            type="text"
+                            name="nome_evento"
+                            required
+                            placeholder="es. Visita con cliente, Sopralluogo..."
+                            defaultValue={currentVisita ? (currentVisita.nome_evento || currentVisita.tipo_visita) : ''}
+                            className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none text-[#1D1D1F] hover:bg-[#E5E5EA]/50 focus:bg-white focus:border-[#0071E3] transition-all"
+                          />
+                        </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-[#86868B] mb-1">Data e Ora *</label>
-                      <input
-                        type="datetime-local"
-                        name="data_ora"
-                        required
-                        defaultValue={currentVisita ? currentVisita.data_ora : '2026-05-12T10:00'}
-                        className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none text-gray-700"
-                      />
+                        {/* Inizio & Fine Evento */}
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block text-xs font-semibold text-[#86868B] mb-1">Inizio Evento *</label>
+                            <input
+                              key={isCalendarAllDay ? "date-start" : "datetime-start"}
+                              type={isCalendarAllDay ? "date" : "datetime-local"}
+                              name="inizio_evento"
+                              required
+                              defaultValue={currentVisita ? new Date(new Date(currentVisita.inizio_evento) - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, isCalendarAllDay ? 10 : 16) : new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, isCalendarAllDay ? 10 : 16)}
+                              className="w-full px-3.5 py-2.5 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none text-[#1D1D1F] hover:bg-[#E5E5EA]/50 focus:bg-white focus:border-[#0071E3] transition-all"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-[#86868B] mb-1">Fine Evento *</label>
+                            <input
+                              key={isCalendarAllDay ? "date-end" : "datetime-end"}
+                              type={isCalendarAllDay ? "date" : "datetime-local"}
+                              name="fine_evento"
+                              required
+                              defaultValue={currentVisita && currentVisita.fine_evento ? new Date(new Date(currentVisita.fine_evento) - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, isCalendarAllDay ? 10 : 16) : (() => {
+                                const baseDate = currentVisita ? new Date(currentVisita.inizio_evento) : new Date();
+                                const offsetMultiplier = isCalendarAllDay ? 0 : 60 * 60 * 1000;
+                                const nextDate = new Date(baseDate.getTime() + offsetMultiplier);
+                                return new Date(nextDate - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, isCalendarAllDay ? 10 : 16);
+                              })()}
+                              className="w-full px-3.5 py-2.5 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none text-[#1D1D1F] hover:bg-[#E5E5EA]/50 focus:bg-white focus:border-[#0071E3] transition-all"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Tutto il giorno checkbox */}
+                        <div className="flex items-center space-x-2 bg-[#F5F5F7] p-2.5 rounded-xl border border-transparent">
+                          <input
+                            type="checkbox"
+                            id="tutto_giorno"
+                            name="tutto_giorno"
+                            checked={isCalendarAllDay}
+                            onChange={(e) => setIsCalendarAllDay(e.target.checked)}
+                            className="rounded text-[#0071E3] focus:ring-[#0071E3] w-4 h-4 cursor-pointer"
+                          />
+                          <label htmlFor="tutto_giorno" className="text-xs font-semibold text-gray-700 cursor-pointer select-none">
+                            📅 Tutto il giorno (senza orario)
+                          </label>
+                        </div>
+
+                        {/* Esito (Testo Lungo) */}
+                        <div>
+                          <label className="block text-xs font-semibold text-[#86868B] mb-1">Esito e Note Operative</label>
+                          <textarea
+                            name="esito_e_note"
+                            rows="4"
+                            placeholder="Inserisci l'esito dettagliato, note o feedback dell'evento..."
+                            defaultValue={currentVisita ? currentVisita.esito_e_note : ''}
+                            className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none text-[#1D1D1F] hover:bg-[#E5E5EA]/50 focus:bg-white focus:border-[#0071E3] transition-all resize-none"
+                          />
+                        </div>
+                      </div>
+
+                      {/* COLONNA DESTRA: Relazioni e Target */}
+                      <div className="space-y-4">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-[#86868B] pb-1 border-b border-gray-100">Associazioni</h4>
+
+                        {/* Cliente */}
+                        <div className="relative">
+                          <div className="flex justify-between items-center mb-1">
+                            <label className="block text-xs font-semibold text-[#86868B]">Cliente</label>
+                            {!selectedCalendarClientId && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setAddingContactForVisit('cliente');
+                                  handleCreateContatto();
+                                }}
+                                className="text-[10px] font-bold text-[#0071E3] hover:underline"
+                              >
+                                + Nuovo Contatto
+                              </button>
+                            )}
+                          </div>
+                          
+                          {selectedCalendarClientId ? (
+                            (() => {
+                              const selectedClient = contatti.find(c => String(c.id) === String(selectedCalendarClientId));
+                              if (!selectedClient) {
+                                return (
+                                  <div className="flex items-center justify-between p-3 bg-white border border-dashed border-[#E5E5EA] rounded-xl text-xs text-gray-400">
+                                    <span>Cliente non trovato</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => setSelectedCalendarClientId('')}
+                                      className="text-red-500 font-bold hover:underline"
+                                    >
+                                      Rimuovi
+                                    </button>
+                                  </div>
+                                );
+                              }
+                              const rolesStr = Array.isArray(selectedClient.ruolo) ? selectedClient.ruolo.join(', ') : (selectedClient.ruolo || '');
+                              return (
+                                <div className="flex items-center justify-between p-3 bg-[#F5F5F7] border border-[#E5E5EA] rounded-xl hover:border-[#D2D2D7] transition-all">
+                                  <div className="flex items-center gap-2.5">
+                                    <div className="w-8 h-8 rounded-full bg-[#0071E3]/10 text-[#0071E3] flex items-center justify-center font-bold text-xs uppercase">
+                                      {(selectedClient.nome || 'C')[0]}{(selectedClient.cognome || 'L')[0]}
+                                    </div>
+                                    <div>
+                                      <div className="text-xs font-bold text-[#1D1D1F]">
+                                        {selectedClient.cognome} {selectedClient.nome}
+                                      </div>
+                                      {selectedClient.societa && (
+                                        <div className="text-[10px] text-[#86868B]">{selectedClient.societa}</div>
+                                      )}
+                                      {rolesStr && (
+                                        <div className="text-[9px] text-[#86868B] bg-white border border-[#E5E5EA] px-1.5 py-0.5 rounded-full inline-block mt-0.5 font-medium">
+                                          {rolesStr}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedCalendarClientId('');
+                                      setSearchVisitClientQuery('');
+                                    }}
+                                    className="w-6 h-6 rounded-full hover:bg-white border border-[#D2D2D7] flex items-center justify-center text-[#86868B] hover:text-red-500 transition-all text-xs"
+                                    title="Rimuovi cliente"
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                              );
+                            })()
+                          ) : (
+                            <div className="relative">
+                              <input
+                                type="text"
+                                placeholder="🔍 Cerca cliente per nome o ruolo..."
+                                value={searchVisitClientQuery}
+                                onChange={(e) => setSearchVisitClientQuery(e.target.value)}
+                                onFocus={() => setIsClientSearchFocused(true)}
+                                onBlur={() => setTimeout(() => setIsClientSearchFocused(false), 200)}
+                                className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none text-[#1D1D1F] hover:bg-[#E5E5EA]/50 focus:bg-white focus:border-[#0071E3] transition-all"
+                              />
+
+                              {isClientSearchFocused && (
+                                <div className="absolute left-0 right-0 mt-1 bg-white border border-[#E5E5EA] rounded-2xl shadow-xl max-h-60 overflow-y-auto z-[60] p-1.5 space-y-1">
+                                  {(() => {
+                                    const filtered = contatti.filter(c => {
+                                      const qParts = searchVisitClientQuery.toLowerCase().trim().split(/\s+/).filter(Boolean);
+                                      if (qParts.length === 0) return true;
+                                      const nome = (c.nome || '').toLowerCase();
+                                      const cognome = (c.cognome || '').toLowerCase();
+                                      const societa = (c.societa || '').toLowerCase();
+                                      const rolesStr = (Array.isArray(c.ruolo) ? c.ruolo.join(' ') : (c.ruolo || '')).toLowerCase();
+                                      return qParts.every(part =>
+                                        nome.includes(part) ||
+                                        cognome.includes(part) ||
+                                        societa.includes(part) ||
+                                        rolesStr.includes(part)
+                                      );
+                                    });
+
+                                    if (filtered.length === 0) {
+                                      return (
+                                        <div className="p-3 text-center text-xs text-[#86868B]">
+                                          Nessun contatto trovato
+                                          <button
+                                            type="button"
+                                            onMouseDown={() => {
+                                              setAddingContactForVisit('cliente');
+                                              handleCreateContatto();
+                                            }}
+                                            className="block mx-auto mt-2 text-xs font-bold text-[#0071E3] hover:underline"
+                                          >
+                                            + Crea come nuovo contatto
+                                          </button>
+                                        </div>
+                                      );
+                                    }
+
+                                    return (
+                                      <>
+                                        {filtered.map(c => {
+                                          const rolesStr = Array.isArray(c.ruolo) ? c.ruolo.join(', ') : (c.ruolo || '');
+                                          return (
+                                            <button
+                                              key={c.id}
+                                              type="button"
+                                              onMouseDown={() => {
+                                                setSelectedCalendarClientId(c.id);
+                                                setSearchVisitClientQuery('');
+                                              }}
+                                              className="w-full text-left px-3 py-2 rounded-xl text-xs hover:bg-[#F5F5F7] transition-all flex flex-col gap-0.5"
+                                            >
+                                              <span className="font-bold text-[#1D1D1F]">{c.cognome} {c.nome}</span>
+                                              {(c.societa || rolesStr) && (
+                                                <span className="text-[10px] text-[#86868B]">
+                                                  {c.societa}{c.societa && rolesStr ? ' - ' : ''}{rolesStr}
+                                                </span>
+                                              )}
+                                            </button>
+                                          );
+                                        })}
+                                        <div className="border-t border-gray-100 pt-1 mt-1">
+                                          <button
+                                            type="button"
+                                            onMouseDown={() => {
+                                              setAddingContactForVisit('cliente');
+                                              handleCreateContatto();
+                                            }}
+                                            className="w-full text-left px-3 py-2 rounded-xl text-xs font-semibold text-[#0071E3] hover:bg-[#0071E3]/5 transition-all"
+                                          >
+                                            + Aggiungi Nuovo Contatto...
+                                          </button>
+                                        </div>
+                                      </>
+                                    );
+                                  })()}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Partecipanti */}
+                        <div>
+                          <div className="flex justify-between items-center mb-1">
+                            <label className="block text-xs font-semibold text-[#86868B]">Partecipanti</label>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAddingContactForVisit('partecipanti');
+                                handleCreateContatto();
+                              }}
+                              className="text-[10px] font-bold text-[#0071E3] hover:underline"
+                            >
+                              + Nuovo Contatto
+                            </button>
+                          </div>
+
+                          {/* Pill list of active participants */}
+                          <div className="flex flex-wrap gap-1.5 mb-2 max-h-20 overflow-y-auto">
+                            {selectedCalendarParticipantIds.length === 0 ? (
+                              <span className="text-[10px] text-gray-400 italic">Nessun partecipante aggiunto</span>
+                            ) : (
+                              selectedCalendarParticipantIds.map(cid => {
+                                const match = contatti.find(c => String(c.id) === String(cid));
+                                if (!match) return null;
+                                return (
+                                  <span key={cid} className="inline-flex items-center gap-1 bg-[#0071E3]/10 text-[#0071E3] text-[10px] px-2 py-0.5 rounded-full font-medium">
+                                    {match.nome || ''} {match.cognome || ''}
+                                    <button
+                                      type="button"
+                                      onClick={() => setSelectedCalendarParticipantIds(prev => prev.filter(id => String(id) !== String(cid)))}
+                                      className="hover:text-red-500 font-bold ml-0.5"
+                                    >
+                                      ✕
+                                    </button>
+                                  </span>
+                                );
+                              })
+                            )}
+                          </div>
+
+                          <div className="relative">
+                            <input
+                              type="text"
+                              placeholder="🔍 Cerca partecipanti da aggiungere..."
+                              value={searchVisitParticipantQuery}
+                              onChange={(e) => setSearchVisitParticipantQuery(e.target.value)}
+                              onFocus={() => setIsParticipantSearchFocused(true)}
+                              onBlur={() => setTimeout(() => setIsParticipantSearchFocused(false), 200)}
+                              className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none text-[#1D1D1F] hover:bg-[#E5E5EA]/50 focus:bg-white focus:border-[#0071E3] transition-all"
+                            />
+
+                            {isParticipantSearchFocused && (
+                              <div className="absolute left-0 right-0 mt-1 bg-white border border-[#E5E5EA] rounded-2xl shadow-xl max-h-60 overflow-y-auto z-[60] p-1.5 space-y-1">
+                                {(() => {
+                                  const filtered = contatti
+                                    .filter(c => !selectedCalendarParticipantIds.map(String).includes(String(c.id)))
+                                    .filter(c => {
+                                      const qParts = searchVisitParticipantQuery.toLowerCase().trim().split(/\s+/).filter(Boolean);
+                                      if (qParts.length === 0) return true;
+                                      const nome = (c.nome || '').toLowerCase();
+                                      const cognome = (c.cognome || '').toLowerCase();
+                                      const societa = (c.societa || '').toLowerCase();
+                                      const rolesStr = (Array.isArray(c.ruolo) ? c.ruolo.join(' ') : (c.ruolo || '')).toLowerCase();
+                                      return qParts.every(part =>
+                                        nome.includes(part) ||
+                                        cognome.includes(part) ||
+                                        societa.includes(part) ||
+                                        rolesStr.includes(part)
+                                      );
+                                    });
+
+                                  if (filtered.length === 0) {
+                                    return (
+                                      <div className="p-3 text-center text-xs text-[#86868B]">
+                                        Nessun contatto trovato
+                                        <button
+                                          type="button"
+                                          onMouseDown={() => {
+                                            setAddingContactForVisit('partecipanti');
+                                            handleCreateContatto();
+                                          }}
+                                          className="block mx-auto mt-2 text-xs font-bold text-[#0071E3] hover:underline"
+                                        >
+                                          + Crea come nuovo contatto
+                                        </button>
+                                      </div>
+                                    );
+                                  }
+
+                                  return (
+                                    <>
+                                      {filtered.map(c => {
+                                        const rolesStr = Array.isArray(c.ruolo) ? c.ruolo.join(', ') : (c.ruolo || '');
+                                        return (
+                                          <button
+                                            key={c.id}
+                                            type="button"
+                                            onMouseDown={() => {
+                                              const parsedVal = isNaN(Number(c.id)) ? c.id : Number(c.id);
+                                              if (!selectedCalendarParticipantIds.map(String).includes(String(parsedVal))) {
+                                                setSelectedCalendarParticipantIds(prev => [...prev, parsedVal]);
+                                              }
+                                              setSearchVisitParticipantQuery('');
+                                            }}
+                                            className="w-full text-left px-3 py-2 rounded-xl text-xs hover:bg-[#F5F5F7] transition-all flex flex-col gap-0.5"
+                                          >
+                                            <span className="font-bold text-[#1D1D1F]">{c.cognome} {c.nome}</span>
+                                            {(c.societa || rolesStr) && (
+                                              <span className="text-[10px] text-[#86868B]">
+                                                {c.societa}{c.societa && rolesStr ? ' - ' : ''}{rolesStr}
+                                              </span>
+                                            )}
+                                          </button>
+                                        );
+                                      })}
+                                      <div className="border-t border-gray-100 pt-1 mt-1">
+                                        <button
+                                          type="button"
+                                          onMouseDown={() => {
+                                            setAddingContactForVisit('partecipanti');
+                                            handleCreateContatto();
+                                          }}
+                                          className="w-full text-left px-3 py-2 rounded-xl text-xs font-semibold text-[#0071E3] hover:bg-[#0071E3]/5 transition-all"
+                                        >
+                                          + Aggiungi Nuovo Contatto...
+                                        </button>
+                                      </div>
+                                    </>
+                                  );
+                                })()}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Immobile in Oggetto */}
+                        <div>
+                          <div className="flex justify-between items-center mb-1">
+                            <label className="block text-xs font-semibold text-[#86868B]">Immobile di Riferimento</label>
+                            {!selectedVisitaImmobileId && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setAddingPropertyForVisit(true);
+                                  setCurrentImmobile(null);
+                                  setActiveFormTab('principale');
+                                  setIsImmobileModalOpen(true);
+                                }}
+                                className="text-[10px] font-bold text-[#0071E3] hover:underline"
+                              >
+                                + Nuovo Immobile
+                              </button>
+                            )}
+                          </div>
+                          <input type="hidden" name="immobile_di_riferimento_id" value={selectedVisitaImmobileId} />
+
+                          {selectedVisitaImmobileId ? (
+                            (() => {
+                              const selectedImm = immobili.find(imm => Number(imm.id) === Number(selectedVisitaImmobileId));
+                              if (!selectedImm) return null;
+                              return (
+                                <div className="bg-white rounded-2xl border border-[#E5E5EA] overflow-hidden hover:border-[#0071E3] transition-all group shadow-sm flex flex-col">
+                                  {/* Header Image */}
+                                  <div 
+                                    className="h-32 bg-cover bg-center relative flex items-end"
+                                    style={{
+                                      backgroundImage: selectedImm.immagine_di_riferimento 
+                                        ? `url(${selectedImm.immagine_di_riferimento})` 
+                                        : 'linear-gradient(to bottom right, #E5E5EA, #D2D2D7)'
+                                    }}
+                                  >
+                                    <div className="absolute inset-0 bg-black/15"></div>
+                                    
+                                    {/* Floating ✕ Button to Deselect/Change */}
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setSelectedVisitaImmobileId('');
+                                        setSearchVisitaPropertyQuery('');
+                                      }}
+                                      className="absolute top-2.5 right-2.5 w-7 h-7 bg-white/95 backdrop-blur-sm rounded-full flex items-center justify-center font-bold text-sm text-[#1D1D1F] hover:text-red-500 hover:scale-105 transition-all shadow-md z-30 animate-fade-in"
+                                      title="Rimuovi immobile"
+                                    >
+                                      ✕
+                                    </button>
+                                    
+                                    <div className="absolute top-2 left-2 flex gap-1 z-10 flex-wrap">
+                                      <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold tracking-wide uppercase shadow-sm ${selectedImm.stato === 'Disponibile' ? 'bg-[#34C759] text-white' :
+                                          selectedImm.stato === 'In Trattativa' ? 'bg-[#FF9500] text-white' :
+                                            selectedImm.stato === 'Venduto' ? 'bg-[#8E8E93] text-white' : 'bg-[#0071E3] text-white'
+                                        }`}>
+                                        {selectedImm.stato}
+                                      </span>
+                                      <span className="bg-black/40 backdrop-blur-md text-white px-1.5 py-0.5 rounded text-[8px] font-semibold tracking-wide shadow-sm">
+                                        {selectedImm.categoria}
+                                      </span>
+                                    </div>
+                                    
+                                    <div className="absolute bottom-2 left-2 text-white text-[10px] font-bold drop-shadow-md z-10">
+                                      {selectedImm.comune}{selectedImm.nazione ? `, ${selectedImm.nazione}` : ''}
+                                    </div>
+                                    
+                                    <span className="absolute bottom-2 right-2 bg-[#0071E3] text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full shadow-sm z-10">
+                                      {selectedImm.immobile_in ? selectedImm.immobile_in.join(' / ') : ''}
+                                    </span>
+                                  </div>
+
+                                  {/* Details */}
+                                  <div className="p-3.5 space-y-3">
+                                    <div className="min-w-0">
+                                      <h4 className="font-bold text-sm text-[#1D1D1F] line-clamp-1 leading-tight group-hover:text-[#0071E3] transition-colors">
+                                        {selectedImm.nome_immobile}
+                                      </h4>
+                                      <p className="text-[10px] text-[#86868B] leading-snug line-clamp-2 mt-0.5">
+                                        {selectedImm.descrizione_immobile}
+                                      </p>
+                                    </div>
+
+                                    {/* Tech Metrics Grid */}
+                                    <div className="grid grid-cols-3 gap-1 border-t border-b border-[#F5F5F7] py-1.5 text-center">
+                                      <div>
+                                        <span className="block text-[8px] font-medium text-[#86868B] uppercase tracking-wider">Codice</span>
+                                        <span className="text-[9px] font-semibold text-[#1D1D1F]">{selectedImm.codice_immobile || 'N/D'}</span>
+                                      </div>
+                                      <div>
+                                        <span className="block text-[8px] font-medium text-[#86868B] uppercase tracking-wider">Locali</span>
+                                        <span className="text-[9px] font-semibold text-[#1D1D1F]">{selectedImm.numero_di_locali}</span>
+                                      </div>
+                                      <div>
+                                        <span className="block text-[8px] font-medium text-[#86868B] uppercase tracking-wider">Superficie</span>
+                                        <span className="text-[9px] font-semibold text-[#1D1D1F]">
+                                          {selectedImm.superficie_abitabile ? `${selectedImm.superficie_abitabile} m²` : '—'}
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    <div className="text-sm font-extrabold text-[#0071E3]">
+                                      {Number(selectedImm.prezzo_di_vendita) > 0 
+                                        ? `CHF ${Number(selectedImm.prezzo_di_vendita).toLocaleString('it-CH')}` 
+                                        : `CHF ${Number(selectedImm.prezzo_di_affitto).toLocaleString('it-CH')}/mese`
+                                      }
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })()
+                          ) : (
+                            <div className="space-y-2">
+                              <input
+                                type="text"
+                                placeholder="🔍 Cerca immobile per nome, codice o comune..."
+                                value={searchVisitaPropertyQuery}
+                                onChange={(e) => setSearchVisitaPropertyQuery(e.target.value)}
+                                onFocus={() => setIsPropertySearchFocused(true)}
+                                onBlur={() => setTimeout(() => setIsPropertySearchFocused(false), 200)}
+                                className="w-full px-2.5 py-1.5 bg-[#F5F5F7] border border-transparent rounded-lg text-xs focus:outline-none focus:border-[#0071E3] transition-all text-[#1D1D1F]"
+                              />
+
+                              {isPropertySearchFocused && (
+                                <div className="max-h-60 overflow-y-auto border border-[#E5E5EA] rounded-2xl p-2 bg-[#F5F5F7] flex flex-col gap-2">
+                                  {immobili.length === 0 ? (
+                                    <p className="text-xs text-gray-400 italic text-center py-4">Nessun immobile a catalogo</p>
+                                  ) : (
+                                    (() => {
+                                      const filtered = immobili.filter(imm => 
+                                        (imm.nome_immobile || '').toLowerCase().includes(searchVisitaPropertyQuery.toLowerCase()) || 
+                                        (imm.comune || '').toLowerCase().includes(searchVisitaPropertyQuery.toLowerCase()) ||
+                                        (imm.codice_immobile || '').toLowerCase().includes(searchVisitaPropertyQuery.toLowerCase())
+                                      );
+                                      if (filtered.length === 0) return <p className="text-xs text-gray-400 italic text-center py-4">Nessun risultato</p>;
+                                      return filtered.map(imm => (
+                                        <div
+                                          key={imm.id}
+                                          onClick={() => {
+                                            setSelectedVisitaImmobileId(imm.id);
+                                            setIsPropertySearchFocused(false);
+                                          }}
+                                          className="bg-white p-2 rounded-xl border border-gray-200 flex items-center gap-3 cursor-pointer hover:border-[#0071E3] hover:shadow-md transition-all group"
+                                        >
+                                          <div 
+                                            className="w-14 h-14 rounded-lg bg-cover bg-center shrink-0 border border-gray-100"
+                                            style={{
+                                              backgroundImage: imm.immagine_di_riferimento 
+                                                ? `url(${imm.immagine_di_riferimento})` 
+                                                : 'linear-gradient(to bottom right, #E5E5EA, #D2D2D7)'
+                                            }}
+                                          />
+                                          <div className="text-xs leading-tight min-w-0 flex-1">
+                                            <span className="font-bold text-[#1D1D1F] block truncate group-hover:text-[#0071E3] transition-colors">
+                                              {imm.nome_immobile}
+                                            </span>
+                                            <span className="block text-[10px] text-[#86868B] mt-0.5">
+                                              {imm.comune} • {imm.codice_immobile}
+                                            </span>
+                                            <span className="block text-[10px] text-[#0071E3] font-semibold mt-0.5">
+                                              {Number(imm.prezzo_di_vendita) > 0 
+                                                ? `CHF ${Number(imm.prezzo_di_vendita).toLocaleString('it-CH')}` 
+                                                : `CHF ${Number(imm.prezzo_di_affitto).toLocaleString('it-CH')}/mese`
+                                              }
+                                              {Number(imm.numero_di_locali) > 0 && ` • ${imm.numero_di_locali} Locali`}
+                                              {Number(imm.superficie_abitabile) > 0 && ` • ${imm.superficie_abitabile} m²`}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      ));
+                                    })()
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                      </div>
                     </div>
 
-                    <div>
-                      <label className="block text-xs font-semibold text-[#86868B] mb-1">Tipologia Attività *</label>
-                      <select
-                        name="tipo_visita"
-                        defaultValue={currentVisita ? currentVisita.tipo_visita : 'Shooting Fotografico'}
-                        className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                      >
-                        <option value="Shooting Fotografico">Shooting Fotografico</option>
-                        <option value="Visita Cliente">Visita Cliente</option>
-                        <option value="Primo Incontro">Primo Incontro</option>
-                        <option value="Sopralluogo Tecnico">Sopralluogo Tecnico</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-[#86868B] mb-1">Esito Appuntamento</label>
-                      <select
-                        name="esito"
-                        defaultValue={currentVisita ? currentVisita.esito : 'NEUTRO'}
-                        className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                      >
-                        <option value="NEUTRO">Neutro</option>
-                        <option value="POSITIVO">Positivo</option>
-                        <option value="NEGATIVO">Negativo</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-[#86868B] mb-1">Referente / Cliente</label>
-                      <select
-                        name="cliente_id"
-                        defaultValue={currentVisita ? currentVisita.cliente_id : ''}
-                        className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                      >
-                        <option value="">Seleziona...</option>
-                        {contatti.map(c => (
-                          <option key={c.id} value={c.id}>{c.cognome} {c.nome} ({c.ruolo})</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Nomi Partecipanti (Separati da virgola)</label>
-                    <input
-                      type="text"
-                      name="partecipanti"
-                      placeholder="es. Olga Honchar, Massimiliano Boldi, Stefano Cau"
-                      defaultValue={currentVisita ? currentVisita.partecipanti : ''}
-                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Creato Da (Agente)</label>
-                    <input
-                      type="text"
-                      name="creato_da"
-                      placeholder="es. MASSIMILIANO BOLDI"
-                      defaultValue={currentVisita ? currentVisita.creato_da : 'MASSIMILIANO BOLDI'}
-                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Note operative & Feedback post-visita</label>
-                    <textarea
-                      name="feedback"
-                      rows="3"
-                      placeholder="Inserisci l'esito del colloquio, richieste speciali o note sulla logistica..."
-                      defaultValue={currentVisita ? currentVisita.feedback : ''}
-                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                    />
-                  </div>
+                    {/* Agent selection (hidden/pre-filled default) */}
+                    <input type="hidden" name="creato_da" value={currentVisita ? currentVisita.creato_da : (profile?.nome ? `${profile.nome.toUpperCase()} ${profile.cognome ? profile.cognome.toUpperCase() : ''}`.trim() : 'MASSIMILIANO BOLDI')} />
 
                   </div>
 

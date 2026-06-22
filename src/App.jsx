@@ -597,6 +597,8 @@ export default function App() {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [activeDetailTab, setActiveDetailTab] = useState('generale');
   const [previousModalContext, setPreviousModalContext] = useState(null);
+  const [previousVisitaModalContext, setPreviousVisitaModalContext] = useState(null);
+  const [previousContattoModalContext, setPreviousContattoModalContext] = useState(null);
 
   // Detail inspector (Contatti)
   const [viewingContatto, setViewingContatto] = useState(null);
@@ -2003,9 +2005,23 @@ export default function App() {
     setIsContattoModalOpen(true);
   };
 
-  const handleViewContatto = (item) => {
+  const handleViewContatto = (item, context = null) => {
+    setPreviousContattoModalContext(context);
     setViewingContatto(item);
     setIsContactDetailModalOpen(true);
+  };
+
+  const handleCloseContattoDetail = () => {
+    setIsContactDetailModalOpen(false);
+    setViewingContatto(null);
+    if (previousContattoModalContext) {
+      if (previousContattoModalContext.type === 'immobile') {
+        setViewingImmobile(previousContattoModalContext.item);
+        setActiveDetailTab(previousContattoModalContext.tab || 'generale');
+        setIsDetailModalOpen(true);
+      }
+      setPreviousContattoModalContext(null);
+    }
   };
 
   const handleDeleteContatto = async (id) => {
@@ -2129,10 +2145,24 @@ export default function App() {
     setCurrentVisita(null);
   };
 
-  const handleViewVisita = (item) => {
+  const handleViewVisita = (item, context = null) => {
     if (isResizingRef.current) return;
+    setPreviousVisitaModalContext(context);
     setViewingVisita(item);
     setIsVisitaDetailModalOpen(true);
+  };
+
+  const handleCloseVisitaDetail = () => {
+    setIsVisitaDetailModalOpen(false);
+    setViewingVisita(null);
+    if (previousVisitaModalContext) {
+      if (previousVisitaModalContext.type === 'immobile') {
+        setViewingImmobile(previousVisitaModalContext.item);
+        setActiveDetailTab(previousVisitaModalContext.tab || 'generale');
+        setIsDetailModalOpen(true);
+      }
+      setPreviousVisitaModalContext(null);
+    }
   };
 
   const handleCreateVisita = () => {
@@ -3634,50 +3664,25 @@ export default function App() {
                               </div>
                             </div>
 
-                            {/* Price and Actions */}
-                            <div className="flex items-center justify-between pt-1">
-                              <div>
-                                <span className="block text-[10px] text-[#86868B] uppercase font-semibold">Prezzo</span>
-                                <div className="space-y-0.5">
-                                  {Number(item.prezzo_di_vendita) > 0 && (
-                                    <div className="text-[11px] font-extrabold text-[#1D1D1F]">
-                                      <span className="text-[9px] text-[#86868B] font-semibold uppercase mr-1">Vendita:</span>
-                                      CHF {(Number(item.prezzo_di_vendita)).toLocaleString('it-CH')}
-                                    </div>
-                                  )}
-                                  {Number(item.prezzo_di_affitto) > 0 && (
-                                    <div className="text-[11px] font-extrabold text-[#1D1D1F]">
-                                      <span className="text-[9px] text-[#86868B] font-semibold uppercase mr-1">Affitto:</span>
-                                      CHF {(Number(item.prezzo_di_affitto)).toLocaleString('it-CH')}/mese
-                                    </div>
-                                  )}
-                                  {!(Number(item.prezzo_di_vendita) > 0) && !(Number(item.prezzo_di_affitto) > 0) && (
-                                    <span className="text-xs font-semibold text-gray-400 italic">Trattativa Riservata</span>
-                                  )}
-                                </div>
-                              </div>
-
-                              <div className="flex items-center space-x-1.5">
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleEditImmobile(item);
-                                  }}
-                                  className="p-2 bg-[#F5F5F7] hover:bg-[#E5E5EA] rounded-xl text-gray-700 transition-all"
-                                  title="Modifica"
-                                >
-                                  <IconEdit />
-                                </button>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleDeleteImmobile(item.id);
-                                  }}
-                                  className="p-2 bg-red-50 hover:bg-red-100 rounded-xl text-red-600 transition-all"
-                                  title="Elimina"
-                                >
-                                  <IconTrash />
-                                </button>
+                            {/* Price */}
+                            <div className="pt-2">
+                              <span className="block text-[10px] text-[#86868B] uppercase font-semibold">Prezzo</span>
+                              <div className="space-y-0.5">
+                                {Number(item.prezzo_di_vendita) > 0 && (
+                                  <div className="text-[11px] font-extrabold text-[#1D1D1F]">
+                                    <span className="text-[9px] text-[#86868B] font-semibold uppercase mr-1">Vendita:</span>
+                                    CHF {(Number(item.prezzo_di_vendita)).toLocaleString('it-CH')}
+                                  </div>
+                                )}
+                                {Number(item.prezzo_di_affitto) > 0 && (
+                                  <div className="text-[11px] font-extrabold text-[#1D1D1F]">
+                                    <span className="text-[9px] text-[#86868B] font-semibold uppercase mr-1">Affitto:</span>
+                                    CHF {(Number(item.prezzo_di_affitto)).toLocaleString('it-CH')}/mese
+                                  </div>
+                                )}
+                                {!(Number(item.prezzo_di_vendita) > 0) && !(Number(item.prezzo_di_affitto) > 0) && (
+                                  <span className="text-xs font-semibold text-gray-400 italic">Trattativa Riservata</span>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -5008,7 +5013,7 @@ export default function App() {
             <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/20 backdrop-blur-sm transition-all">
               <div className="absolute inset-0 -z-10" onClick={handleCloseImmobileDetail}></div>
 
-              <div className="w-full max-w-2xl h-full bg-white/70 backdrop-blur-2xl shadow-2xl border-l border-white/30 flex flex-col animate-slide-left overflow-hidden">
+              <div className="w-full md:max-w-2xl h-full bg-white/70 backdrop-blur-2xl shadow-2xl border-l border-white/30 flex flex-col animate-slide-left overflow-hidden">
 
                 {/* Header Banner */}
                 <div className="bg-[#F5F5F7] border-b border-[#E5E5EA] flex flex-col relative">
@@ -5072,6 +5077,7 @@ export default function App() {
                     { id: 'amministrazione', label: 'Amministrazione' },
                     { id: 'documenti', label: 'Documenti' },
                     { id: 'note_interne', label: 'Note Interne' },
+                    { id: 'eventi', label: 'Eventi' },
                     { id: 'log', label: 'Log' }
                   ].map(tab => (
                     <button
@@ -5253,9 +5259,25 @@ export default function App() {
                     <div className="space-y-6">
                       <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider">anagrafiche_collegate</span>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="bg-white p-3.5 rounded-xl border border-[#E5E5EA]">
+                        <div
+                          onClick={() => {
+                            if (viewingImmobile.proprietario_id) {
+                              const contactObj = contatti.find(c => String(c.id) === String(viewingImmobile.proprietario_id));
+                              if (contactObj) {
+                                const currentProperty = viewingImmobile;
+                                handleCloseImmobileDetail();
+                                handleViewContatto(contactObj, { type: 'immobile', item: currentProperty, tab: 'contatti' });
+                              }
+                            }
+                          }}
+                          className={`group bg-white p-3.5 rounded-2xl border border-[#E5E5EA] transition-all duration-200 ${
+                            viewingImmobile.proprietario_id 
+                              ? 'cursor-pointer hover:border-[#0071E3]/40 hover:shadow-lg' 
+                              : ''
+                          }`}
+                        >
                           <span className="block text-[9px] uppercase font-bold text-[#86868B]">proprietario_oreferrente_id</span>
-                          <span className="font-bold text-sm block mt-0.5">
+                          <span className={`font-bold text-sm block mt-0.5 transition-colors ${viewingImmobile.proprietario_id ? 'group-hover:text-[#0071E3]' : ''}`}>
                             {getContactName(viewingImmobile.proprietario_id)}
                           </span>
                           {viewingImmobile.proprietario_id && (
@@ -5266,9 +5288,25 @@ export default function App() {
                           )}
                         </div>
 
-                        <div className="bg-white p-3.5 rounded-xl border border-[#E5E5EA]">
+                        <div
+                          onClick={() => {
+                            if (viewingImmobile.agente_id) {
+                              const contactObj = contatti.find(c => String(c.id) === String(viewingImmobile.agente_id));
+                              if (contactObj) {
+                                const currentProperty = viewingImmobile;
+                                handleCloseImmobileDetail();
+                                handleViewContatto(contactObj, { type: 'immobile', item: currentProperty, tab: 'contatti' });
+                              }
+                            }
+                          }}
+                          className={`group bg-white p-3.5 rounded-2xl border border-[#E5E5EA] transition-all duration-200 ${
+                            viewingImmobile.agente_id 
+                              ? 'cursor-pointer hover:border-[#0071E3]/40 hover:shadow-lg' 
+                              : ''
+                          }`}
+                        >
                           <span className="block text-[9px] uppercase font-bold text-[#86868B]">agente_id</span>
-                          <span className="font-bold text-sm block mt-0.5">
+                          <span className={`font-bold text-sm block mt-0.5 transition-colors ${viewingImmobile.agente_id ? 'group-hover:text-[#0071E3]' : ''}`}>
                             {getContactName(viewingImmobile.agente_id)}
                           </span>
                           {viewingImmobile.agente_id && (
@@ -5394,6 +5432,115 @@ export default function App() {
                             <span className="text-gray-400 italic">Nessuna nota interna inserita per questo immobile.</span>
                           )}
                         </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* TAB: EVENTI */}
+                  {activeDetailTab === 'eventi' && (
+                    <div className="space-y-6">
+                      <div className="space-y-3">
+                        <h4 className="text-xs font-bold text-[#86868B] uppercase tracking-wider border-b pb-1">Eventi a Calendario</h4>
+                        {(() => {
+                          const propertyEvents = visite.filter(v => Number(v.immobile_di_riferimento_id) === Number(viewingImmobile.id));
+                          if (propertyEvents.length > 0) {
+                            return (
+                              <div className="space-y-2">
+                                {propertyEvents.map(item => {
+                                  const startObj = new Date(item.inizio_evento);
+                                  const endObj = item.fine_evento ? new Date(item.fine_evento) : null;
+                                  const fmtTime = (d) => d.toLocaleTimeString('it-CH', { hour: '2-digit', minute: '2-digit' });
+                                  const clienteName = getContactName(item.cliente_id);
+                                  const partecipantiList = item.partecipanti ? item.partecipanti.split(',').map(p => p.trim()).filter(Boolean) : [];
+                                  return (
+                                    <div
+                                      key={item.id}
+                                      onClick={() => {
+                                        const currentProperty = viewingImmobile;
+                                        handleCloseImmobileDetail();
+                                        handleViewVisita(item, { type: 'immobile', item: currentProperty, tab: 'eventi' });
+                                      }}
+                                      className="group bg-white border border-[#E5E5EA] rounded-2xl cursor-pointer hover:border-[#0071E3]/40 hover:shadow-lg transition-all duration-200 overflow-hidden"
+                                    >
+                                      <div className="flex">
+                                        {/* Date column */}
+                                        <div className="w-[68px] shrink-0 flex flex-col items-center justify-center bg-[#F5F5F7] border-r border-[#E5E5EA] py-3 gap-0.5">
+                                          <span className="text-[9px] font-bold uppercase text-[#86868B] tracking-wider leading-none">
+                                            {startObj.toLocaleDateString('it-IT', { month: 'short' })}
+                                          </span>
+                                          <span className="text-[24px] font-black text-[#1D1D1F] leading-none">
+                                            {startObj.toLocaleDateString('it-IT', { day: 'numeric' })}
+                                          </span>
+                                          <span className="text-[9px] font-semibold text-[#86868B] capitalize leading-none">
+                                            {startObj.toLocaleDateString('it-IT', { weekday: 'short' })}
+                                          </span>
+                                        </div>
+
+                                        {/* Main content */}
+                                        <div className="flex-1 min-w-0 px-3.5 py-3 flex flex-col gap-2">
+                                          {/* Title + time */}
+                                          <div className="flex items-start justify-between gap-2">
+                                            <div className="min-w-0 flex-1">
+                                              <h5 className="text-[12px] font-extrabold text-[#1D1D1F] leading-snug group-hover:text-[#0071E3] transition-colors truncate">
+                                                {item.nome_evento || item.tipo_visita || '—'}
+                                              </h5>
+                                            </div>
+                                            <div className="flex items-center gap-1.5 shrink-0">
+                                              <div className={`w-6 h-6 rounded-full flex items-center justify-center font-black text-[9px] uppercase shadow-sm ${
+                                                isMyEvent(item) 
+                                                  ? 'bg-gradient-to-tr from-[#0071E3] to-[#5AC8FA] text-white border border-[#0071E3]/20' 
+                                                  : 'bg-gradient-to-tr from-[#8E8E93] to-[#D2D2D7] text-white border border-[#8E8E93]/20'
+                                              }`} title={item.creato_da || 'MASSIMILIANO BOLDI'}>
+                                                {isMyEvent(item) ? 'TU' : getCreatorTag(item)}
+                                              </div>
+                                              {item.tutto_giorno ? (
+                                                <span className="shrink-0 inline-flex items-center gap-1 bg-[#FFF3E0] text-[#E65100] text-[11px] font-bold px-2.5 py-1 rounded-full border border-[#FFB74D]/30 whitespace-nowrap">
+                                                  ☀️ Tutto il giorno
+                                                </span>
+                                              ) : (
+                                                <span className="shrink-0 inline-flex items-center gap-1 bg-[#E8F4FF] text-[#0071E3] text-[11px] font-bold px-2.5 py-1 rounded-full border border-[#0071E3]/20 whitespace-nowrap">
+                                                  🕐 {fmtTime(startObj)}{endObj ? ' → ' + fmtTime(endObj) : ''}
+                                                </span>
+                                              )}
+                                            </div>
+                                          </div>
+
+                                          {/* Pills: cliente + partecipanti */}
+                                          <div className="flex flex-wrap gap-1">
+                                            {/* Cliente */}
+                                            {clienteName && (
+                                              <span className="inline-flex items-center gap-0.5 bg-[#F5F5F7] border border-[#E5E5EA] rounded-full px-2 py-0.5 text-[9px] font-semibold text-[#374151]">
+                                                👤 {clienteName}
+                                              </span>
+                                            )}
+                                            {/* Partecipanti */}
+                                            {partecipantiList.length > 0 ? (
+                                              partecipantiList.map((p, i) => (
+                                                <span key={i} className="inline-flex items-center gap-0.5 bg-[#EFF6FF] border border-[#BFDBFE] rounded-full px-2 py-0.5 text-[9px] font-semibold text-[#1D4ED8]">
+                                                  👥 {p}
+                                                </span>
+                                              ))
+                                            ) : null}
+                                          </div>
+
+                                          {/* Note */}
+                                          {item.esito_e_note && (
+                                            <p className="text-[10px] text-[#86868B] leading-relaxed line-clamp-1 border-t border-[#F5F5F7] pt-1.5">
+                                              <span className="font-semibold text-[#6B7280]">Note: </span>
+                                              {item.esito_e_note}
+                                            </p>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            );
+                          } else {
+                            return <p className="text-xs text-[#86868B] italic">Nessun evento in calendario per questo immobile.</p>;
+                          }
+                        })()}
                       </div>
                     </div>
                   )}
@@ -6605,6 +6752,18 @@ export default function App() {
 
                   {/* Buttons */}
                   <div className="p-6 border-t border-[#E5E5EA] bg-[#F5F5F7] flex space-x-2">
+                    {currentImmobile && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleDeleteImmobile(currentImmobile.id);
+                          setIsImmobileModalOpen(false);
+                        }}
+                        className="flex-1 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 py-3 rounded-full font-semibold text-sm transition-all text-center"
+                      >
+                        Elimina Immobile
+                      </button>
+                    )}
                     <button
                       type="submit"
                       className="flex-1 bg-[#0071E3] hover:bg-[#0077ED] text-white py-3 rounded-full font-bold text-sm transition-all text-center shadow-sm"
@@ -7073,8 +7232,10 @@ export default function App() {
             const propertyObj = immobili.find(imm => Number(imm.id) === Number(viewingVisita.immobile_di_riferimento_id));
 
             return (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-0 md:p-4">
-                <div className="bg-white w-full h-full md:h-auto max-w-lg rounded-none md:rounded-3xl shadow-2xl border border-[#E5E5EA] overflow-hidden flex flex-col text-[#1D1D1F]">
+              <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/20 backdrop-blur-sm transition-all">
+                <div className="absolute inset-0 -z-10" onClick={handleCloseVisitaDetail}></div>
+
+                <div className="w-full md:max-w-lg h-full bg-white shadow-2xl border-l border-[#E5E5EA] flex flex-col animate-slide-left overflow-hidden text-[#1D1D1F]">
                   
                   {/* Header */}
                   <div className="px-6 py-5 border-b border-[#E5E5EA] flex justify-between items-center bg-[#F5F5F7]">
@@ -7085,7 +7246,7 @@ export default function App() {
                       </h3>
                     </div>
                     <button
-                      onClick={() => setIsVisitaDetailModalOpen(false)}
+                      onClick={handleCloseVisitaDetail}
                       className="w-7 h-7 bg-white rounded-full border border-[#D2D2D7] flex items-center justify-center font-bold text-sm text-[#86868B] hover:text-[#1D1D1F] transition-all"
                     >
                       ✕
@@ -7093,7 +7254,7 @@ export default function App() {
                   </div>
 
                   {/* Body */}
-                  <div className="p-6 space-y-5 overflow-y-auto flex-1 md:max-h-[500px] custom-scrollbar">
+                  <div className="p-6 space-y-5 overflow-y-auto flex-1 custom-scrollbar">
                     
                     {/* Time details */}
                     <div className="flex items-start gap-3 bg-[#F5F5F7] p-4 rounded-2xl border border-transparent">
@@ -7207,7 +7368,7 @@ export default function App() {
                           type="button"
                           onClick={() => {
                             handleDeleteVisita(viewingVisita.id);
-                            setIsVisitaDetailModalOpen(false);
+                            handleCloseVisitaDetail();
                           }}
                           className="flex-1 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 py-3 rounded-full font-semibold text-sm transition-all text-center"
                         >
@@ -7227,7 +7388,7 @@ export default function App() {
                     )}
                     <button
                       type="button"
-                      onClick={() => setIsVisitaDetailModalOpen(false)}
+                      onClick={handleCloseVisitaDetail}
                       className="flex-1 bg-white hover:bg-gray-100 border border-[#D2D2D7] text-[#1D1D1F] py-3 rounded-full font-semibold text-sm transition-all text-center"
                     >
                       Chiudi

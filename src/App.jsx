@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase, isRealSupabase } from './supabaseClient';
 
 // --- INLINE BEAUTIFUL SVG ICONS (Apple Style) ---
@@ -2381,6 +2381,179 @@ export default function App() {
     return imm ? (imm.nome || imm.nome_immobile) : 'Immobile sconosciuto';
   };
 
+  const filteredImmobili = useMemo(() => {
+    return immobili
+      .filter(item => {
+        const propName = (item.nome_immobile || '').toLowerCase();
+        const propComune = (item.comune || '').toLowerCase();
+        const matchSearch = propName.includes(searchProperty.toLowerCase()) || propComune.includes(searchProperty.toLowerCase());
+        
+        const matchType = filterPropertyType === 'Tutti' || (item.immobile_in && item.immobile_in.includes(filterPropertyType));
+        
+        const matchTipo = filterTipo === 'Tutti' || (item.tipo && item.tipo.some(t => t.toLowerCase() === filterTipo.toLowerCase()));
+        
+        const matchStato = filterStato === 'Tutti' ||
+          (filterStato === 'Disponibile' && (item.stato === 'Disponibile' || item.stato === 'In Trattativa')) ||
+          (item.stato && item.stato.toLowerCase() === filterStato.toLowerCase());
+        
+        const matchComune = filterComune === 'Tutti' || (item.comune && item.comune.toLowerCase() === filterComune.toLowerCase());
+        
+        const matchVendibileStranieri = filterVendibileStranieri === 'Tutti' || (item.vendibile_a_stranieri && item.vendibile_a_stranieri.toLowerCase() === filterVendibileStranieri.toLowerCase());
+        
+        const matchResidenza = filterResidenza === 'Tutti' || (item.tipo_di_residenza && item.tipo_di_residenza.some(r => r.toLowerCase() === filterResidenza.toLowerCase()));
+        
+        const matchMandatoFirmato = filterMandatoFirmato === 'Tutti' || (item.mandato_firmato && item.mandato_firmato.toLowerCase() === filterMandatoFirmato.toLowerCase());
+        
+        const matchAgenteId = filterAgenteId === 'Tutti' || String(item.agente_id) === String(filterAgenteId);
+        
+        const isRent = item.immobile_in && item.immobile_in.includes('Affitto');
+        const price = isRent ? Number(item.prezzo_di_affitto || 0) : Number(item.prezzo_di_vendita || 0);
+        const matchPrezzoMin = !filterPrezzoMin || price >= Number(filterPrezzoMin);
+        const matchPrezzoMax = !filterPrezzoMax || price <= Number(filterPrezzoMax);
+        
+        const matchLocali = filterLocaliMin === 'Tutti' || Number(item.numero_di_locali || 0) >= Number(filterLocaliMin);
+        const matchBagni = filterBagniMin === 'Tutti' || Number(item.numero_bagni || 0) >= Number(filterBagniMin);
+        
+        const matchSuperficie = !filterSuperficieMin || Number(item.superficie_abitabile || item.superficie_sul || 0) >= Number(filterSuperficieMin);
+        
+        const matchGarage = !filterGarageMin || Number(item.garage || 0) >= Number(filterGarageMin);
+        const matchPostiAuto = !filterPostiAutoMin || Number(item.parcheggio || 0) >= Number(filterPostiAutoMin);
+        
+        return matchSearch && matchType && matchTipo && matchStato && matchComune && 
+               matchVendibileStranieri && matchResidenza && matchMandatoFirmato && matchAgenteId &&
+               matchPrezzoMin && matchPrezzoMax && matchLocali && matchBagni && matchSuperficie &&
+               matchGarage && matchPostiAuto;
+      })
+      .sort((a, b) => {
+        if (sortProperty === 'prezzo-asc') {
+          const aIsRent = a.immobile_in && a.immobile_in.includes('Affitto');
+          const bIsRent = b.immobile_in && b.immobile_in.includes('Affitto');
+          const aPrice = aIsRent ? Number(a.prezzo_di_affitto || 0) : Number(a.prezzo_di_vendita || 0);
+          const bPrice = bIsRent ? Number(b.prezzo_di_affitto || 0) : Number(b.prezzo_di_vendita || 0);
+          return aPrice - bPrice;
+        }
+        if (sortProperty === 'prezzo-desc') {
+          const aIsRent = a.immobile_in && a.immobile_in.includes('Affitto');
+          const bIsRent = b.immobile_in && b.immobile_in.includes('Affitto');
+          const aPrice = aIsRent ? Number(a.prezzo_di_affitto || 0) : Number(a.prezzo_di_vendita || 0);
+          const bPrice = bIsRent ? Number(b.prezzo_di_affitto || 0) : Number(b.prezzo_di_vendita || 0);
+          return bPrice - aPrice;
+        }
+        if (sortProperty === 'superficie-asc') {
+          const aSup = Number(a.superficie_abitabile || a.superficie_sul || 0);
+          const bSup = Number(b.superficie_abitabile || b.superficie_sul || 0);
+          return aSup - bSup;
+        }
+        if (sortProperty === 'superficie-desc') {
+          const aSup = Number(a.superficie_abitabile || a.superficie_sul || 0);
+          const bSup = Number(b.superficie_abitabile || b.superficie_sul || 0);
+          return bSup - aSup;
+        }
+        if (sortProperty === 'creazione-asc') {
+          const aTime = a.created_at ? new Date(a.created_at).getTime() : 0;
+          const bTime = b.created_at ? new Date(b.created_at).getTime() : 0;
+          return aTime - bTime;
+        }
+        if (sortProperty === 'creazione-desc') {
+          const aTime = a.created_at ? new Date(a.created_at).getTime() : 0;
+          const bTime = b.created_at ? new Date(b.created_at).getTime() : 0;
+          return bTime - aTime;
+        }
+        if (sortProperty === 'modifica-asc') {
+          const aTime = a.ultima_modifica_il ? new Date(a.ultima_modifica_il).getTime() : 0;
+          const bTime = b.ultima_modifica_il ? new Date(b.ultima_modifica_il).getTime() : 0;
+          return aTime - bTime;
+        }
+        if (sortProperty === 'modifica-desc') {
+          const aTime = a.ultima_modifica_il ? new Date(a.ultima_modifica_il).getTime() : 0;
+          const bTime = b.ultima_modifica_il ? new Date(b.ultima_modifica_il).getTime() : 0;
+          return bTime - aTime;
+        }
+        return 0;
+      });
+  }, [
+    immobili, searchProperty, filterPropertyType, filterTipo, filterStato,
+    filterComune, filterVendibileStranieri, filterResidenza, filterMandatoFirmato,
+    filterAgenteId, filterPrezzoMin, filterPrezzoMax, filterLocaliMin, filterBagniMin,
+    filterSuperficieMin, filterGarageMin, filterPostiAutoMin, sortProperty
+  ]);
+
+  const filteredContatti = useMemo(() => {
+    return contatti
+      .filter(item => {
+        const fullName = `${item.nome || ''} ${item.cognome || ''}`.toLowerCase();
+        const matchSearch = fullName.includes(searchContact.toLowerCase()) || (item.mail || '').toLowerCase().includes(searchContact.toLowerCase());
+        const matchRuolo = filterContactRuolo === 'Tutti' || 
+          (Array.isArray(item.ruolo) 
+            ? item.ruolo.includes(filterContactRuolo) 
+            : String(item.ruolo || '').includes(filterContactRuolo)
+          );
+        return matchSearch && matchRuolo;
+      })
+      .sort((a, b) => {
+        if (sortContactOrder === 'cognome-nome') {
+          const cognomeA = (a.cognome || '').toLowerCase();
+          const cognomeB = (b.cognome || '').toLowerCase();
+          if (cognomeA !== cognomeB) return cognomeA.localeCompare(cognomeB);
+          return (a.nome || '').toLowerCase().localeCompare((b.nome || '').toLowerCase());
+        } else {
+          const nomeA = (a.nome || '').toLowerCase();
+          const nomeB = (b.nome || '').toLowerCase();
+          if (nomeA !== nomeB) return nomeA.localeCompare(nomeB);
+          return (a.cognome || '').toLowerCase().localeCompare((b.cognome || '').toLowerCase());
+        }
+      });
+  }, [contatti, searchContact, filterContactRuolo, sortContactOrder]);
+
+  const visiteStats = useMemo(() => {
+    const uniqueAgents = Array.from(new Set([
+      ...visite.map(v => v.creato_da).filter(Boolean),
+      ...contatti.filter(c => {
+        const roles = Array.isArray(c.ruolo) ? c.ruolo : [c.ruolo];
+        return roles.some(r => String(r).toLowerCase().includes('agente'));
+      }).map(c => `${c.nome} ${c.cognome}`.toUpperCase())
+    ])).sort();
+
+    const filteredVisite = visite.filter(item => {
+      const immName = getImmobileName(item.immobile_di_riferimento_id).toLowerCase();
+      const clientName = getContactName(item.cliente_id).toLowerCase();
+      const query = searchVisit.toLowerCase();
+      const matchesSearch = !query || 
+        immName.includes(query) || 
+        clientName.includes(query) ||
+        (item.tipo_visita || '').toLowerCase().includes(query) ||
+        (item.esito_e_note || '').toLowerCase().includes(query);
+
+      const matchesAgent = filterVisitAgent === 'Tutti' || 
+        item.creato_da === filterVisitAgent || 
+        (item.partecipanti || '').includes(filterVisitAgent);
+
+      const matchesClient = filterVisitClient === 'Tutti' || String(item.cliente_id) === String(filterVisitClient);
+      const matchesProperty = filterVisitProperty === 'Tutti' || String(item.immobile_di_riferimento_id) === String(filterVisitProperty);
+      const matchesType = filterVisitType === 'Tutti' || item.tipo_visita === filterVisitType;
+      const matchesOutcome = filterVisitOutcome === 'Tutti' || item.esito_e_note === filterVisitOutcome;
+
+      return matchesSearch && matchesAgent && matchesClient && matchesProperty && matchesType && matchesOutcome;
+    });
+
+    const totalActivities = filteredVisite.length;
+    const customerVisits = filteredVisite.filter(v => v.tipo_visita === 'Visita Cliente').length;
+    const withOutcome = filteredVisite.filter(v => v.esito_e_note === 'POSITIVO' || v.esito_e_note === 'NEGATIVO');
+    const positiveCount = filteredVisite.filter(v => v.esito_e_note === 'POSITIVO').length;
+    const successRate = withOutcome.length > 0 ? Math.round((positiveCount / withOutcome.length) * 100) : 0;
+
+    return {
+      uniqueAgents,
+      filteredVisite,
+      totalActivities,
+      customerVisits,
+      successRate
+    };
+  }, [
+    visite, contatti, immobili, searchVisit, filterVisitAgent,
+    filterVisitClient, filterVisitProperty, filterVisitType, filterVisitOutcome
+  ]);
+
   return (
     <div className="relative min-h-screen liquid-bg text-slate-100 font-sans antialiased overflow-hidden selection:bg-[#0071E3] selection:text-white">
 
@@ -2704,8 +2877,7 @@ export default function App() {
           <main ref={mainContentRef} className="flex-1 overflow-y-auto bg-transparent p-4 md:p-8 pb-24 md:pb-8">
 
             {/* TAB 1: DASHBOARD */}
-            {activeTab === 'dashboard' && (
-              <div className="space-y-8 max-w-6xl mx-auto">
+            <div className={`${activeTab === 'dashboard' ? 'block' : 'hidden'} space-y-8 max-w-6xl mx-auto`}>
 
                 {/* Elegant Top Header with Welcome Message */}
                 <div className="flex justify-between items-end border-b border-[#E5E5EA] pb-5">
@@ -3055,12 +3227,10 @@ export default function App() {
                   </div>
                 </div>
 
-              </div>
-            )}
+            </div>
 
             {/* TAB 2: IMMOBILI */}
-            {activeTab === 'immobili' && (
-              <div className="space-y-6 max-w-6xl mx-auto">
+            <div className={`${activeTab === 'immobili' ? 'block' : 'hidden'} space-y-6 max-w-6xl mx-auto`}>
 
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E5E5EA] pb-5">
@@ -3406,49 +3576,7 @@ export default function App() {
                       <span>Calcolo immobili in corso...</span>
                     ) : (
                       <span>
-                        Trovati <span className="font-bold text-[#1D1D1F]">{
-                          immobili.filter(item => {
-                            const propName = (item.nome_immobile || '').toLowerCase();
-                            const propComune = (item.comune || '').toLowerCase();
-                            const matchSearch = propName.includes(searchProperty.toLowerCase()) || propComune.includes(searchProperty.toLowerCase());
-                            
-                            const matchType = filterPropertyType === 'Tutti' || (item.immobile_in && item.immobile_in.includes(filterPropertyType));
-                            
-                            const matchTipo = filterTipo === 'Tutti' || (item.tipo && item.tipo.some(t => t.toLowerCase() === filterTipo.toLowerCase()));
-                            
-                            const matchStato = filterStato === 'Tutti' ||
-                              (filterStato === 'Disponibile' && (item.stato === 'Disponibile' || item.stato === 'In Trattativa')) ||
-                              (item.stato && item.stato.toLowerCase() === filterStato.toLowerCase());
-                            
-                            const matchComune = filterComune === 'Tutti' || (item.comune && item.comune.toLowerCase() === filterComune.toLowerCase());
-                            
-                            const matchVendibileStranieri = filterVendibileStranieri === 'Tutti' || (item.vendibile_a_stranieri && item.vendibile_a_stranieri.toLowerCase() === filterVendibileStranieri.toLowerCase());
-                            
-                            const matchResidenza = filterResidenza === 'Tutti' || (item.tipo_di_residenza && item.tipo_di_residenza.some(r => r.toLowerCase() === filterResidenza.toLowerCase()));
-                            
-                            const matchMandatoFirmato = filterMandatoFirmato === 'Tutti' || (item.mandato_firmato && item.mandato_firmato.toLowerCase() === filterMandatoFirmato.toLowerCase());
-                            
-                            const matchAgenteId = filterAgenteId === 'Tutti' || String(item.agente_id) === String(filterAgenteId);
-                            
-                            const isRent = item.immobile_in && item.immobile_in.includes('Affitto');
-                            const price = isRent ? Number(item.prezzo_di_affitto || 0) : Number(item.prezzo_di_vendita || 0);
-                            const matchPrezzoMin = !filterPrezzoMin || price >= Number(filterPrezzoMin);
-                            const matchPrezzoMax = !filterPrezzoMax || price <= Number(filterPrezzoMax);
-                            
-                            const matchLocali = filterLocaliMin === 'Tutti' || Number(item.numero_di_locali || 0) >= Number(filterLocaliMin);
-                            const matchBagni = filterBagniMin === 'Tutti' || Number(item.numero_bagni || 0) >= Number(filterBagniMin);
-                            
-                            const matchSuperficie = !filterSuperficieMin || Number(item.superficie_abitabile || item.superficie_sul || 0) >= Number(filterSuperficieMin);
-                            
-                            const matchGarage = !filterGarageMin || Number(item.garage || 0) >= Number(filterGarageMin);
-                            const matchPostiAuto = !filterPostiAutoMin || Number(item.parcheggio || 0) >= Number(filterPostiAutoMin);
-                            
-                            return matchSearch && matchType && matchTipo && matchStato && matchComune && 
-                                   matchVendibileStranieri && matchResidenza && matchMandatoFirmato && matchAgenteId &&
-                                   matchPrezzoMin && matchPrezzoMax && matchLocali && matchBagni && matchSuperficie &&
-                                   matchGarage && matchPostiAuto;
-                          }).length
-                        }</span> immobili
+                        Trovati <span className="font-bold text-[#1D1D1F]">{filteredImmobili.length}</span> immobili
                       </span>
                     )}
                   </div>
@@ -3498,96 +3626,7 @@ export default function App() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {immobili
-                      .filter(item => {
-                        const propName = (item.nome_immobile || '').toLowerCase();
-                        const propComune = (item.comune || '').toLowerCase();
-                        const matchSearch = propName.includes(searchProperty.toLowerCase()) || propComune.includes(searchProperty.toLowerCase());
-                        
-                        const matchType = filterPropertyType === 'Tutti' || (item.immobile_in && item.immobile_in.includes(filterPropertyType));
-                        
-                        const matchTipo = filterTipo === 'Tutti' || (item.tipo && item.tipo.some(t => t.toLowerCase() === filterTipo.toLowerCase()));
-                        
-                        const matchStato = filterStato === 'Tutti' ||
-                          (filterStato === 'Disponibile' && (item.stato === 'Disponibile' || item.stato === 'In Trattativa')) ||
-                          (item.stato && item.stato.toLowerCase() === filterStato.toLowerCase());
-                        
-                        const matchComune = filterComune === 'Tutti' || (item.comune && item.comune.toLowerCase() === filterComune.toLowerCase());
-                        
-                        const matchVendibileStranieri = filterVendibileStranieri === 'Tutti' || (item.vendibile_a_stranieri && item.vendibile_a_stranieri.toLowerCase() === filterVendibileStranieri.toLowerCase());
-                        
-                        const matchResidenza = filterResidenza === 'Tutti' || (item.tipo_di_residenza && item.tipo_di_residenza.some(r => r.toLowerCase() === filterResidenza.toLowerCase()));
-                        
-                        const matchMandatoFirmato = filterMandatoFirmato === 'Tutti' || (item.mandato_firmato && item.mandato_firmato.toLowerCase() === filterMandatoFirmato.toLowerCase());
-                        
-                        const matchAgenteId = filterAgenteId === 'Tutti' || String(item.agente_id) === String(filterAgenteId);
-                        
-                        const isRent = item.immobile_in && item.immobile_in.includes('Affitto');
-                        const price = isRent ? Number(item.prezzo_di_affitto || 0) : Number(item.prezzo_di_vendita || 0);
-                        const matchPrezzoMin = !filterPrezzoMin || price >= Number(filterPrezzoMin);
-                        const matchPrezzoMax = !filterPrezzoMax || price <= Number(filterPrezzoMax);
-                        
-                        const matchLocali = filterLocaliMin === 'Tutti' || Number(item.numero_di_locali || 0) >= Number(filterLocaliMin);
-                        const matchBagni = filterBagniMin === 'Tutti' || Number(item.numero_bagni || 0) >= Number(filterBagniMin);
-                        
-                        const matchSuperficie = !filterSuperficieMin || Number(item.superficie_abitabile || item.superficie_sul || 0) >= Number(filterSuperficieMin);
-                        
-                        const matchGarage = !filterGarageMin || Number(item.garage || 0) >= Number(filterGarageMin);
-                        const matchPostiAuto = !filterPostiAutoMin || Number(item.parcheggio || 0) >= Number(filterPostiAutoMin);
-                        
-                        return matchSearch && matchType && matchTipo && matchStato && matchComune && 
-                               matchVendibileStranieri && matchResidenza && matchMandatoFirmato && matchAgenteId &&
-                               matchPrezzoMin && matchPrezzoMax && matchLocali && matchBagni && matchSuperficie &&
-                               matchGarage && matchPostiAuto;
-                      })
-                      .sort((a, b) => {
-                        if (sortProperty === 'prezzo-asc') {
-                          const aIsRent = a.immobile_in && a.immobile_in.includes('Affitto');
-                          const bIsRent = b.immobile_in && b.immobile_in.includes('Affitto');
-                          const aPrice = aIsRent ? Number(a.prezzo_di_affitto || 0) : Number(a.prezzo_di_vendita || 0);
-                          const bPrice = bIsRent ? Number(b.prezzo_di_affitto || 0) : Number(b.prezzo_di_vendita || 0);
-                          return aPrice - bPrice;
-                        }
-                        if (sortProperty === 'prezzo-desc') {
-                          const aIsRent = a.immobile_in && a.immobile_in.includes('Affitto');
-                          const bIsRent = b.immobile_in && b.immobile_in.includes('Affitto');
-                          const aPrice = aIsRent ? Number(a.prezzo_di_affitto || 0) : Number(a.prezzo_di_vendita || 0);
-                          const bPrice = bIsRent ? Number(b.prezzo_di_affitto || 0) : Number(b.prezzo_di_vendita || 0);
-                          return bPrice - aPrice;
-                        }
-                        if (sortProperty === 'superficie-asc') {
-                          const aSup = Number(a.superficie_abitabile || a.superficie_sul || 0);
-                          const bSup = Number(b.superficie_abitabile || b.superficie_sul || 0);
-                          return aSup - bSup;
-                        }
-                        if (sortProperty === 'superficie-desc') {
-                          const aSup = Number(a.superficie_abitabile || a.superficie_sul || 0);
-                          const bSup = Number(b.superficie_abitabile || b.superficie_sul || 0);
-                          return bSup - aSup;
-                        }
-                        if (sortProperty === 'creazione-asc') {
-                          const aTime = a.created_at ? new Date(a.created_at).getTime() : 0;
-                          const bTime = b.created_at ? new Date(b.created_at).getTime() : 0;
-                          return aTime - bTime;
-                        }
-                        if (sortProperty === 'creazione-desc') {
-                          const aTime = a.created_at ? new Date(a.created_at).getTime() : 0;
-                          const bTime = b.created_at ? new Date(b.created_at).getTime() : 0;
-                          return bTime - aTime;
-                        }
-                        if (sortProperty === 'modifica-asc') {
-                          const aTime = a.ultima_modifica_il ? new Date(a.ultima_modifica_il).getTime() : 0;
-                          const bTime = b.ultima_modifica_il ? new Date(b.ultima_modifica_il).getTime() : 0;
-                          return aTime - bTime;
-                        }
-                        if (sortProperty === 'modifica-desc') {
-                          const aTime = a.ultima_modifica_il ? new Date(a.ultima_modifica_il).getTime() : 0;
-                          const bTime = b.ultima_modifica_il ? new Date(b.ultima_modifica_il).getTime() : 0;
-                          return bTime - aTime;
-                        }
-                        return 0;
-                      })
-                      .map((item) => (
+                    {filteredImmobili.map((item) => (
                         <div
                           key={item.id}
                           onClick={() => handleViewImmobile(item)}
@@ -3692,12 +3731,10 @@ export default function App() {
                   </div>
                 )}
 
-              </div>
-            )}
+            </div>
 
             {/* TAB 3: CONTATTI */}
-            {activeTab === 'contatti' && (
-              <div className="space-y-6 max-w-6xl mx-auto">
+            <div className={`${activeTab === 'contatti' ? 'block' : 'hidden'} space-y-6 max-w-6xl mx-auto`}>
 
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E5E5EA] pb-5">
@@ -3832,31 +3869,7 @@ export default function App() {
                             </td>
                           </tr>
                         ) : (
-                          contatti
-                            .filter(item => {
-                              const fullName = `${item.nome || ''} ${item.cognome || ''}`.toLowerCase();
-                              const matchSearch = fullName.includes(searchContact.toLowerCase()) || (item.mail || '').toLowerCase().includes(searchContact.toLowerCase());
-                              const matchRuolo = filterContactRuolo === 'Tutti' || 
-                                (Array.isArray(item.ruolo) 
-                                  ? item.ruolo.includes(filterContactRuolo) 
-                                  : String(item.ruolo || '').includes(filterContactRuolo)
-                                );
-                              return matchSearch && matchRuolo;
-                            })
-                            .sort((a, b) => {
-                              if (sortContactOrder === 'cognome-nome') {
-                                const cognomeA = (a.cognome || '').toLowerCase();
-                                const cognomeB = (b.cognome || '').toLowerCase();
-                                if (cognomeA !== cognomeB) return cognomeA.localeCompare(cognomeB);
-                                return (a.nome || '').toLowerCase().localeCompare((b.nome || '').toLowerCase());
-                              } else {
-                                const nomeA = (a.nome || '').toLowerCase();
-                                const nomeB = (b.nome || '').toLowerCase();
-                                if (nomeA !== nomeB) return nomeA.localeCompare(nomeB);
-                                return (a.cognome || '').toLowerCase().localeCompare((b.cognome || '').toLowerCase());
-                              }
-                            })
-                            .map((item) => (
+                          filteredContatti.map((item) => (
                               <tr
                                 key={item.id}
                                 onClick={() => handleViewContatto(item)}
@@ -3940,38 +3953,10 @@ export default function App() {
                   ) : contatti.length === 0 ? (
                     <p className="text-center text-xs text-[#86868B] py-8">Nessun contatto trovato.</p>
                   ) : (
-                    (() => {
-                      const filtered = contatti.filter(item => {
-                        const fullName = `${item.nome || ''} ${item.cognome || ''}`.toLowerCase();
-                        const matchSearch = fullName.includes(searchContact.toLowerCase()) || (item.mail || '').toLowerCase().includes(searchContact.toLowerCase());
-                        const matchRuolo = filterContactRuolo === 'Tutti' || 
-                          (Array.isArray(item.ruolo) 
-                            ? item.ruolo.includes(filterContactRuolo) 
-                            : String(item.ruolo || '').includes(filterContactRuolo)
-                          );
-                        return matchSearch && matchRuolo;
-                      });
-                      
-                      if (filtered.length === 0) {
-                        return <p className="text-center text-xs text-[#86868B] py-8">Nessun risultato per la ricerca.</p>;
-                      }
-
-                      // Apply sorting
-                      filtered.sort((a, b) => {
-                        if (sortContactOrder === 'cognome-nome') {
-                          const cognomeA = (a.cognome || '').toLowerCase();
-                          const cognomeB = (b.cognome || '').toLowerCase();
-                          if (cognomeA !== cognomeB) return cognomeA.localeCompare(cognomeB);
-                          return (a.nome || '').toLowerCase().localeCompare((b.nome || '').toLowerCase());
-                        } else {
-                          const nomeA = (a.nome || '').toLowerCase();
-                          const nomeB = (b.nome || '').toLowerCase();
-                          if (nomeA !== nomeB) return nomeA.localeCompare(nomeB);
-                          return (a.cognome || '').toLowerCase().localeCompare((b.cognome || '').toLowerCase());
-                        }
-                      });
-                      
-                      return filtered.map(item => (
+                    filteredContatti.length === 0 ? (
+                      <p className="text-center text-xs text-[#86868B] py-8">Nessun risultato per la ricerca.</p>
+                    ) : (
+                      filteredContatti.map(item => (
                         <div 
                           key={item.id} 
                           onClick={() => handleViewContatto(item)}
@@ -4058,54 +4043,17 @@ export default function App() {
                             </div>
                           )}
                         </div>
-                      ));
-                    })()
+                      ))
+                    )
                   )}
                 </div>
 
-              </div>
-            )}
+            </div>
 
             {/* TAB 4: CALENDARIO / VISITE */}
-            {activeTab === 'visite' && (() => {
-              // Get all unique agents (creato_da) for filter
-              const uniqueAgents = Array.from(new Set([
-                ...visite.map(v => v.creato_da).filter(Boolean),
-                ...contatti.filter(c => {
-                  const roles = Array.isArray(c.ruolo) ? c.ruolo : [c.ruolo];
-                  return roles.some(r => String(r).toLowerCase().includes('agente'));
-                }).map(c => `${c.nome} ${c.cognome}`.toUpperCase())
-              ])).sort();
-
-              // Filtered visits based on CRM filters
-              const filteredVisite = visite.filter(item => {
-                const immName = getImmobileName(item.immobile_di_riferimento_id).toLowerCase();
-                const clientName = getContactName(item.cliente_id).toLowerCase();
-                const query = searchVisit.toLowerCase();
-                const matchesSearch = !query || 
-                  immName.includes(query) || 
-                  clientName.includes(query) ||
-                  (item.tipo_visita || '').toLowerCase().includes(query) ||
-                  (item.esito_e_note || '').toLowerCase().includes(query);
-
-                const matchesAgent = filterVisitAgent === 'Tutti' || 
-                  item.creato_da === filterVisitAgent || 
-                  (item.partecipanti || '').includes(filterVisitAgent);
-
-                const matchesClient = filterVisitClient === 'Tutti' || String(item.cliente_id) === String(filterVisitClient);
-                const matchesProperty = filterVisitProperty === 'Tutti' || String(item.immobile_di_riferimento_id) === String(filterVisitProperty);
-                const matchesType = filterVisitType === 'Tutti' || item.tipo_visita === filterVisitType;
-                const matchesOutcome = filterVisitOutcome === 'Tutti' || item.esito_e_note === filterVisitOutcome;
-
-                return matchesSearch && matchesAgent && matchesClient && matchesProperty && matchesType && matchesOutcome;
-              });
-
-              // CRM Statistics calculations
-              const totalActivities = filteredVisite.length;
-              const customerVisits = filteredVisite.filter(v => v.tipo_visita === 'Visita Cliente').length;
-              const withOutcome = filteredVisite.filter(v => v.esito_e_note === 'POSITIVO' || v.esito_e_note === 'NEGATIVO');
-              const positiveCount = filteredVisite.filter(v => v.esito_e_note === 'POSITIVO').length;
-              const successRate = withOutcome.length > 0 ? Math.round((positiveCount / withOutcome.length) * 100) : 0;
+            <div className={`${activeTab === 'visite' ? 'block' : 'hidden'} max-w-6xl mx-auto`}>
+              {(() => {
+                const { uniqueAgents, filteredVisite, totalActivities, customerVisits, successRate } = visiteStats;
 
               const agentCounts = {};
               filteredVisite.forEach(v => {
@@ -4968,7 +4916,8 @@ export default function App() {
                   )}
                 </div>
               );
-            })()}
+              })()}
+            </div>
 
             {/* Global FAB (Apple Liquid Style) */}
             {['immobili', 'contatti', 'visite'].includes(activeTab) && (

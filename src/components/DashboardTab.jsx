@@ -55,14 +55,14 @@ export const DashboardTab = React.memo(({
   const fmtTime = (d) => d.toLocaleTimeString('it-CH', { hour: '2-digit', minute: '2-digit' });
 
   // Filtered lists and stats
-  const activeVenditaCount = immobili.filter(imm => imm.immobile_in && imm.immobile_in.includes('Vendita') && imm.stato !== 'Venduto').length;
-  const activeAffittoCount = immobili.filter(imm => imm.immobile_in && imm.immobile_in.includes('Affitto') && imm.stato !== 'Affittato').length;
+  const activeVenditaCount = immobili.filter(imm => imm.immobile_in && imm.immobile_in.includes('Vendita') && imm.stato !== 'Venduto' && imm.stato !== 'Lead').length;
+  const activeAffittoCount = immobili.filter(imm => imm.immobile_in && imm.immobile_in.includes('Affitto') && imm.stato !== 'Affittato' && imm.stato !== 'Lead').length;
   const activeTrattativaCount = immobili.filter(imm => imm.stato === 'In Trattativa').length;
   const vendutoCount = immobili.filter(imm => imm.stato === 'Venduto').length;
   const affittatoCount = immobili.filter(imm => imm.stato === 'Affittato').length;
 
   const portafoglioValore = (immobili
-    .filter(imm => imm.immobile_in && imm.immobile_in.includes('Vendita') && imm.stato !== 'Venduto')
+    .filter(imm => imm.immobile_in && imm.immobile_in.includes('Vendita') && imm.stato !== 'Venduto' && imm.stato !== 'Lead')
     .reduce((acc, curr) => acc + (Number(curr.prezzo_di_vendita) || 0), 0) / 1000000
   ).toFixed(2);
 

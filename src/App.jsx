@@ -384,6 +384,64 @@ const formatDashboardWeekRange = (d = new Date()) => {
   }
 };
 
+const DocumentFileField = ({ dbField, currentImmobile, setCurrentImmobile, isFileOnly }) => {
+  const [selectedFile, setSelectedFile] = useState(null);
+  const inputRef = useRef(null);
+
+  const existingFileField = isFileOnly ? dbField : dbField + "_doc";
+  const existingFile = currentImmobile && currentImmobile[existingFileField] ? currentImmobile[existingFileField] : null;
+
+  const handleRemove = () => {
+    if (selectedFile) {
+      setSelectedFile(null);
+      if (inputRef.current) inputRef.current.value = '';
+    } else if (existingFile) {
+      setCurrentImmobile(prev => ({ ...prev, [existingFileField]: "" }));
+    }
+  };
+
+  const hasFile = !!selectedFile || !!existingFile;
+  const fileName = selectedFile ? selectedFile.name : (existingFile ? existingFile.split('/').pop() : '');
+  const inputName = existingFileField + "_file";
+
+  return (
+    <div className="w-full">
+      <div className={hasFile ? "hidden" : "glass-input rounded-lg px-2 py-1"}>
+        <input
+          ref={inputRef}
+          type="file"
+          name={inputName}
+          accept="image/*,application/pdf"
+          className="w-full text-[9px] text-[#86868B] file:mr-1 file:py-0.5 file:px-2 file:rounded-full file:border-0 file:text-[8px] file:font-bold file:bg-[#0071E3]/10 file:text-[#0071E3] hover:file:bg-[#0071E3]/20 cursor-pointer"
+          onChange={(e) => setSelectedFile(e.target.files[0])}
+        />
+      </div>
+      
+      {hasFile && (
+        <div className="flex items-center gap-1.5 px-2 h-[42px] bg-[#F5F5F7] border border-[#D2D2D7] rounded-lg shadow-sm w-full box-border">
+          <div className="w-1.5 h-1.5 rounded-full bg-[#34C759] shrink-0" />
+          <span className="text-[10px]">📄</span>
+          <span className="text-[9px] font-semibold text-[#1D1D1F] truncate flex-1" title={fileName}>
+            {fileName}
+          </span>
+          <button 
+            type="button"
+            onClick={handleRemove}
+            className="w-4 h-4 rounded-full bg-[#FF3B30]/10 text-[#FF3B30] hover:bg-[#FF3B30] hover:text-white flex items-center justify-center text-[9px] font-bold transition-colors shrink-0"
+            title="Rimuovi file"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {!existingFile && (
+        <input type="hidden" name={`${existingFileField}_deleted`} value="true" />
+      )}
+    </div>
+  );
+};
+
 export default function App() {
   // --- AUTHENTICATION STATES ---
   const [session, setSession] = useState(null);
@@ -430,6 +488,7 @@ export default function App() {
   const [filterPrezzoMax, setFilterPrezzoMax] = useState('');
   const [filterLocaliMin, setFilterLocaliMin] = useState('Tutti');
   const [filterSuperficieMin, setFilterSuperficieMin] = useState('');
+  const [filterSuperficieMax, setFilterSuperficieMax] = useState('');
   const [filterComune, setFilterComune] = useState('Tutti');
   const [filterVendibileStranieri, setFilterVendibileStranieri] = useState('Tutti');
   const [filterResidenza, setFilterResidenza] = useState('Tutti');
@@ -451,6 +510,7 @@ export default function App() {
     filterPrezzoMax !== '' ||
     filterLocaliMin !== 'Tutti' ||
     filterSuperficieMin !== '' ||
+    filterSuperficieMax !== '' ||
     filterVendibileStranieri !== 'Tutti' ||
     filterResidenza !== 'Tutti' ||
     filterMandatoFirmato !== 'Tutti' ||
@@ -469,6 +529,7 @@ export default function App() {
     setFilterPrezzoMax('');
     setFilterLocaliMin('Tutti');
     setFilterSuperficieMin('');
+    setFilterSuperficieMax('');
     setFilterVendibileStranieri('Tutti');
     setFilterResidenza('Tutti');
     setFilterMandatoFirmato('Tutti');
@@ -548,7 +609,16 @@ export default function App() {
   // Editing modals
   const [currentImmobile, setCurrentImmobile] = useState(null);
   const [isImmobileModalOpen, setIsImmobileModalOpen] = useState(false);
+  const [isSavingImmobile, setIsSavingImmobile] = useState(false);
   const [activeFormTab, setActiveFormTab] = useState('principale');
+  const [tempImmobileImageUrl, setTempImmobileImageUrl] = useState(null);
+  const [tempPlanimetriaUrl, setTempPlanimetriaUrl] = useState(null);
+  const [selectedImmobileProprietarioId, setSelectedImmobileProprietarioId] = useState(null);
+  const [searchImmobileProprietarioQuery, setSearchImmobileProprietarioQuery] = useState('');
+  const [isProprietarioSearchFocused, setIsProprietarioSearchFocused] = useState(false);
+  const [selectedImmobileAgenteIds, setSelectedImmobileAgenteIds] = useState([]);
+  const [searchImmobileAgenteQuery, setSearchImmobileAgenteQuery] = useState('');
+  const [isAgenteSearchFocused, setIsAgenteSearchFocused] = useState(false);
   const [isUserSettingsModalOpen, setIsUserSettingsModalOpen] = useState(false);
   const [isProfileEditing, setIsProfileEditing] = useState(false);
   const [tempProfileFotoUrl, setTempProfileFotoUrl] = useState(null);
@@ -848,7 +918,7 @@ export default function App() {
         }
 
         // Upload base64 files
-        if (item.type === 'immobile') {
+        if (item.type === 'immobile' && item.fields) {
           const fileFields = [
             'immagine_di_riferimento', 'mandato', 'planimetria', 'estratto_registro_fondiario_doc',
             'descrittivo_tecnico_doc', 'regolamento_condominiale_doc', 'spese_condominiali_doc',
@@ -1048,6 +1118,10 @@ export default function App() {
         setSelectedCalendarClientId(finalId);
       } else if (addingContactForVisit === 'partecipanti') {
         setSelectedCalendarParticipantIds(prev => [...prev, finalId]);
+      } else if (addingContactForVisit === 'proprietario') {
+        setSelectedImmobileProprietarioId(finalId);
+      } else if (addingContactForVisit === 'agente') {
+        setSelectedImmobileAgenteIds(prev => [...prev, finalId]);
       }
       setAddingContactForVisit(null);
     }
@@ -1340,19 +1414,47 @@ export default function App() {
     return publicUrlData.publicUrl;
   };
 
-  const handleUploadOrBase64 = async (fileField, existingValue) => {
+  const deleteFromSupabase = async (publicUrl, bucketName = 'immobili-media') => {
+    if (!isRealSupabase || !supabase || !publicUrl) return;
+    try {
+      if (publicUrl.startsWith('data:')) return; // Ignore base64
+      const urlObj = new URL(publicUrl);
+      const pathParts = urlObj.pathname.split(`/${bucketName}/`);
+      if (pathParts.length > 1) {
+        const filePath = pathParts[1];
+        const { error } = await supabase.storage.from(bucketName).remove([filePath]);
+        if (error) {
+          console.error('Supabase Storage delete error:', error.message);
+        } else {
+          console.log(`Deleted ${filePath} from storage.`);
+        }
+      }
+    } catch (e) {
+      console.error('Error deleting from supabase:', e);
+    }
+  };
+
+  const handleUploadOrBase64 = async (fileField, existingValue, oldFileUrlToDelete = null) => {
+    let newUrl = existingValue || "";
     if (fileField && fileField.size > 0) {
       if (isRealSupabase && !isOffline && navigator.onLine) {
         const url = await uploadToSupabase(fileField);
         if (!url) {
           throw new Error("Impossibile generare l'URL pubblico per il file caricato.");
         }
-        return url;
+        newUrl = url;
+      } else {
+        // Demo mode o offline: usa base64 locale
+        newUrl = await readAsBase64(fileField);
       }
-      // Demo mode o offline: usa base64 locale
-      return await readAsBase64(fileField);
     }
-    return existingValue || "";
+    
+    if (oldFileUrlToDelete && newUrl !== oldFileUrlToDelete) {
+      // Esegui in background senza bloccare il salvataggio
+      deleteFromSupabase(oldFileUrlToDelete).catch(err => console.error("Errore cancellazione file:", err));
+    }
+    
+    return newUrl;
   };
 
   // Helper to format ultimo_rinnovo (YYYYMM -> MM/YYYY)
@@ -1368,6 +1470,7 @@ export default function App() {
   // --- HANDLERS FOR IMMOBILI ---
   const handleSaveImmobile = async (e) => {
     e.preventDefault();
+    setIsSavingImmobile(true);
     const formData = new FormData(e.target);
     const idVal = formData.get('id');
     const id = idVal ? parseInt(idVal) : null;
@@ -1390,23 +1493,93 @@ export default function App() {
     let certificato_radon_doc = "";
 
     try {
-      immagine_di_riferimento = await handleUploadOrBase64(formData.get('immagine_di_riferimento_file'), existing ? existing.immagine_di_riferimento : "");
-      mandato = await handleUploadOrBase64(formData.get('mandato_file'), existing ? existing.mandato : "");
-      planimetria = await handleUploadOrBase64(formData.get('planimetria_file'), existing ? existing.planimetria : "");
-      estratto_registro_fondiario_doc = await handleUploadOrBase64(formData.get('estratto_registro_fondiario_doc_file'), existing ? existing.estratto_registro_fondiario_doc : "");
-      descrittivo_tecnico_doc = await handleUploadOrBase64(formData.get('descrittivo_tecnico_doc_file'), existing ? existing.descrittivo_tecnico_doc : "");
-      regolamento_condominiale_doc = await handleUploadOrBase64(formData.get('regolamento_condominiale_doc_file'), existing ? existing.regolamento_condominiale_doc : "");
-      spese_condominiali_doc = await handleUploadOrBase64(formData.get('spese_condominiali_doc_file'), existing ? existing.spese_condominiali_doc : "");
-      assicurazione_stabile_doc = await handleUploadOrBase64(formData.get('assicurazione_stabile_doc_file'), existing ? existing.assicurazione_stabile_doc : "");
-      verbale_ultima_assemblea_doc = await handleUploadOrBase64(formData.get('verbale_ultima_assemblea_doc_file'), existing ? existing.verbale_ultima_assemblea_doc : "");
-      fondo_rinnovamento_doc = await handleUploadOrBase64(formData.get('fondo_rinnovamento_doc_file'), existing ? existing.fondo_rinnovamento_doc : "");
-      valore_di_stima_doc = await handleUploadOrBase64(formData.get('valore_di_stima_doc_file'), existing ? existing.valore_di_stima_doc : "");
-      piano_assegnazioni_parti_comuni_doc = await handleUploadOrBase64(formData.get('piano_assegnazioni_parti_comuni_doc_file'), existing ? existing.piano_assegnazioni_parti_comuni_doc : "");
-      rasi_doc = await handleUploadOrBase64(formData.get('rasi_doc_file'), existing ? existing.rasi_doc : "");
-      certificato_radon_doc = await handleUploadOrBase64(formData.get('certificato_radon_doc_file'), existing ? existing.certificato_radon_doc : "");
+      immagine_di_riferimento = await handleUploadOrBase64(
+        formData.get('immagine_di_riferimento_file'), 
+        tempImmobileImageUrl === '' ? '' : (existing ? existing.immagine_di_riferimento : ""),
+        existing ? existing.immagine_di_riferimento : null
+      );
+      
+      mandato = await handleUploadOrBase64(
+        formData.get('mandato_file'), 
+        formData.get('mandato_deleted') === 'true' ? '' : (existing ? existing.mandato : ""),
+        existing ? existing.mandato : null
+      );
+      
+      planimetria = await handleUploadOrBase64(
+        formData.get('planimetria_file'), 
+        tempPlanimetriaUrl === '' || formData.get('planimetria_deleted') === 'true' ? '' : (existing ? existing.planimetria : ""),
+        existing ? existing.planimetria : null
+      );
+      
+      estratto_registro_fondiario_doc = await handleUploadOrBase64(
+        formData.get('estratto_registro_fondiario_doc_file'), 
+        formData.get('estratto_registro_fondiario_doc_deleted') === 'true' ? '' : (existing ? existing.estratto_registro_fondiario_doc : ""),
+        existing ? existing.estratto_registro_fondiario_doc : null
+      );
+      
+      descrittivo_tecnico_doc = await handleUploadOrBase64(
+        formData.get('descrittivo_tecnico_doc_file'), 
+        formData.get('descrittivo_tecnico_doc_deleted') === 'true' ? '' : (existing ? existing.descrittivo_tecnico_doc : ""),
+        existing ? existing.descrittivo_tecnico_doc : null
+      );
+      
+      regolamento_condominiale_doc = await handleUploadOrBase64(
+        formData.get('regolamento_condominiale_doc_file'), 
+        formData.get('regolamento_condominiale_doc_deleted') === 'true' ? '' : (existing ? existing.regolamento_condominiale_doc : ""),
+        existing ? existing.regolamento_condominiale_doc : null
+      );
+      
+      spese_condominiali_doc = await handleUploadOrBase64(
+        formData.get('spese_condominiali_doc_file'), 
+        formData.get('spese_condominiali_doc_deleted') === 'true' ? '' : (existing ? existing.spese_condominiali_doc : ""),
+        existing ? existing.spese_condominiali_doc : null
+      );
+      
+      assicurazione_stabile_doc = await handleUploadOrBase64(
+        formData.get('assicurazione_stabile_doc_file'), 
+        formData.get('assicurazione_stabile_doc_deleted') === 'true' ? '' : (existing ? existing.assicurazione_stabile_doc : ""),
+        existing ? existing.assicurazione_stabile_doc : null
+      );
+      
+      verbale_ultima_assemblea_doc = await handleUploadOrBase64(
+        formData.get('verbale_ultima_assemblea_doc_file'), 
+        formData.get('verbale_ultima_assemblea_doc_deleted') === 'true' ? '' : (existing ? existing.verbale_ultima_assemblea_doc : ""),
+        existing ? existing.verbale_ultima_assemblea_doc : null
+      );
+      
+      fondo_rinnovamento_doc = await handleUploadOrBase64(
+        formData.get('fondo_rinnovamento_doc_file'), 
+        formData.get('fondo_rinnovamento_doc_deleted') === 'true' ? '' : (existing ? existing.fondo_rinnovamento_doc : ""),
+        existing ? existing.fondo_rinnovamento_doc : null
+      );
+      
+      valore_di_stima_doc = await handleUploadOrBase64(
+        formData.get('valore_di_stima_doc_file'), 
+        formData.get('valore_di_stima_doc_deleted') === 'true' ? '' : (existing ? existing.valore_di_stima_doc : ""),
+        existing ? existing.valore_di_stima_doc : null
+      );
+      
+      piano_assegnazioni_parti_comuni_doc = await handleUploadOrBase64(
+        formData.get('piano_assegnazioni_parti_comuni_doc_file'), 
+        formData.get('piano_assegnazioni_parti_comuni_doc_deleted') === 'true' ? '' : (existing ? existing.piano_assegnazioni_parti_comuni_doc : ""),
+        existing ? existing.piano_assegnazioni_parti_comuni_doc : null
+      );
+      
+      rasi_doc = await handleUploadOrBase64(
+        formData.get('rasi_doc_file'), 
+        formData.get('rasi_doc_deleted') === 'true' ? '' : (existing ? existing.rasi_doc : ""),
+        existing ? existing.rasi_doc : null
+      );
+      
+      certificato_radon_doc = await handleUploadOrBase64(
+        formData.get('certificato_radon_doc_file'), 
+        formData.get('certificato_radon_doc_deleted') === 'true' ? '' : (existing ? existing.certificato_radon_doc : ""),
+        existing ? existing.certificato_radon_doc : null
+      );
     } catch (fileErr) {
       console.error("File processing error:", fileErr);
       triggerToast("Errore durante il caricamento dei file: " + (fileErr.message || fileErr), "error");
+      setIsSavingImmobile(false);
       return;
     }
 
@@ -1433,6 +1606,17 @@ export default function App() {
     let codice_immobile = formData.get('codice_immobile') || (id ? String(id).slice(-3) : String(Date.now()).slice(-3));
     if (codice_immobile && !codice_immobile.startsWith('#')) {
       codice_immobile = '#' + codice_immobile;
+    }
+
+    // Verifica univocità codice_immobile
+    const duplicato = immobili.find(imm =>
+      imm.codice_immobile &&
+      imm.codice_immobile.toLowerCase() === codice_immobile.toLowerCase() &&
+      imm.id !== id
+    );
+    if (duplicato) {
+      triggerToast("Codice immobile \"" + codice_immobile + "\" già utilizzato! Inserisci un codice diverso.", "error");
+      return;
     }
 
     const rinnovoVal = formData.get('ultimo_rinnovo');
@@ -1474,7 +1658,7 @@ export default function App() {
       descrizione_immobile: formData.get('descrizione_immobile') || "",
       note_interne: formData.get('note_interne') || "",
       proprietario_id: Number(formData.get('proprietario_id')) || null,
-      agente_id: Number(formData.get('agente_id')) || null,
+      agente_id: formData.get('agente_id') || null,
       planimetria,
       link_a_cartella_condivisa: formData.get('link_a_cartella_condivisa') || "",
       numero_di_mappale: formData.get('numero_di_mappale') || "",
@@ -1510,87 +1694,87 @@ export default function App() {
     const changes = [];
     const userEmail = currentSession?.user?.email ? currentSession.user.email.toUpperCase() : "UTENTE CRM";
     
+    const compareFields = [
+      { key: 'nome_immobile', label: 'Nome' },
+      { key: 'immobile_in', label: 'Contratto (Affitto/Vendita)' },
+      { key: 'stato', label: 'Stato' },
+      { key: 'mandato_firmato', label: 'Mandato Firmato' },
+      { key: 'tipo_di_mandato', label: 'Tipo di Mandato' },
+      { key: 'prezzo_di_vendita', label: 'Prezzo Vendita' },
+      { key: 'prezzo_di_affitto', label: 'Prezzo Affitto' },
+      { key: 'spese_condominiali', label: 'Spese Condominiali' },
+      { key: 'costo_parcheggi', label: 'Costo Parcheggi' },
+      { key: 'indirizzo', label: 'Indirizzo' },
+      { key: 'comune', label: 'Comune' },
+      { key: 'npa', label: 'NPA' },
+      { key: 'nazione', label: 'Nazione' },
+      { key: 'categoria', label: 'Categoria' },
+      { key: 'tipo', label: 'Tipologia' },
+      { key: 'superficie_abitabile', label: 'Superficie Abitabile' },
+      { key: 'superficie_sul', label: 'Superficie SUL' },
+      { key: 'numero_di_locali', label: 'Locali' },
+      { key: 'numero_bagni', label: 'Bagni' },
+      { key: 'anno_di_costruzione', label: 'Anno Costruzione' },
+      { key: 'ultimo_rinnovo', label: 'Ultimo Rinnovo' },
+      { key: 'garage', label: 'Garage' },
+      { key: 'parcheggio', label: 'Parcheggio' },
+      { key: 'descrizione_immobile', label: 'Descrizione' },
+      { key: 'numero_di_mappale', label: 'Mappale' },
+      { key: 'tipo_di_residenza', label: 'Residenza' },
+      { key: 'vendibile_a_stranieri', label: 'Stranieri' },
+      { key: 'link_a_cartella_condivisa', label: 'Link Cartella' },
+      { key: 'note_interne', label: 'Note Interne' },
+      { key: 'proprietario_id', label: 'ID Proprietario' },
+      { key: 'agente_id', label: 'ID Agente' },
+      { key: 'immagine_di_riferimento', label: 'Foto Principale' },
+      { key: 'mandato', label: 'File Mandato' },
+      { key: 'planimetria', label: 'File Planimetria' },
+      { key: 'estratto_registro_fondiario', label: 'Estratto RF' },
+      { key: 'estratto_registro_fondiario_doc', label: 'File Estratto RF' },
+      { key: 'descrittivo_tecnico', label: 'Descrittivo Tecnico' },
+      { key: 'descrittivo_tecnico_doc', label: 'File Descrittivo Tecnico' },
+      { key: 'regolamento_condominiale', label: 'Regolamento Condominiale' },
+      { key: 'regolamento_condominiale_doc', label: 'File Regolamento Condominiale' },
+      { key: 'spese_condominiali_doc', label: 'File Spese Condominiali' },
+      { key: 'assicurazione_stabile', label: 'Assicurazione Stabile' },
+      { key: 'assicurazione_stabile_doc', label: 'File Assicurazione Stabile' },
+      { key: 'verbale_ultima_assemblea', label: 'Verbale Ultima Assemblea' },
+      { key: 'verbale_ultima_assemblea_doc', label: 'File Verbale Assemblea' },
+      { key: 'fondo_rinnovamento', label: 'Fondo Rinnovamento' },
+      { key: 'fondo_rinnovamento_doc', label: 'File Fondo Rinnovamento' },
+      { key: 'valore_di_stima', label: 'Valore di Stima' },
+      { key: 'valore_di_stima_doc', label: 'File Valore di Stima' },
+      { key: 'piano_assegnazioni_parti_comuni', label: 'Piano Assegnazioni Parti Comuni' },
+      { key: 'piano_assegnazioni_parti_comuni_doc', label: 'File Piano Assegnazioni' },
+      { key: 'rasi', label: 'Rasi' },
+      { key: 'rasi_doc', label: 'File Rasi' },
+      { key: 'certificato_radon', label: 'Certificato Radon' },
+      { key: 'certificato_radon_doc', label: 'File Certificato Radon' },
+    ];
+
+    const formatLogValue = (val) => {
+      if (!val) return '-';
+      const str = String(val);
+      if (str.startsWith('data:')) {
+        const match = str.match(/^data:([^;]+);/);
+        return match ? `[Nuovo File: ${match[1]}]` : '[Nuovo File]';
+      }
+      if (str.startsWith('http://') || str.startsWith('https://')) {
+        try {
+          const urlObj = new URL(str);
+          const pathname = urlObj.pathname;
+          return pathname.split('/').pop() || str;
+        } catch (_) {
+          return str.split('/').pop() || str;
+        }
+      }
+      if (str.includes('/')) {
+        return str.split('/').pop();
+      }
+      return str;
+    };
+
     if (existing) {
-      const compareFields = [
-        { key: 'nome_immobile', label: 'Nome' },
-        { key: 'immobile_in', label: 'Contratto (Affitto/Vendita)' },
-        { key: 'stato', label: 'Stato' },
-        { key: 'mandato_firmato', label: 'Mandato Firmato' },
-        { key: 'tipo_di_mandato', label: 'Tipo di Mandato' },
-        { key: 'prezzo_di_vendita', label: 'Prezzo Vendita' },
-        { key: 'prezzo_di_affitto', label: 'Prezzo Affitto' },
-        { key: 'spese_condominiali', label: 'Spese Condominiali' },
-        { key: 'costo_parcheggi', label: 'Costo Parcheggi' },
-        { key: 'indirizzo', label: 'Indirizzo' },
-        { key: 'comune', label: 'Comune' },
-        { key: 'npa', label: 'NPA' },
-        { key: 'nazione', label: 'Nazione' },
-        { key: 'categoria', label: 'Categoria' },
-        { key: 'tipo', label: 'Tipologia' },
-        { key: 'superficie_abitabile', label: 'Superficie Abitabile' },
-        { key: 'superficie_sul', label: 'Superficie SUL' },
-        { key: 'numero_di_locali', label: 'Locali' },
-        { key: 'numero_bagni', label: 'Bagni' },
-        { key: 'anno_di_costruzione', label: 'Anno Costruzione' },
-        { key: 'ultimo_rinnovo', label: 'Ultimo Rinnovo' },
-        { key: 'garage', label: 'Garage' },
-        { key: 'parcheggio', label: 'Parcheggio' },
-        { key: 'descrizione_immobile', label: 'Descrizione' },
-        { key: 'numero_di_mappale', label: 'Mappale' },
-        { key: 'tipo_di_residenza', label: 'Residenza' },
-        { key: 'vendibile_a_stranieri', label: 'Stranieri' },
-        { key: 'link_a_cartella_condivisa', label: 'Link Cartella' },
-        { key: 'note_interne', label: 'Note Interne' },
-        { key: 'proprietario_id', label: 'ID Proprietario' },
-        { key: 'agente_id', label: 'ID Agente' },
-        { key: 'immagine_di_riferimento', label: 'Foto Principale' },
-        { key: 'mandato', label: 'File Mandato' },
-        { key: 'planimetria', label: 'File Planimetria' },
-        { key: 'estratto_registro_fondiario', label: 'Estratto RF' },
-        { key: 'estratto_registro_fondiario_doc', label: 'File Estratto RF' },
-        { key: 'descrittivo_tecnico', label: 'Descrittivo Tecnico' },
-        { key: 'descrittivo_tecnico_doc', label: 'File Descrittivo Tecnico' },
-        { key: 'regolamento_condominiale', label: 'Regolamento Condominiale' },
-        { key: 'regolamento_condominiale_doc', label: 'File Regolamento Condominiale' },
-        { key: 'spese_condominiali_doc', label: 'File Spese Condominiali' },
-        { key: 'assicurazione_stabile', label: 'Assicurazione Stabile' },
-        { key: 'assicurazione_stabile_doc', label: 'File Assicurazione Stabile' },
-        { key: 'verbale_ultima_assemblea', label: 'Verbale Ultima Assemblea' },
-        { key: 'verbale_ultima_assemblea_doc', label: 'File Verbale Assemblea' },
-        { key: 'fondo_rinnovamento', label: 'Fondo Rinnovamento' },
-        { key: 'fondo_rinnovamento_doc', label: 'File Fondo Rinnovamento' },
-        { key: 'valore_di_stima', label: 'Valore di Stima' },
-        { key: 'valore_di_stima_doc', label: 'File Valore di Stima' },
-        { key: 'piano_assegnazioni_parti_comuni', label: 'Piano Assegnazioni Parti Comuni' },
-        { key: 'piano_assegnazioni_parti_comuni_doc', label: 'File Piano Assegnazioni' },
-        { key: 'rasi', label: 'Rasi' },
-        { key: 'rasi_doc', label: 'File Rasi' },
-        { key: 'certificato_radon', label: 'Certificato Radon' },
-        { key: 'certificato_radon_doc', label: 'File Certificato Radon' },
-      ];
-
-      const formatLogValue = (val) => {
-        if (!val) return '-';
-        const str = String(val);
-        if (str.startsWith('data:')) {
-          const match = str.match(/^data:([^;]+);/);
-          return match ? `[Nuovo File: ${match[1]}]` : '[Nuovo File]';
-        }
-        if (str.startsWith('http://') || str.startsWith('https://')) {
-          try {
-            const urlObj = new URL(str);
-            const pathname = urlObj.pathname;
-            return pathname.split('/').pop() || str;
-          } catch (_) {
-            return str.split('/').pop() || str;
-          }
-        }
-        if (str.includes('/')) {
-          return str.split('/').pop();
-        }
-        return str;
-      };
-
       compareFields.forEach(f => {
         let oldVal = existing[f.key];
         let newVal = fields[f.key];
@@ -1603,10 +1787,20 @@ export default function App() {
         }
       });
     } else {
-      changes.push("Creazione immobile");
+      const initialFields = [];
+      compareFields.forEach(f => {
+        const val = fields[f.key];
+        if (val !== undefined && val !== null && val !== "" && !(Array.isArray(val) && val.length === 0) && val !== 0 && val !== "0") {
+          const formatted = formatLogValue(val);
+          initialFields.push(`${f.label}: "${formatted}"`);
+        }
+      });
+      changes.push(`Creazione immobile: ${fields.nome_immobile || ''} (${fields.codice_immobile || 'N/D'}). Dati inseriti: ${initialFields.join(', ')}`);
     }
 
-    const logDesc = changes.join(', ');
+    const logDesc = id 
+      ? `Modifica immobile ${existing.nome_immobile || ''} (${existing.codice_immobile || 'N/D'}): ${changes.join(', ')}`
+      : changes.join(', ');
 
     const isActuallyOffline = isOffline || !navigator.onLine;
 
@@ -1662,7 +1856,7 @@ export default function App() {
           if (supabase) {
             const { error: logErr } = await supabase.from('immobili_logs').insert([{
               immobile_id: record.id,
-              descrizione: "Creazione immobile",
+              descrizione: logDesc,
               utente: userEmail,
               data_ora: new Date().toISOString()
             }]);
@@ -1695,6 +1889,15 @@ export default function App() {
     }
     setIsImmobileModalOpen(false);
     setCurrentImmobile(null);
+    setTempImmobileImageUrl(null);
+    setTempPlanimetriaUrl(null);
+    setSelectedImmobileProprietarioId(null);
+    setSearchImmobileProprietarioQuery('');
+    setIsProprietarioSearchFocused(false);
+    setSelectedImmobileAgenteIds([]);
+    setSearchImmobileAgenteQuery('');
+    setIsAgenteSearchFocused(false);
+    setIsSavingImmobile(false);
   };
 
   const canModifyEvent = (event) => {
@@ -1741,6 +1944,15 @@ export default function App() {
   const handleEditImmobile = (item) => {
     setCurrentImmobile(item);
     setActiveFormTab('principale');
+    setTempImmobileImageUrl(null);
+    setTempPlanimetriaUrl(null);
+    setSelectedImmobileProprietarioId(item.proprietario_id);
+    const agentVal = item.agente_id;
+    let agentIds = [];
+    if (agentVal) {
+      agentIds = String(agentVal).split(',').map(id => id.trim()).filter(Boolean).map(id => isNaN(Number(id)) ? id : Number(id));
+    }
+    setSelectedImmobileAgenteIds(agentIds);
     setIsImmobileModalOpen(true);
   };
 
@@ -1777,7 +1989,78 @@ export default function App() {
 
   const handleDeleteImmobile = async (id) => {
     if (window.confirm("Sei sicuro di voler eliminare questo immobile?")) {
+      const userEmail = currentSession?.user?.email ? currentSession.user.email.toUpperCase() : "UTENTE CRM";
       const isActuallyOffline = isOffline || !navigator.onLine;
+      const immobile = immobili.find(item => item.id === id);
+      
+      // Costruisci una descrizione super dettagliata con tutti i campi dell'immobile prima di eliminarlo
+      let logDescrizione = "";
+      if (immobile) {
+        const campiLabels = [
+          { key: 'nome_immobile', label: 'Nome' },
+          { key: 'codice_immobile', label: 'Codice' },
+          { key: 'stato', label: 'Stato' },
+          { key: 'prezzo_di_vendita', label: 'Prezzo Vendita' },
+          { key: 'prezzo_di_affitto', label: 'Prezzo Affitto' },
+          { key: 'comune', label: 'Comune' },
+          { key: 'indirizzo', label: 'Indirizzo' },
+          { key: 'npa', label: 'NPA' },
+          { key: 'nazione', label: 'Nazione' },
+          { key: 'categoria', label: 'Categoria' },
+          { key: 'tipo', label: 'Tipologia' },
+          { key: 'superficie_abitabile', label: 'Superficie Abitabile' },
+          { key: 'superficie_sul', label: 'Superficie SUL' },
+          { key: 'numero_di_locali', label: 'Locali' },
+          { key: 'numero_bagni', label: 'Bagni' },
+          { key: 'anno_di_costruzione', label: 'Anno Costruzione' },
+          { key: 'ultimo_rinnovo', label: 'Ultimo Rinnovo' },
+          { key: 'numero_di_mappale', label: 'Mappale' },
+          { key: 'note_interne', label: 'Note' }
+        ];
+        
+        const dettagliList = campiLabels
+          .map(f => {
+            const val = immobile[f.key];
+            if (val !== undefined && val !== null && val !== '') {
+              return `${f.label}: "${val}"`;
+            }
+            return null;
+          })
+          .filter(Boolean)
+          .join(', ');
+
+        logDescrizione = `Eliminazione immobile ID ${id}: ${dettagliList}`;
+
+        // Elimina tutti i file fisici associati da Supabase Storage
+        const fileFields = [
+          'immagine_di_riferimento',
+          'planimetria',
+          'mandato',
+          'estratto_registro_fondiario_doc',
+          'descrittivo_tecnico_doc',
+          'regolamento_condominiale_doc',
+          'spese_condominiali_doc',
+          'assicurazione_stabile_doc',
+          'verbale_ultima_assemblea_doc',
+          'fondo_rinnovamento_doc',
+          'valore_di_stima_doc',
+          'piano_assegnazioni_parti_comuni_doc',
+          'rasi_doc',
+          'certificato_radon_doc'
+        ];
+
+        fileFields.forEach(field => {
+          const fileUrl = immobile[field];
+          if (fileUrl && typeof fileUrl === 'string' && fileUrl.startsWith('http')) {
+            deleteFromSupabase(fileUrl).catch(err => 
+              console.error(`Errore durante l'eliminazione del file ${field} dallo Storage:`, err)
+            );
+          }
+        });
+      } else {
+        logDescrizione = `Eliminazione immobile ID: ${id}`;
+      }
+
       if (isRealSupabase && !isActuallyOffline) {
         try {
           // Prima scollega le visite associate per preservare lo storico del calendario
@@ -1786,13 +2069,36 @@ export default function App() {
             .update({ immobile_di_riferimento_id: null })
             .eq('immobile_di_riferimento_id', id);
 
+          // Registra il log di eliminazione con immobile_id impostato a null. 
+          // Questo previene che venga cancellato dal CASCADE DELETE se l'utente non ha ancora eseguito la migrazione.
+          if (supabase) {
+            const { error: logErr } = await supabase.from('immobili_logs').insert([{
+              immobile_id: null,
+              descrizione: logDescrizione,
+              utente: userEmail,
+              data_ora: new Date().toISOString()
+            }]);
+            if (logErr) {
+              console.error("Errore salvataggio log eliminazione:", logErr);
+            }
+          }
+
           const { error } = await supabase
             .from('immobili')
             .delete()
             .eq('id', id);
           if (error) throw error;
 
-          // Aggiorna lo stato locale: scollega le visite e rimuovi l'immobile
+          // Aggiorna lo stato locale
+          const newLog = {
+            id: Date.now(),
+            immobile_id: null,
+            descrizione: logDescrizione,
+            utente: userEmail,
+            data_ora: new Date().toISOString()
+          };
+          setLocalLogs(prev => [newLog, ...prev]);
+
           setVisite(visite.map(v =>
             String(v.immobile_di_riferimento_id) === String(id)
               ? { ...v, immobile_di_riferimento_id: null }
@@ -1807,15 +2113,33 @@ export default function App() {
           console.error(err);
           triggerToast("Errore eliminazione Supabase. Eliminazione offline...", "warning");
           saveDeleteOffline('immobile', 'immobili', id);
+          
+          const newLog = {
+            id: Date.now(),
+            immobile_id: null,
+            descrizione: logDescrizione,
+            utente: userEmail,
+            data_ora: new Date().toISOString()
+          };
+          setLocalLogs(prev => [newLog, ...prev]);
         }
       } else {
-        // Anche offline: scollega le visite localmente
+        // Anche offline: scollega le visite localmente e traccia il log
         setVisite(visite.map(v =>
           String(v.immobile_di_riferimento_id) === String(id)
             ? { ...v, immobile_di_riferimento_id: null }
             : v
         ));
         saveDeleteOffline('immobile', 'immobili', id);
+
+        const newLog = {
+          id: Date.now(),
+          immobile_id: null,
+          descrizione: logDescrizione,
+          utente: userEmail,
+          data_ora: new Date().toISOString()
+        };
+        setLocalLogs(prev => [newLog, ...prev]);
       }
     }
   };
@@ -1949,6 +2273,10 @@ export default function App() {
               setSelectedCalendarClientId(newId);
             } else if (addingContactForVisit === 'partecipanti') {
               setSelectedCalendarParticipantIds(prev => [...prev, newId]);
+            } else if (addingContactForVisit === 'proprietario') {
+              setSelectedImmobileProprietarioId(newId);
+            } else if (addingContactForVisit === 'agente') {
+              setSelectedImmobileAgenteIds(prev => [...prev, newId]);
             }
             setAddingContactForVisit(null);
           }
@@ -2746,6 +3074,8 @@ export default function App() {
               setFilterPrezzoMax={setFilterPrezzoMax}
               filterSuperficieMin={filterSuperficieMin}
               setFilterSuperficieMin={setFilterSuperficieMin}
+              filterSuperficieMax={filterSuperficieMax}
+              setFilterSuperficieMax={setFilterSuperficieMax}
               filterGarageMin={filterGarageMin}
               setFilterGarageMin={setFilterGarageMin}
               filterPostiAutoMin={filterPostiAutoMin}
@@ -2827,6 +3157,7 @@ export default function App() {
                       setIsImmobileModalOpen(true);
                       setCurrentImmobile(null);
                       setActiveFormTab('principale');
+                      setSelectedImmobileProprietarioId(null);
                     } else if (activeTab === 'contatti') {
                       handleCreateContatto();
                     } else if (activeTab === 'visite') {
@@ -2853,85 +3184,60 @@ export default function App() {
 
           {/* ========================================================= */}
           {/* DETTAGLIO COMPLETO IMMOBILE (CON TUTTI I CAMPI CSV E TRATTINO) */}
+          {/* =====================          {/* ========================================================= */}
+          {/* DETTAGLIO COMPLETO IMMOBILE (CON TUTTI I CAMPI CSV E TRATTINO) */}
           {/* ========================================================= */}
           {isDetailModalOpen && viewingImmobile && (
             <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/20 backdrop-blur-sm transition-all">
               <div className="absolute inset-0 -z-10" onClick={handleCloseImmobileDetail}></div>
 
-              <div className="w-full md:max-w-2xl h-full bg-white/70 backdrop-blur-2xl shadow-2xl border-l border-white/30 flex flex-col animate-slide-left overflow-hidden">
+              <div className="glass-modal w-full md:max-w-2xl h-full shadow-2xl border-l border-white/20 flex flex-col animate-slide-left overflow-hidden text-[#1D1D1F]">
 
-                {/* Header Banner */}
-                <div className="bg-[#F5F5F7] border-b border-[#E5E5EA] flex flex-col relative">
-                  {/* Property Image Banner */}
-                  {viewingImmobile.immagine_di_riferimento ? (
-                    <div className="w-full h-48 overflow-hidden relative">
-                      <img
-                        src={viewingImmobile.immagine_di_riferimento}
-                        alt={viewingImmobile.nome_immobile}
-                        className="w-full h-full object-cover"
-                      />
-                      {/* Floating close button */}
-                      <button
-                        onClick={handleCloseImmobileDetail}
-                        className="absolute top-4 right-4 w-7 h-7 bg-white/90 hover:bg-white rounded-full border border-[#D2D2D7]/50 flex items-center justify-center font-bold text-sm text-[#86868B] transition-colors shadow-md z-10 animate-fade-in"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  ) : null}
-
-                  {/* Property Info Area */}
-                  <div className="p-6 flex justify-between items-start">
-                    <div className="space-y-1.5 flex-1">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-[10px] uppercase font-extrabold tracking-widest text-[#86868B] bg-white px-2.5 py-0.5 rounded-full border border-[#D2D2D7] shadow-sm">
-                          ID: #{formatField(viewingImmobile.id)}
-                        </span>
-                        <span className="text-[10px] uppercase font-extrabold tracking-widest text-[#0071E3] bg-[#0071E3]/10 px-2.5 py-0.5 rounded-full font-semibold">
-                          CODICE: {formatField(viewingImmobile.codice_immobile)}
-                        </span>
-                      </div>
-                      <h3 className="text-xl font-bold tracking-tight text-[#1D1D1F] leading-snug">
-                        {viewingImmobile.nome_immobile}
-                      </h3>
-                      <p className="text-xs text-[#86868B] flex items-center font-medium">
-                        <span className="mr-1 text-sm">🗺️</span>
-                        {viewingImmobile.indirizzo ? `${viewingImmobile.indirizzo}; ` : ''}
-                        {viewingImmobile.npa ? `${viewingImmobile.npa}; ` : ''}
-                        {viewingImmobile.comune ? `${viewingImmobile.comune}, ` : ''}
-                        {viewingImmobile.nazione || 'Svizzera'}
-                      </p>
-                    </div>
-                    {/* Fallback close button if no image */}
-                    {!viewingImmobile.immagine_di_riferimento && (
-                      <button
-                        onClick={handleCloseImmobileDetail}
-                        className="w-7 h-7 bg-white/80 hover:bg-white rounded-full border border-[#D2D2D7] flex items-center justify-center font-bold text-sm text-[#86868B] transition-colors shadow-sm ml-4"
-                      >
-                        ✕
-                      </button>
-                    )}
+                {/* Header con gradiente sottile */}
+                <div className="relative px-6 py-5 border-b border-white/20 flex justify-between items-center" style={{background: 'linear-gradient(135deg, rgba(255,255,255,0.85) 0%, rgba(245,245,247,0.9) 100%)'}}>
+                  <div className="absolute bottom-0 left-0 right-0 h-[2px]" style={{background: 'linear-gradient(90deg, #0071E3 0%, #00C7FF 50%, #7B61FF 100%)', opacity: 0.6}} />
+                  <div className="space-y-0.5">
+                    <h3 className="text-lg font-bold tracking-tight text-[#1D1D1F] flex items-center gap-2.5">
+                      <span className="w-8 h-8 rounded-xl flex items-center justify-center text-base" style={{background: 'linear-gradient(135deg, #0071E3 0%, #00C7FF 100%)', color: 'white', boxShadow: '0 4px 12px rgba(0,113,227,0.25)'}}>
+                        🏠
+                      </span>
+                      Dettaglio Immobile
+                    </h3>
+                    <p className="text-[11px] text-[#86868B] pl-[42px]">{viewingImmobile.nome_immobile} • {formatField(viewingImmobile.codice_immobile)}</p>
                   </div>
+                  <button
+                    onClick={handleCloseImmobileDetail}
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-sm text-[#86868B] hover:text-[#1D1D1F] hover:bg-black/5 transition-all duration-200"
+                    style={{backdropFilter: 'blur(10px)', background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(0,0,0,0.06)'}}
+                  >
+                    ✕
+                  </button>
                 </div>
 
-                {/* Tab Bar inner Inspector */}
-                <div className="px-6 py-2 bg-white border-b border-[#E5E5EA] flex space-x-1 overflow-x-auto">
+                {/* Tab Bar inner Inspector (con lo stesso stile della modale di modifica) */}
+                <div className="px-6 py-2.5 border-b border-white/20 overflow-x-auto flex space-x-1 scrollbar-none" style={{background: 'rgba(245,245,247,0.7)', backdropFilter: 'blur(20px)'}}>
                   {[
-                    { id: 'generale', label: 'Generale & Prezzi' },
-                    { id: 'contatti', label: 'Contatti' },
-                    { id: 'amministrazione', label: 'Amministrazione' },
-                    { id: 'documenti', label: 'Documenti' },
-                    { id: 'note_interne', label: 'Note Interne' },
-                    { id: 'eventi', label: 'Eventi' },
-                    { id: 'log', label: 'Log' }
+                    { id: 'generale', label: '🏗️ Dettagli & Prezzi' },
+                    { id: 'contatti', label: '👤 Contatti' },
+                    { id: 'amministrazione', label: '📁 Amministrazione' },
+                    { id: 'documenti', label: '📄 Documenti' },
+                    { id: 'note_interne', label: '🔒 Note' },
+                    { id: 'eventi', label: '📅 Eventi' },
+                    { id: 'log', label: '📊 Log' }
                   ].map(tab => (
                     <button
                       key={tab.id}
+                      type="button"
                       onClick={() => setActiveDetailTab(tab.id)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold tracking-tight whitespace-nowrap transition-all ${activeDetailTab === tab.id
-                          ? 'bg-[#0071E3] text-white shadow-sm'
-                          : 'text-[#86868B] hover:bg-[#F5F5F7] hover:text-[#1D1D1F]'
-                        }`}
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold tracking-tight whitespace-nowrap transition-all duration-300 ${
+                        activeDetailTab === tab.id
+                          ? 'text-white shadow-md'
+                          : 'text-[#86868B] hover:text-[#1D1D1F] hover:bg-white/50'
+                      }`}
+                      style={activeDetailTab === tab.id ? {
+                        background: 'linear-gradient(135deg, #0071E3 0%, #0088FF 100%)',
+                        boxShadow: '0 4px 12px rgba(0,113,227,0.25), inset 0 1px 0 rgba(255,255,255,0.2)'
+                      } : {}}
                     >
                       {tab.label}
                     </button>
@@ -2939,120 +3245,140 @@ export default function App() {
                 </div>
 
                 {/* Content Drawer Scrollable with dynamic tabs */}
-                <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-white text-[#1D1D1F]">
+                <div className="flex-1 overflow-y-auto p-6 space-y-5 bg-transparent">
 
-                  {/* TAB 2: GENERALE & PREZZI */}
+                  {/* TAB: GENERALE & PREZZI */}
                   {activeDetailTab === 'generale' && (
-                    <div className="space-y-6">
+                    <div className="space-y-5">
+                      {/* Banner Immagine (se presente) */}
+                      {viewingImmobile.immagine_di_riferimento && (
+                        <div className="relative rounded-2xl overflow-hidden shadow-md border border-white/20">
+                          <img
+                            src={viewingImmobile.immagine_di_riferimento}
+                            alt={viewingImmobile.nome_immobile}
+                            className="w-full h-44 object-cover"
+                          />
+                          <div className="absolute inset-0" style={{background: 'linear-gradient(180deg, transparent 50%, rgba(0,0,0,0.4) 100%)'}} />
+                          <div className="absolute bottom-4 left-4 text-white">
+                            <p className="text-[10px] uppercase font-bold tracking-widest text-white/80">Indirizzo immobile</p>
+                            <p className="text-xs font-semibold mt-0.5">
+                              {viewingImmobile.indirizzo ? `${viewingImmobile.indirizzo}, ` : ''}
+                              {viewingImmobile.comune} ({viewingImmobile.npa})
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
                       {/* Stato & Immobile_in outside the main grey container */}
                       <div className="grid grid-cols-2 gap-4">
-                        <div>
+                        <div className="glass-panel p-4 rounded-2xl flex flex-col justify-between">
                           <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">stato</span>
-                          <span className={`inline-flex px-3 py-1 rounded-full text-xs font-bold uppercase shadow-sm ${viewingImmobile.stato === 'Disponibile' ? 'bg-[#34C759] text-white' :
+                          <span className={`inline-flex self-start px-3 py-1 rounded-full text-xs font-bold uppercase shadow-sm ${viewingImmobile.stato === 'Disponibile' ? 'bg-[#34C759] text-white' :
                               viewingImmobile.stato === 'In Trattativa' ? 'bg-[#FF9500] text-white' :
-                                viewingImmobile.stato === 'Venduto' ? 'bg-[#8E8E93] text-white' : 'bg-[#FF3B30] text-white'
+                                viewingImmobile.stato === 'Venduto' ? 'bg-[#8E8E93] text-white' :
+                                  viewingImmobile.stato === 'Lead' ? 'bg-[#AF52DE] text-white' : 'bg-[#FF3B30] text-white'
                             }`}>
                             {formatField(viewingImmobile.stato)}
                           </span>
                         </div>
-                        <div>
+                        <div className="glass-panel p-4 rounded-2xl flex flex-col justify-between">
                           <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">immobile_in</span>
-                          <span className="text-sm font-bold">
+                          <span className="text-sm font-bold text-[#1D1D1F]">
                             {viewingImmobile.immobile_in ? viewingImmobile.immobile_in.join(' / ') : '-'}
                           </span>
                         </div>
                       </div>
 
-                      {/* Main Grey Container holding the 17 specified fields */}
-                      <div className="bg-[#F5F5F7] p-5 rounded-2xl border border-[#E5E5EA] grid grid-cols-2 gap-4 text-sm">
+                      {/* Main glass card holding the 17 specified fields */}
+                      <div className="glass-panel p-5 rounded-2xl grid grid-cols-2 gap-4 text-sm">
                         <div>
                           <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">prezzo_di_vendita</span>
-                          <span className="text-base font-extrabold">
+                          <span className="text-base font-extrabold text-[#1D1D1F]">
                             {formatField(viewingImmobile.prezzo_di_vendita, "", true)}
                           </span>
                         </div>
                         <div>
                           <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">prezzo_di_affitto</span>
-                          <span className="text-base font-extrabold">
+                          <span className="text-base font-extrabold text-[#1D1D1F]">
                             {formatField(viewingImmobile.prezzo_di_affitto, "/mese", true)}
                           </span>
                         </div>
-                        <div className="border-t border-gray-200/60 pt-3">
+                        <div className="border-t border-black/5 pt-3">
                           <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">spese_condominiali</span>
                           <span className="text-base font-extrabold text-[#1D1D1F]">
                             {formatField(viewingImmobile.spese_condominiali, "/mese", true)}
                           </span>
                         </div>
-                        <div className="border-t border-gray-200/60 pt-3">
+                        <div className="border-t border-black/5 pt-3">
                           <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">costo_parcheggi</span>
-                          <span className="text-base font-extrabold">
+                          <span className="text-base font-extrabold text-[#1D1D1F]">
                             {formatField(viewingImmobile.costo_parcheggi, "", true)}
                           </span>
                         </div>
-                        <div className="border-t border-gray-200/60 pt-3">
+                        <div className="border-t border-black/5 pt-3">
                           <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">categoria</span>
-                          <span className="font-semibold">{formatField(viewingImmobile.categoria)}</span>
+                          <span className="font-semibold text-[#1D1D1F]">{formatField(viewingImmobile.categoria)}</span>
                         </div>
-                        <div className="border-t border-gray-200/60 pt-3">
+                        <div className="border-t border-black/5 pt-3">
                           <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">tipo</span>
-                          <span className="font-semibold">{viewingImmobile.tipo ? viewingImmobile.tipo.join(', ') : '-'}</span>
+                          <span className="font-semibold text-[#1D1D1F]">{viewingImmobile.tipo ? viewingImmobile.tipo.join(', ') : '-'}</span>
                         </div>
-                        <div className="border-t border-gray-200/60 pt-3">
+                        <div className="border-t border-black/5 pt-3">
                           <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">superficie_abitabile</span>
-                          <span className="font-semibold">{formatField(viewingImmobile.superficie_abitabile, " m²")}</span>
+                          <span className="font-semibold text-[#1D1D1F]">{formatField(viewingImmobile.superficie_abitabile, " m²")}</span>
                         </div>
-                        <div className="border-t border-gray-200/60 pt-3">
+                        <div className="border-t border-black/5 pt-3">
                           <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">superficie_sul</span>
-                          <span className="font-semibold">{formatField(viewingImmobile.superficie_sul, " m²")}</span>
+                          <span className="font-semibold text-[#1D1D1F]">{formatField(viewingImmobile.superficie_sul, " m²")}</span>
                         </div>
-                        <div className="border-t border-gray-200/60 pt-3">
+                        <div className="border-t border-black/5 pt-3">
                           <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">numero_di_locali</span>
-                          <span className="font-semibold">{formatField(viewingImmobile.numero_di_locali)}</span>
+                          <span className="font-semibold text-[#1D1D1F]">{formatField(viewingImmobile.numero_di_locali)}</span>
                         </div>
-                        <div className="border-t border-gray-200/60 pt-3">
+                        <div className="border-t border-black/5 pt-3">
                           <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">numero_bagni</span>
-                          <span className="font-semibold">{formatField(viewingImmobile.numero_bagni)}</span>
+                          <span className="font-semibold text-[#1D1D1F]">{formatField(viewingImmobile.numero_bagni)}</span>
                         </div>
-                        <div className="border-t border-gray-200/60 pt-3">
+                        <div className="border-t border-black/5 pt-3">
                           <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">garage</span>
-                          <span className="font-semibold">{formatField(viewingImmobile.garage)}</span>
+                          <span className="font-semibold text-[#1D1D1F]">{formatField(viewingImmobile.garage)}</span>
                         </div>
-                        <div className="border-t border-gray-200/60 pt-3">
+                        <div className="border-t border-black/5 pt-3">
                           <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">parcheggio</span>
-                          <span className="font-semibold">{formatField(viewingImmobile.parcheggio)}</span>
+                          <span className="font-semibold text-[#1D1D1F]">{formatField(viewingImmobile.parcheggio)}</span>
                         </div>
-                        <div className="border-t border-gray-200/60 pt-3">
+                        <div className="border-t border-black/5 pt-3">
                           <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">anno_di_costruzione</span>
-                          <span className="font-semibold">{formatField(viewingImmobile.anno_di_costruzione)}</span>
+                          <span className="font-semibold text-[#1D1D1F]">{formatField(viewingImmobile.anno_di_costruzione)}</span>
                         </div>
-                        <div className="border-t border-gray-200/60 pt-3">
+                        <div className="border-t border-black/5 pt-3">
                           <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">ultimo_rinnovo</span>
-                          <span className="font-semibold">{formatUltimoRinnovo(viewingImmobile.ultimo_rinnovo)}</span>
+                          <span className="font-semibold text-[#1D1D1F]">{formatUltimoRinnovo(viewingImmobile.ultimo_rinnovo)}</span>
                         </div>
-                        <div className="border-t border-gray-200/60 pt-3">
+                        <div className="border-t border-black/5 pt-3">
                           <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">tipo_di_residenza</span>
-                          <span className="font-semibold">{viewingImmobile.tipo_di_residenza ? viewingImmobile.tipo_di_residenza.join(', ') : '-'}</span>
+                          <span className="font-semibold text-[#1D1D1F]">{viewingImmobile.tipo_di_residenza ? viewingImmobile.tipo_di_residenza.join(', ') : '-'}</span>
                         </div>
-                        <div className="border-t border-gray-200/60 pt-3">
+                        <div className="border-t border-black/5 pt-3">
                           <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">vendibile_a_stranieri</span>
-                          <span className="font-semibold">{formatField(viewingImmobile.vendibile_a_stranieri)}</span>
+                          <span className="font-semibold text-[#1D1D1F]">{formatField(viewingImmobile.vendibile_a_stranieri)}</span>
                         </div>
-                        <div className="border-t border-gray-200/60 pt-3 col-span-2">
+                        <div className="border-t border-black/5 pt-3 col-span-2">
                           <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">numero_di_mappale</span>
-                          <span className="font-semibold">{formatField(viewingImmobile.numero_di_mappale)}</span>
+                          <span className="font-semibold text-[#1D1D1F]">{formatField(viewingImmobile.numero_di_mappale)}</span>
                         </div>
                       </div>
 
                       {/* Descrizione immobile */}
-                      <div className="space-y-1">
+                      <div className="glass-panel p-5 rounded-2xl space-y-2">
                         <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider">descrizione_immobile</span>
-                        <p className="text-sm leading-relaxed whitespace-pre-wrap bg-gray-50 p-4 rounded-xl border border-[#E5E5EA]">
+                        <p className="text-sm leading-relaxed whitespace-pre-wrap text-[#1D1D1F]">
                           {viewingImmobile.descrizione_immobile || <span className="text-gray-400 italic">- Nessuna descrizione inserita</span>}
                         </p>
                       </div>
 
                       {/* Planimetria */}
-                      <div className="bg-[#F5F5F7] p-5 rounded-2xl border border-[#E5E5EA] flex items-center justify-between">
+                      <div className="glass-panel p-5 rounded-2xl flex items-center justify-between">
                         <div className="flex items-center space-x-3">
                           <span className="text-2xl">📐</span>
                           <div>
@@ -3070,12 +3396,12 @@ export default function App() {
                             Apri Planimetria
                           </a>
                         ) : (
-                          <span className="text-xs text-[#86868B] font-medium bg-gray-200 px-3 py-1 rounded-full">Assente</span>
+                          <span className="text-xs text-[#86868B] font-medium bg-black/5 px-3 py-1 rounded-full border border-black/5">Assente</span>
                         )}
                       </div>
 
                       {/* Cartella Condivisa */}
-                      <div className="bg-[#F5F5F7] p-5 rounded-2xl border border-[#E5E5EA] flex items-center justify-between">
+                      <div className="glass-panel p-5 rounded-2xl flex items-center justify-between">
                         <div className="flex items-center space-x-3">
                           <span className="text-2xl">📂</span>
                           <div>
@@ -3093,15 +3419,15 @@ export default function App() {
                             Apri Cartella
                           </a>
                         ) : (
-                          <span className="text-xs text-[#86868B] font-medium bg-gray-200 px-3 py-1 rounded-full">Assente</span>
+                          <span className="text-xs text-[#86868B] font-medium bg-black/5 px-3 py-1 rounded-full border border-black/5">Assente</span>
                         )}
                       </div>
                     </div>
                   )}
 
-                  {/* TAB 3: CONTATTI */}
+                  {/* TAB: CONTATTI */}
                   {activeDetailTab === 'contatti' && (
-                    <div className="space-y-6">
+                    <div className="space-y-5">
                       <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider">anagrafiche_collegate</span>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div
@@ -3115,7 +3441,7 @@ export default function App() {
                               }
                             }
                           }}
-                          className={`group bg-white p-3.5 rounded-2xl border border-[#E5E5EA] transition-all duration-200 ${
+                          className={`group glass-panel p-4 rounded-2xl transition-all duration-200 ${
                             viewingImmobile.proprietario_id 
                               ? 'cursor-pointer hover:border-[#0071E3]/40 hover:shadow-lg' 
                               : ''
@@ -3133,42 +3459,51 @@ export default function App() {
                           )}
                         </div>
 
-                        <div
-                          onClick={() => {
-                            if (viewingImmobile.agente_id) {
-                              const contactObj = contatti.find(c => String(c.id) === String(viewingImmobile.agente_id));
-                              if (contactObj) {
-                                const currentProperty = viewingImmobile;
-                                handleCloseImmobileDetail();
-                                handleViewContatto(contactObj, { type: 'immobile', item: currentProperty, tab: 'contatti' });
-                              }
-                            }
-                          }}
-                          className={`group bg-white p-3.5 rounded-2xl border border-[#E5E5EA] transition-all duration-200 ${
-                            viewingImmobile.agente_id 
-                              ? 'cursor-pointer hover:border-[#0071E3]/40 hover:shadow-lg' 
-                              : ''
-                          }`}
-                        >
+                        <div className="glass-panel p-4 rounded-2xl">
                           <span className="block text-[9px] uppercase font-bold text-[#86868B]">agente_id</span>
-                          <span className={`font-bold text-sm block mt-0.5 transition-colors ${viewingImmobile.agente_id ? 'group-hover:text-[#0071E3]' : ''}`}>
-                            {getContactName(viewingImmobile.agente_id)}
-                          </span>
-                          {viewingImmobile.agente_id && (
-                            <div className="mt-2 text-xs text-[#86868B] space-y-0.5">
-                              <p>📞 {getContactPhone(viewingImmobile.agente_id)}</p>
-                              <p>✉️ {getContactEmail(viewingImmobile.agente_id)}</p>
-                            </div>
-                          )}
+                          {(() => {
+                            const agentIds = viewingImmobile.agente_id ? String(viewingImmobile.agente_id).split(',').map(id => id.trim()).filter(Boolean) : [];
+                            if (agentIds.length === 0) {
+                              return <span className="font-bold text-sm block mt-0.5 text-gray-400 italic">Non assegnato</span>;
+                            }
+                            return (
+                              <div className="space-y-3 mt-2">
+                                {agentIds.map(agentId => {
+                                  const contactObj = contatti.find(c => String(c.id) === String(agentId));
+                                  if (!contactObj) return null;
+                                  return (
+                                    <div
+                                      key={agentId}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const currentProperty = viewingImmobile;
+                                        handleCloseImmobileDetail();
+                                        handleViewContatto(contactObj, { type: 'immobile', item: currentProperty, tab: 'contatti' });
+                                      }}
+                                      className="cursor-pointer bg-white/30 hover:bg-white/70 p-2 rounded-xl border border-black/5 hover:border-[#0071E3]/20 transition-all"
+                                    >
+                                      <span className="font-bold text-xs text-[#0071E3] block hover:underline">
+                                        👤 {contactObj.nome} {contactObj.cognome}
+                                      </span>
+                                      <div className="mt-1 text-[10px] text-[#86868B] space-y-0.5 pl-3">
+                                        <p>📞 {contactObj.telefono || 'Assente'}</p>
+                                        <p>✉️ {contactObj.mail || 'Assente'}</p>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            );
+                          })()}
                         </div>
                       </div>
                     </div>
                   )}
 
-                  {/* TAB 4: AMMINISTRAZIONE */}
+                  {/* TAB: AMMINISTRAZIONE */}
                   {activeDetailTab === 'amministrazione' && (
-                    <div className="space-y-6">
-                      <div className="bg-[#F5F5F7] p-5 rounded-2xl border border-[#E5E5EA] grid grid-cols-2 gap-4">
+                    <div className="space-y-5">
+                      <div className="glass-panel p-5 rounded-2xl grid grid-cols-2 gap-4">
                         <div>
                           <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">mandato_firmato</span>
                           <span className={`inline-flex px-3 py-1 rounded-full text-xs font-bold uppercase shadow-sm ${viewingImmobile.mandato_firmato === 'Si' ? 'bg-[#34C759] text-white' :
@@ -3179,16 +3514,16 @@ export default function App() {
                         </div>
                         <div>
                           <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">tipo_di_mandato</span>
-                          <span className="text-sm font-bold">
+                          <span className="text-sm font-bold text-[#1D1D1F]">
                             {formatField(viewingImmobile.tipo_di_mandato)}
                           </span>
                         </div>
                       </div>
 
-                      <div className="space-y-3">
+                      <div className="glass-panel p-5 rounded-2xl space-y-3">
                         <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider">mandato</span>
                         {viewingImmobile.mandato ? (
-                          <div className="p-4 bg-gray-50 rounded-xl border border-[#E5E5EA] flex items-center justify-between">
+                          <div className="p-4 bg-white/40 rounded-xl border border-black/5 flex items-center justify-between">
                             <div className="flex items-center space-x-2">
                               <span className="text-2xl">📄</span>
                               <div>
@@ -3212,9 +3547,9 @@ export default function App() {
                     </div>
                   )}
 
-                  {/* TAB 5: DOCUMENTI */}
+                  {/* TAB: DOCUMENTI */}
                   {activeDetailTab === 'documenti' && (
-                    <div className="space-y-6">
+                    <div className="space-y-5">
                       <div className="space-y-3">
                         <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider">conformità & documenti</span>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -3235,7 +3570,7 @@ export default function App() {
                             const fileUrl = doc.isFileOnly ? status : viewingImmobile[`${doc.key}_doc`];
                             const isPresent = doc.isFileOnly ? !!fileUrl : status === 'Si';
                             return (
-                              <div key={doc.key} className="p-4 bg-[#F5F5F7] rounded-2xl border border-[#E5E5EA] flex flex-col justify-between space-y-3">
+                              <div key={doc.key} className="glass-panel p-4 rounded-2xl flex flex-col justify-between space-y-3">
                                 <div className="flex justify-between items-start">
                                   <div>
                                     <span className="block text-xs font-bold text-[#1D1D1F]">{doc.label}</span>
@@ -3269,10 +3604,10 @@ export default function App() {
 
                   {/* TAB: NOTE INTERNE */}
                   {activeDetailTab === 'note_interne' && (
-                    <div className="space-y-6">
+                    <div className="space-y-5">
                       <div className="space-y-2">
                         <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider">note_interne</span>
-                        <div className="bg-white p-5 rounded-2xl border border-[#E5E5EA] text-sm text-[#1D1D1F] whitespace-pre-wrap leading-relaxed min-h-[150px]">
+                        <div className="glass-panel p-5 rounded-2xl text-sm text-[#1D1D1F] whitespace-pre-wrap leading-relaxed min-h-[150px]">
                           {viewingImmobile.note_interne || (
                             <span className="text-gray-400 italic">Nessuna nota interna inserita per questo immobile.</span>
                           )}
@@ -3283,9 +3618,9 @@ export default function App() {
 
                   {/* TAB: EVENTI */}
                   {activeDetailTab === 'eventi' && (
-                    <div className="space-y-6">
+                    <div className="space-y-5">
                       <div className="space-y-3">
-                        <h4 className="text-xs font-bold text-[#86868B] uppercase tracking-wider border-b pb-1">Eventi a Calendario</h4>
+                        <h4 className="text-xs font-bold text-[#86868B] uppercase tracking-wider border-b border-black/5 pb-1">Eventi a Calendario</h4>
                         {(() => {
                           const propertyEvents = visite.filter(v => Number(v.immobile_di_riferimento_id) === Number(viewingImmobile.id));
                           if (propertyEvents.length > 0) {
@@ -3305,11 +3640,11 @@ export default function App() {
                                         handleCloseImmobileDetail();
                                         handleViewVisita(item, { type: 'immobile', item: currentProperty, tab: 'eventi' });
                                       }}
-                                      className="group bg-white border border-[#E5E5EA] rounded-2xl cursor-pointer hover:border-[#0071E3]/40 hover:shadow-lg transition-all duration-200 overflow-hidden"
+                                      className="group glass-panel rounded-2xl cursor-pointer hover:border-[#0071E3]/40 hover:shadow-lg transition-all duration-200 overflow-hidden"
                                     >
                                       <div className="flex">
                                         {/* Date column */}
-                                        <div className="w-[68px] shrink-0 flex flex-col items-center justify-center bg-[#F5F5F7] border-r border-[#E5E5EA] py-3 gap-0.5">
+                                        <div className="w-[68px] shrink-0 flex flex-col items-center justify-center bg-white/40 border-r border-black/5 py-3 gap-0.5">
                                           <span className="text-[9px] font-bold uppercase text-[#86868B] tracking-wider leading-none">
                                             {startObj.toLocaleDateString('it-IT', { month: 'short' })}
                                           </span>
@@ -3354,7 +3689,7 @@ export default function App() {
                                           <div className="flex flex-wrap gap-1">
                                             {/* Cliente */}
                                             {clienteName && (
-                                              <span className="inline-flex items-center gap-0.5 bg-[#F5F5F7] border border-[#E5E5EA] rounded-full px-2 py-0.5 text-[9px] font-semibold text-[#374151]">
+                                              <span className="inline-flex items-center gap-0.5 bg-white/40 border border-black/5 rounded-full px-2 py-0.5 text-[9px] font-semibold text-[#374151]">
                                                 👤 {clienteName}
                                               </span>
                                             )}
@@ -3370,7 +3705,7 @@ export default function App() {
 
                                           {/* Note */}
                                           {item.esito_e_note && (
-                                            <p className="text-[10px] text-[#86868B] leading-relaxed line-clamp-1 border-t border-[#F5F5F7] pt-1.5">
+                                            <p className="text-[10px] text-[#86868B] leading-relaxed line-clamp-1 border-t border-black/5 pt-1.5">
                                               <span className="font-semibold text-[#6B7280]">Note: </span>
                                               {item.esito_e_note}
                                             </p>
@@ -3390,18 +3725,18 @@ export default function App() {
                     </div>
                   )}
 
-                  {/* TAB 6: LOG */}
+                  {/* TAB: LOG */}
                   {activeDetailTab === 'log' && (
-                    <div className="space-y-6">
-                      <div className="bg-[#F5F5F7] p-5 rounded-2xl border border-[#E5E5EA] space-y-3 text-sm">
+                    <div className="space-y-5">
+                      <div className="glass-panel p-5 rounded-2xl space-y-3 text-sm">
                         <span className="block font-bold text-gray-500 uppercase tracking-wide text-[9px] mb-2">log_sincronizzazione_crm</span>
                         <div>
                           <span className="block text-xs text-[#86868B] mb-0.5">creato_da</span>
-                          <span className="font-semibold text-gray-700">{formatField(viewingImmobile.creato_da)}</span>
+                          <span className="font-semibold text-[#1D1D1F]">{formatField(viewingImmobile.creato_da)}</span>
                         </div>
-                        <div className="border-t border-gray-200/60 pt-2">
+                        <div className="border-t border-black/5 pt-2">
                           <span className="block text-xs text-[#86868B] mb-0.5">created_at</span>
-                          <span className="font-semibold text-gray-700">
+                          <span className="font-semibold text-[#1D1D1F]">
                             {viewingImmobile.created_at ? new Date(viewingImmobile.created_at).toLocaleString('it-CH', {
                               year: 'numeric',
                               month: '2-digit',
@@ -3411,9 +3746,9 @@ export default function App() {
                             }) : '-'}
                           </span>
                         </div>
-                        <div className="border-t border-gray-200/60 pt-2">
+                        <div className="border-t border-black/5 pt-2">
                           <span className="block text-xs text-[#86868B] mb-0.5">ultima_modifica_il</span>
-                          <span className="font-semibold text-gray-700">
+                          <span className="font-semibold text-[#1D1D1F]">
                             {viewingImmobile.ultima_modifica_il ? new Date(viewingImmobile.ultima_modifica_il).toLocaleString('it-CH', {
                               year: 'numeric',
                               month: '2-digit',
@@ -3423,9 +3758,9 @@ export default function App() {
                             }) : '-'}
                           </span>
                         </div>
-                        <div className="border-t border-gray-200/60 pt-2">
+                        <div className="border-t border-black/5 pt-2">
                           <span className="block text-xs text-[#86868B] mb-0.5">ultima_modifica_fatta_da</span>
-                          <span className="font-semibold text-gray-700">{formatField(viewingImmobile.ultima_modifica_fatta_da)}</span>
+                          <span className="font-semibold text-[#1D1D1F]">{formatField(viewingImmobile.ultima_modifica_fatta_da)}</span>
                         </div>
                       </div>
 
@@ -3434,13 +3769,13 @@ export default function App() {
                         <div className="space-y-4">
                           <span className="block font-bold text-gray-500 uppercase tracking-wide text-[9px]">cronologia_modifiche</span>
                           {immobileLogs.length === 0 ? (
-                            <div className="bg-white p-6 rounded-2xl border border-[#E5E5EA] text-center text-sm text-gray-400 italic">
+                            <div className="glass-panel p-6 rounded-2xl text-center text-sm text-gray-400 italic">
                               Nessuna modifica registrata
                             </div>
                           ) : (
                             <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
                               {immobileLogs.map((log) => (
-                                <div key={log.id} className="bg-white p-4 rounded-2xl border border-[#E5E5EA] space-y-2 relative shadow-sm hover:shadow transition-all">
+                                <div key={log.id} className="glass-panel p-4 rounded-2xl space-y-2 relative shadow-sm hover:shadow transition-all bg-white/40">
                                   <div className="flex justify-between items-center text-xs">
                                     <span className="font-bold text-[#0071E3]">{log.utente}</span>
                                     <span className="text-gray-400 font-medium">
@@ -3467,7 +3802,7 @@ export default function App() {
 
                 </div>
 
-                <div className="p-6 border-t border-[#E5E5EA] bg-[#F5F5F7] flex space-x-2">
+                <div className="p-6 border-t border-white/20 bg-[#F5F5F7]/80 backdrop-blur-md flex space-x-2">
                   <button
                     onClick={() => {
                       setIsDetailModalOpen(false);
@@ -3481,7 +3816,7 @@ export default function App() {
                     onClick={handleCloseImmobileDetail}
                     className="flex-1 bg-white hover:bg-gray-100 border border-[#D2D2D7] text-[#1D1D1F] py-3 rounded-full font-semibold text-sm transition-all text-center"
                   >
-                    Chiudi Inspector
+                    Chiudi
                   </button>
                 </div>
 
@@ -3882,32 +4217,32 @@ export default function App() {
                   </div>
 
                   {/* Actions / Buttons */}
-                  <div className="p-6 border-t border-[#E5E5EA] bg-[#F5F5F7] flex space-x-2">
+                  <div className="p-4 sm:p-6 border-t border-[#E5E5EA] bg-[#F5F5F7] flex flex-col sm:flex-row gap-3 sm:justify-end items-stretch sm:items-center">
                     {isProfileEditing ? (
-                      <>
-                        <button
-                          type="submit"
-                          disabled={loading}
-                          className="flex-1 btn-glossy text-white py-3 rounded-full font-bold text-sm transition-all text-center shadow-sm"
-                        >
-                          Salva Impostazioni
-                        </button>
+                      <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                         <button
                           type="button"
                           onClick={() => {
                             setIsProfileEditing(false);
                             setTempProfileFotoUrl(null);
                           }}
-                          className="flex-1 bg-white hover:bg-gray-100 border border-[#D2D2D7] text-[#1D1D1F] py-3 rounded-full font-semibold text-sm transition-all text-center"
+                          className="w-full sm:w-auto px-6 py-3 bg-white hover:bg-gray-100 border border-[#D2D2D7] text-[#1D1D1F] rounded-full font-semibold text-sm transition-all text-center order-2 sm:order-1"
                         >
                           Annulla
                         </button>
-                      </>
+                        <button
+                          type="submit"
+                          disabled={loading}
+                          className="w-full sm:w-auto px-8 py-3 btn-glossy text-white rounded-full font-bold text-sm transition-all text-center shadow-sm order-1 sm:order-2"
+                        >
+                          Salva Impostazioni
+                        </button>
+                      </div>
                     ) : (
                       <button
                         type="button"
                         onClick={() => setIsUserSettingsModalOpen(false)}
-                        className="w-full bg-[#0071E3] hover:bg-[#0077ED] text-white py-3 rounded-full font-semibold text-sm transition-all text-center shadow-sm"
+                        className="w-full sm:w-auto px-8 py-3 bg-[#0071E3] hover:bg-[#0077ED] text-white rounded-full font-semibold text-sm transition-all text-center shadow-sm"
                       >
                         Chiudi
                       </button>
@@ -3924,41 +4259,61 @@ export default function App() {
             <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 backdrop-blur-sm p-0 md:p-4">
               <div className="glass-modal w-full max-w-3xl rounded-none md:rounded-3xl shadow-2xl overflow-hidden my-0 md:my-8 h-full md:h-[680px] flex flex-col text-[#1D1D1F]">
 
-                <div className="px-6 py-4 border-b border-[#E5E5EA] flex justify-between items-center bg-[#F5F5F7]">
-                  <div>
-                    <h3 className="text-lg font-bold tracking-tight text-[#1D1D1F]">
-                      {currentImmobile ? 'Modifica Scheda Immobile' : 'Registra Nuovo Prodotto Immobile'}
+                {/* Header con gradiente sottile */}
+                <div className="relative px-6 py-5 border-b border-white/20 flex justify-between items-center" style={{background: 'linear-gradient(135deg, rgba(255,255,255,0.85) 0%, rgba(245,245,247,0.9) 100%)'}}>
+                  <div className="absolute bottom-0 left-0 right-0 h-[2px]" style={{background: 'linear-gradient(90deg, #0071E3 0%, #00C7FF 50%, #7B61FF 100%)', opacity: 0.6}} />
+                  <div className="space-y-0.5">
+                    <h3 className="text-lg font-bold tracking-tight text-[#1D1D1F] flex items-center gap-2.5">
+                      <span className="w-8 h-8 rounded-xl flex items-center justify-center text-base" style={{background: 'linear-gradient(135deg, #0071E3 0%, #00C7FF 100%)', color: 'white', boxShadow: '0 4px 12px rgba(0,113,227,0.25)'}}>
+                        {currentImmobile ? '✏️' : '🏠'}
+                      </span>
+                      {currentImmobile ? 'Modifica Scheda Immobile' : 'Registra Nuovo Immobile'}
                     </h3>
-                    <p className="text-xs text-[#86868B]">Compila tutti i campi presenti nell'anagrafica d'importazione</p>
+                    <p className="text-[11px] text-[#86868B] pl-[42px]">Compila i campi dell'anagrafica immobiliare</p>
                   </div>
                   <button
-                    onClick={() => setIsImmobileModalOpen(false)}
-                    className="w-7 h-7 bg-white rounded-full border border-[#D2D2D7] flex items-center justify-center font-bold text-sm text-[#86868B] hover:text-[#1D1D1F] transition-all shadow-sm"
+                    onClick={() => {
+                      setIsImmobileModalOpen(false);
+                      setTempImmobileImageUrl(null);
+                      setTempPlanimetriaUrl(null);
+                      setSelectedImmobileProprietarioId(null);
+                      setSearchImmobileProprietarioQuery('');
+                      setIsProprietarioSearchFocused(false);
+                      setSelectedImmobileAgenteIds([]);
+                      setSearchImmobileAgenteQuery('');
+                      setIsAgenteSearchFocused(false);
+                    }}
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-sm text-[#86868B] hover:text-[#1D1D1F] hover:bg-black/5 transition-all duration-200"
+                    style={{backdropFilter: 'blur(10px)', background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(0,0,0,0.06)'}}
                   >
                     ✕
                   </button>
                 </div>
 
-                {/* Tab selector per il form */}
-                <div className="px-6 py-2.5 bg-[#F5F5F7] border-b border-[#E5E5EA] overflow-x-auto flex space-x-1 scrollbar-none">
+                {/* Tab selector raffinato */}
+                <div className="px-6 py-2.5 border-b border-white/20 overflow-x-auto flex space-x-1 scrollbar-none" style={{background: 'rgba(245,245,247,0.7)', backdropFilter: 'blur(20px)'}}>
                   {[
-                    { id: 'principale', label: 'Principale' },
-                    { id: 'generale', label: 'Generale & Prezzi' },
-                    { id: 'contatti', label: 'Contatti' },
-                    { id: 'amministrazione', label: 'Amministrazione' },
-                    { id: 'documenti', label: 'Documenti' },
-                    { id: 'note_interne', label: 'Note Interne' },
-                    { id: 'log', label: 'Log', hidden: !currentImmobile },
+                    { id: 'principale', label: '📋 Principale' },
+                    { id: 'generale', label: '🏗️ Dettagli' },
+                    { id: 'contatti', label: '👤 Contatti' },
+                    { id: 'amministrazione', label: '📁 Amministrazione' },
+                    { id: 'documenti', label: '📄 Documenti' },
+                    { id: 'note_interne', label: '🔒 Note' },
+                    { id: 'log', label: '📊 Log', hidden: !currentImmobile },
                   ].filter(t => !t.hidden).map(tab => (
                     <button
                       key={tab.id}
                       type="button"
                       onClick={() => setActiveFormTab(tab.id)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold tracking-tight whitespace-nowrap transition-all ${
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold tracking-tight whitespace-nowrap transition-all duration-300 ${
                         activeFormTab === tab.id
-                          ? 'bg-[#0071E3] text-white shadow-sm'
-                          : 'text-[#86868B] hover:text-[#1D1D1F] hover:bg-[#E5E5EA]/50'
+                          ? 'text-white shadow-md'
+                          : 'text-[#86868B] hover:text-[#1D1D1F] hover:bg-white/50'
                       }`}
+                      style={activeFormTab === tab.id ? {
+                        background: 'linear-gradient(135deg, #0071E3 0%, #0088FF 100%)',
+                        boxShadow: '0 4px 12px rgba(0,113,227,0.25), inset 0 1px 0 rgba(255,255,255,0.2)'
+                      } : {}}
                     >
                       {tab.label}
                     </button>
@@ -3966,191 +4321,293 @@ export default function App() {
                 </div>
 
                 <form onSubmit={handleSaveImmobile} className="flex-1 flex flex-col overflow-hidden">
-                  <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                    {currentImmobile && <input type="hidden" name="id" value={currentImmobile.id} />}
+                  <fieldset disabled={isSavingImmobile} className="flex-1 flex flex-col overflow-hidden border-none p-0 m-0 min-w-0">
+                    <div className="flex-1 overflow-y-auto p-6 space-y-5">
+                      {currentImmobile && <input type="hidden" name="id" value={currentImmobile.id} />}
 
-                  {/* ========= SEZIONE 1: INFORMAZIONI PRINCIPALI ========= */}
-                  <div className={activeFormTab === 'principale' ? 'space-y-4' : 'hidden'}>
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-[#0071E3] border-b pb-1">1. Informazioni Principali</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="md:col-span-2">
-                        <label className="block text-xs font-semibold text-[#86868B] mb-1">nome_immobile *</label>
-                        <input
-                          type="text"
-                          name="nome_immobile"
-                          required
-                          placeholder="es. ESCLUSIVA PROPRIETÀ VISTA LAGO A CADEMARIO"
-                          defaultValue={currentImmobile ? currentImmobile.nome_immobile : ''}
-                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all text-[#1D1D1F]"
-                        />
+                    {/* ========= SEZIONE 1: INFORMAZIONI PRINCIPALI ========= */}
+                  <div className={activeFormTab === 'principale' ? 'space-y-5 animate-fade-in' : 'hidden'}>
+                    <div className="glass-panel p-5 rounded-2xl space-y-4">
+                      <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                        <span className="text-sm">🖼️</span>
+                        <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Immagine di Riferimento</span>
                       </div>
-
-                      <div>
-                        <label className="block text-xs font-semibold text-[#86868B] mb-1">codice_immobile *</label>
-                        <input
-                          type="text"
-                          name="codice_immobile"
-                          required
-                          placeholder="es. #0001"
-                          defaultValue={currentImmobile ? currentImmobile.codice_immobile : ''}
-                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all text-[#1D1D1F]"
-                        />
-                      </div>
-
-
-
-                      <div>
-                        <label className="block text-xs font-semibold text-[#86868B] mb-1">immagine_di_riferimento</label>
-                        <input
-                          type="file"
-                          name="immagine_di_riferimento_file"
-                          accept="image/*"
-                          className="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#0071E3]/10 file:text-[#0071E3] hover:file:bg-[#0071E3]/20 cursor-pointer"
-                        />
-                        {currentImmobile && currentImmobile.immagine_di_riferimento && (
-                          <div className="flex items-center gap-2 mt-1.5">
-                            <span className="text-[10px] text-gray-400">File attuale:</span>
-                            <a href={currentImmobile.immagine_di_riferimento} target="_blank" rel="noreferrer" className="text-[10px] text-[#0071E3] underline truncate max-w-[240px]">{currentImmobile.immagine_di_riferimento.split('/').pop()}</a>
+                      
+                      {/* Anteprima Immagine */}
+                      {(() => {
+                        const isDeleted = tempImmobileImageUrl === '';
+                        const previewSrc = isDeleted ? null : (tempImmobileImageUrl || (currentImmobile && currentImmobile.immagine_di_riferimento));
+                        return previewSrc ? (
+                          <div className="relative rounded-xl overflow-hidden group" style={{border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 2px 12px rgba(0,0,0,0.06)'}}>
+                            <img
+                              src={previewSrc}
+                              alt={currentImmobile?.nome_immobile || 'Anteprima immobile'}
+                              className="w-full h-44 object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+                            />
+                            <div className="absolute inset-0" style={{background: 'linear-gradient(180deg, transparent 50%, rgba(0,0,0,0.4) 100%)'}} />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setTempImmobileImageUrl('');
+                                triggerToast("Immagine rimossa. Salva per confermare.", "info");
+                              }}
+                              className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white/80 hover:text-white transition-all duration-200 opacity-0 group-hover:opacity-100 z-10"
+                              style={{background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.15)'}}
+                              title="Rimuovi immagine"
+                            >
+                              ✕
+                            </button>
+                            <div className="absolute bottom-0 left-0 right-0 p-3 flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{background: tempImmobileImageUrl ? '#FF9500' : '#34C759'}} />
+                                <span className="text-[10px] text-white/90 font-medium">
+                                  {tempImmobileImageUrl ? 'Nuova immagine (Anteprima)' : 'Immagine attuale'}
+                                </span>
+                              </div>
+                              {!tempImmobileImageUrl && currentImmobile?.immagine_di_riferimento && (
+                                <a href={currentImmobile.immagine_di_riferimento} target="_blank" rel="noreferrer" className="text-[10px] text-white/70 hover:text-white underline font-medium transition-colors">Apri originale ↗</a>
+                              )}
+                            </div>
                           </div>
+                        ) : null;
+                      })()}
+
+                      <div>
+                        <div className="glass-input rounded-xl px-3 py-2">
+                          <input
+                            type="file"
+                            name="immagine_di_riferimento_file"
+                            accept="image/*"
+                            className="w-full text-xs text-[#86868B] file:mr-3 file:py-1.5 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-bold file:uppercase file:tracking-wide file:bg-[#0071E3]/10 file:text-[#0071E3] hover:file:bg-[#0071E3]/20 cursor-pointer transition-all"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onload = (ev) => setTempImmobileImageUrl(ev.target.result);
+                                reader.readAsDataURL(file);
+                              } else {
+                                setTempImmobileImageUrl(null);
+                              }
+                            }}
+                          />
+                        </div>
+                        {((tempImmobileImageUrl !== '' && tempImmobileImageUrl !== null) || (tempImmobileImageUrl === null && currentImmobile?.immagine_di_riferimento)) && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setTempImmobileImageUrl('');
+                              triggerToast("Immagine rimossa. Salva per confermare.", "info");
+                            }}
+                            className="mt-2 text-xs text-[#FF3B30] hover:underline font-semibold block"
+                          >
+                            Rimuovi immagine
+                          </button>
                         )}
                       </div>
+                    </div>
 
-                      <div className="md:col-span-2">
-                        <label className="block text-xs font-semibold text-[#86868B] mb-1">indirizzo *</label>
-                        <input
-                          type="text"
-                          name="indirizzo"
-                          required
-                          placeholder="Via Cantonale 1"
-                          defaultValue={currentImmobile ? currentImmobile.indirizzo : ''}
-                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all text-[#1D1D1F]"
-                        />
+                    <div className="glass-panel p-5 rounded-2xl space-y-4">
+                      <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                        <span className="text-sm">🏠</span>
+                        <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Identificazione</span>
                       </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="md:col-span-2">
+                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Nome Immobile <span className="text-[#FF3B30]">*</span></label>
+                          <input
+                            type="text"
+                            name="nome_immobile"
+                            required
+                            placeholder="es. Esclusiva Proprietà Vista Lago"
+                            defaultValue={currentImmobile ? currentImmobile.nome_immobile : ''}
+                            className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Codice Immobile <span className="text-[#FF3B30]">*</span></label>
+                          <input
+                            type="text"
+                            name="codice_immobile"
+                            required
+                            placeholder="es. #0001"
+                            defaultValue={currentImmobile ? currentImmobile.codice_immobile : ''}
+                            className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC] font-mono"
+                          />
+                        </div>
+                      </div>
+                    </div>
 
-                      <div>
-                        <label className="block text-xs font-semibold text-[#86868B] mb-1">npa *</label>
-                        <input
-                          type="number"
-                          name="npa"
-                          required
-                          placeholder="6900"
-                          defaultValue={currentImmobile ? currentImmobile.npa : ''}
-                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all text-[#1D1D1F]"
-                        />
+                    <div className="glass-panel p-5 rounded-2xl space-y-4">
+                      <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                        <span className="text-sm">📍</span>
+                        <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Posizione</span>
                       </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-[#86868B] mb-1">comune *</label>
-                        <input
-                          type="text"
-                          name="comune"
-                          required
-                          placeholder="Lugano"
-                          defaultValue={currentImmobile ? currentImmobile.comune : ''}
-                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all text-[#1D1D1F]"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-[#86868B] mb-1">nazione</label>
-                        <input
-                          type="text"
-                          name="nazione"
-                          defaultValue={currentImmobile ? currentImmobile.nazione : 'Svizzera'}
-                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all text-[#1D1D1F]"
-                        />
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="md:col-span-2">
+                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Indirizzo <span className="text-[#FF3B30]">*</span></label>
+                          <input
+                            type="text"
+                            name="indirizzo"
+                            required
+                            placeholder="Via Cantonale 1"
+                            defaultValue={currentImmobile ? currentImmobile.indirizzo : ''}
+                            className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">NPA <span className="text-[#FF3B30]">*</span></label>
+                          <input
+                            type="number"
+                            name="npa"
+                            required
+                            placeholder="6900"
+                            defaultValue={currentImmobile ? currentImmobile.npa : ''}
+                            className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Comune <span className="text-[#FF3B30]">*</span></label>
+                          <input
+                            type="text"
+                            name="comune"
+                            required
+                            placeholder="Lugano"
+                            defaultValue={currentImmobile ? currentImmobile.comune : ''}
+                            className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
+                          />
+                        </div>
+                        <div className="md:col-span-4">
+                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Nazione</label>
+                          <input
+                            type="text"
+                            name="nazione"
+                            defaultValue={currentImmobile ? currentImmobile.nazione : 'Svizzera'}
+                            className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
 
                   {/* ========= SEZIONE 2: GENERALE & PREZZI ========= */}
-                  <div className={activeFormTab === 'generale' ? 'space-y-4' : 'hidden'}>
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-[#0071E3] border-b pb-1">2. Generale & Prezzi</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs font-semibold text-[#86868B] mb-1">stato *</label>
-                        <select
-                          name="stato"
-                          defaultValue={currentImmobile ? currentImmobile.stato : 'Disponibile'}
-                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all text-[#1D1D1F]"
-                        >
-                          <option value="Disponibile">Disponibile</option>
-                          <option value="In Trattativa">In Trattativa</option>
-                          <option value="Venduto">Venduto</option>
-                          <option value="Affittato">Affittato</option>
-                        </select>
+                  <div className={activeFormTab === 'generale' ? 'space-y-5 animate-fade-in' : 'hidden'}>
+                    <div className="glass-panel p-5 rounded-2xl space-y-4">
+                      <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                        <span className="text-sm">🏗️</span>
+                        <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Stato e Contratto</span>
                       </div>
-
-                      <div>
-                        <label className="block text-xs font-semibold text-[#86868B] mb-2">immobile_in *</label>
-                        <div className="flex space-x-4 py-1.5">
-                          {['Affitto', 'Vendita'].map(val => (
-                            <label key={val} className="flex items-center space-x-2 text-sm text-[#1D1D1F]">
-                              <input
-                                type="checkbox"
-                                name={`immobile_in_${val}`}
-                                defaultChecked={currentImmobile && currentImmobile.immobile_in ? currentImmobile.immobile_in.includes(val) : (val === 'Vendita')}
-                                className="rounded text-[#0071E3] focus:ring-[#0071E3]"
-                              />
-                              <span>{val}</span>
-                            </label>
-                          ))}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Stato <span className="text-[#FF3B30]">*</span></label>
+                          <select
+                            name="stato"
+                            defaultValue={currentImmobile ? currentImmobile.stato : 'Disponibile'}
+                            className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F]"
+                          >
+                            <option value="Disponibile">Disponibile</option>
+                            <option value="Lead">Lead</option>
+                            <option value="In Trattativa">In Trattativa</option>
+                            <option value="Venduto">Venduto</option>
+                            <option value="Affittato">Affittato</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Immobile in <span className="text-[#FF3B30]">*</span></label>
+                          <div className="flex gap-2">
+                            {['Affitto', 'Vendita'].map(val => (
+                              <label key={val} className="relative flex-1 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  name={`immobile_in_${val}`}
+                                  defaultChecked={currentImmobile && currentImmobile.immobile_in ? currentImmobile.immobile_in.includes(val) : false}
+                                  className="peer sr-only"
+                                />
+                                <div className="px-4 py-2.5 rounded-full border border-[#D2D2D7] bg-white/50 text-[#86868B] font-semibold text-sm transition-all duration-300 peer-checked:border-[#0071E3] peer-checked:bg-[#0071E3]/10 peer-checked:text-[#0071E3] peer-checked:shadow-sm hover:border-[#0071E3]/40 flex items-center justify-center gap-1.5 active:scale-[0.98]">
+                                  <span className="text-sm leading-none">
+                                    {val === 'Affitto' ? '🔑' : '🏷️'}
+                                  </span>
+                                  <span>{val}</span>
+                                </div>
+                              </label>
+                            ))}
+                          </div>
                         </div>
                       </div>
                     </div>
 
-                    {/* Container wrapping pricing and specifications */}
-                    <div className="bg-[#F5F5F7] p-5 rounded-2xl border border-[#E5E5EA] space-y-4">
-                      <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Specifiche e Prezzi</span>
+                    <div className="glass-panel p-5 rounded-2xl space-y-4">
+                      <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                        <span className="text-sm">💰</span>
+                        <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Prezzi & Costi</span>
+                      </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-xs font-semibold text-[#86868B] mb-1">prezzo_di_vendita</label>
-                          <input
-                            type="number"
-                            name="prezzo_di_vendita"
-                            placeholder="es. 3450000"
-                            defaultValue={currentImmobile ? currentImmobile.prezzo_di_vendita : ''}
-                            className="w-full px-3.5 py-2 bg-white border border-[#E5E5EA] rounded-xl text-sm focus:outline-none focus:border-[#0071E3] text-[#1D1D1F]"
-                          />
+                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Prezzo di Vendita</label>
+                          <div className="relative">
+                            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-[#86868B] font-semibold">CHF</span>
+                            <input
+                              type="number"
+                              name="prezzo_di_vendita"
+                              placeholder="3'450'000"
+                              defaultValue={currentImmobile ? currentImmobile.prezzo_di_vendita : ''}
+                              className="glass-input w-full pl-12 pr-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
+                            />
+                          </div>
                         </div>
-
                         <div>
-                          <label className="block text-xs font-semibold text-[#86868B] mb-1">prezzo_di_affitto</label>
-                          <input
-                            type="number"
-                            name="prezzo_di_affitto"
-                            placeholder="es. 3100"
-                            defaultValue={currentImmobile ? currentImmobile.prezzo_di_affitto : ''}
-                            className="w-full px-3.5 py-2 bg-white border border-[#E5E5EA] rounded-xl text-sm focus:outline-none focus:border-[#0071E3] text-[#1D1D1F]"
-                          />
+                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Prezzo di Affitto</label>
+                          <div className="relative">
+                            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-[#86868B] font-semibold">CHF</span>
+                            <input
+                              type="number"
+                              name="prezzo_di_affitto"
+                              placeholder="3'100"
+                              defaultValue={currentImmobile ? currentImmobile.prezzo_di_affitto : ''}
+                              className="glass-input w-full pl-12 pr-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
+                            />
+                          </div>
                         </div>
-
                         <div>
-                          <label className="block text-xs font-semibold text-[#86868B] mb-1">spese_condominiali</label>
-                          <input
-                            type="number"
-                            name="spese_condominiali"
-                            placeholder="es. 250"
-                            defaultValue={currentImmobile ? currentImmobile.spese_condominiali : ''}
-                            className="w-full px-3.5 py-2 bg-white border border-[#E5E5EA] rounded-xl text-sm focus:outline-none focus:border-[#0071E3] text-[#1D1D1F]"
-                          />
+                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Spese Condominiali</label>
+                          <div className="relative">
+                            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-[#86868B] font-semibold">CHF</span>
+                            <input
+                              type="number"
+                              name="spese_condominiali"
+                              placeholder="250"
+                              defaultValue={currentImmobile ? currentImmobile.spese_condominiali : ''}
+                              className="glass-input w-full pl-12 pr-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
+                            />
+                          </div>
                         </div>
-
                         <div>
-                          <label className="block text-xs font-semibold text-[#86868B] mb-1">costo_parcheggi</label>
-                          <input
-                            type="number"
-                            name="costo_parcheggi"
-                            placeholder="es. 150"
-                            defaultValue={currentImmobile ? currentImmobile.costo_parcheggi : ''}
-                            className="w-full px-3.5 py-2 bg-white border border-[#E5E5EA] rounded-xl text-sm focus:outline-none focus:border-[#0071E3] text-[#1D1D1F]"
-                          />
+                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Costo Parcheggi</label>
+                          <div className="relative">
+                            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-[#86868B] font-semibold">CHF</span>
+                            <input
+                              type="number"
+                              name="costo_parcheggi"
+                              placeholder="150"
+                              defaultValue={currentImmobile ? currentImmobile.costo_parcheggi : ''}
+                              className="glass-input w-full pl-12 pr-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
+                            />
+                          </div>
                         </div>
+                      </div>
+                    </div>
 
+                    <div className="glass-panel p-5 rounded-2xl space-y-4">
+                      <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                        <span className="text-sm">📐</span>
+                        <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Spazi & Dimensioni</span>
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                         <div>
-                          <label className="block text-xs font-semibold text-[#86868B] mb-1">categoria *</label>
+                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Categoria <span className="text-[#FF3B30]">*</span></label>
                           <select
                             name="categoria"
                             defaultValue={currentImmobile ? currentImmobile.categoria : 'Appartamento'}
-                            className="w-full px-3.5 py-2 bg-white border border-[#E5E5EA] rounded-xl text-sm focus:outline-none focus:border-[#0071E3] text-[#1D1D1F]"
+                            className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F]"
                           >
                             <option value="Appartamento">Appartamento</option>
                             <option value="Casa">Casa</option>
@@ -4160,108 +4617,85 @@ export default function App() {
                             <option value="Box">Box</option>
                           </select>
                         </div>
-
-
-
-                        <div className="md:col-span-2">
-                          <label className="block text-xs font-semibold text-[#86868B] mb-2">tipo</label>
-                          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 bg-white p-4 rounded-2xl border border-[#E5E5EA]">
-                            {[
-                              "Appartamento", "Attico", "Villa", "Duplex", "Loft", "Casa a Schiera",
-                              "Casa Unifamiliare", "Ufficio", "Rustico", "Parcheggio all'Aperto",
-                              "Parcheggio al Coperto", "Garage", "Terreno Commerciale", "Terreno per Costruire"
-                            ].map(val => (
-                              <label key={val} className="flex items-center space-x-2 text-xs text-[#1D1D1F]">
-                                <input
-                                  type="checkbox"
-                                  name={`tipo_${val}`}
-                                  defaultChecked={currentImmobile && currentImmobile.tipo ? currentImmobile.tipo.includes(val) : false}
-                                  className="rounded text-[#0071E3] focus:ring-[#0071E3]"
-                                />
-                                <span>{val}</span>
-                              </label>
-                            ))}
+                        <div>
+                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Superficie Abitabile</label>
+                          <div className="relative">
+                            <input
+                              type="number"
+                              name="superficie_abitabile"
+                              defaultValue={currentImmobile ? currentImmobile.superficie_abitabile : ''}
+                              className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
+                              placeholder="m²"
+                            />
+                            <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-[#86868B]">m²</span>
                           </div>
                         </div>
-
                         <div>
-                          <label className="block text-xs font-semibold text-[#86868B] mb-1">superficie_abitabile</label>
-                          <input
-                            type="number"
-                            name="superficie_abitabile"
-                            defaultValue={currentImmobile ? currentImmobile.superficie_abitabile : ''}
-                            className="w-full px-3.5 py-2 bg-white border border-[#E5E5EA] rounded-xl text-sm focus:outline-none focus:border-[#0071E3] text-[#1D1D1F]"
-                          />
+                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Superficie SUL</label>
+                          <div className="relative">
+                            <input
+                              type="number"
+                              name="superficie_sul"
+                              defaultValue={currentImmobile ? currentImmobile.superficie_sul : ''}
+                              className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
+                              placeholder="m²"
+                            />
+                            <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-[#86868B]">m²</span>
+                          </div>
                         </div>
-
                         <div>
-                          <label className="block text-xs font-semibold text-[#86868B] mb-1">superficie_sul</label>
-                          <input
-                            type="number"
-                            name="superficie_sul"
-                            defaultValue={currentImmobile ? currentImmobile.superficie_sul : ''}
-                            className="w-full px-3.5 py-2 bg-white border border-[#E5E5EA] rounded-xl text-sm focus:outline-none focus:border-[#0071E3] text-[#1D1D1F]"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-xs font-semibold text-[#86868B] mb-1">numero_di_locali</label>
+                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Locali</label>
                           <input
                             type="number"
                             step="0.1"
                             name="numero_di_locali"
                             placeholder="es. 3.5"
                             defaultValue={currentImmobile ? currentImmobile.numero_di_locali : ''}
-                            className="w-full px-3.5 py-2 bg-white border border-[#E5E5EA] rounded-xl text-sm focus:outline-none focus:border-[#0071E3] text-[#1D1D1F]"
+                            className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
                           />
                         </div>
-
                         <div>
-                          <label className="block text-xs font-semibold text-[#86868B] mb-1">numero_bagni</label>
+                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Bagni</label>
                           <input
                             type="number"
                             name="numero_bagni"
                             placeholder="es. 2"
                             defaultValue={currentImmobile ? currentImmobile.numero_bagni : ''}
-                            className="w-full px-3.5 py-2 bg-white border border-[#E5E5EA] rounded-xl text-sm focus:outline-none focus:border-[#0071E3] text-[#1D1D1F]"
+                            className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
                           />
                         </div>
-
                         <div>
-                          <label className="block text-xs font-semibold text-[#86868B] mb-1">garage</label>
+                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Garage</label>
                           <input
                             type="number"
                             name="garage"
                             placeholder="es. 1"
                             defaultValue={currentImmobile ? currentImmobile.garage : ''}
-                            className="w-full px-3.5 py-2 bg-white border border-[#E5E5EA] rounded-xl text-sm focus:outline-none focus:border-[#0071E3] text-[#1D1D1F]"
+                            className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
                           />
                         </div>
-
                         <div>
-                          <label className="block text-xs font-semibold text-[#86868B] mb-1">parcheggio</label>
+                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Parcheggi</label>
                           <input
                             type="number"
                             name="parcheggio"
-                            placeholder="es. 2"
+                            placeholder="es. 1"
                             defaultValue={currentImmobile ? currentImmobile.parcheggio : ''}
-                            className="w-full px-3.5 py-2 bg-white border border-[#E5E5EA] rounded-xl text-sm focus:outline-none focus:border-[#0071E3] text-[#1D1D1F]"
+                            className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
                           />
                         </div>
-
                         <div>
-                          <label className="block text-xs font-semibold text-[#86868B] mb-1">anno_di_costruzione</label>
+                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Costruzione (Anno)</label>
                           <input
                             type="number"
                             name="anno_di_costruzione"
                             placeholder="es. 2018"
                             defaultValue={currentImmobile ? currentImmobile.anno_di_costruzione : ''}
-                            className="w-full px-3.5 py-2 bg-white border border-[#E5E5EA] rounded-xl text-sm focus:outline-none focus:border-[#0071E3] text-[#1D1D1F]"
+                            className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
                           />
                         </div>
-
                         <div>
-                          <label className="block text-xs font-semibold text-[#86868B] mb-1">ultimo_rinnovo</label>
+                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Rinnovo (Anno)</label>
                           <input
                             type="number"
                             name="ultimo_rinnovo"
@@ -4274,320 +4708,676 @@ export default function App() {
                               }
                               return val;
                             })() : ''}
-                            className="w-full px-3.5 py-2 bg-white border border-[#E5E5EA] rounded-xl text-sm focus:outline-none focus:border-[#0071E3] text-[#1D1D1F]"
+                            className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
                           />
                         </div>
+                      </div>
+                    </div>
 
+                    <div className="glass-panel p-5 rounded-2xl space-y-4">
+                      <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                        <span className="text-sm">⚙️</span>
+                        <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Parametri & Vincoli</span>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
-                          <label className="block text-xs font-semibold text-[#86868B] mb-2">tipo_di_residenza</label>
-                          <div className="flex space-x-6 bg-white p-3 rounded-2xl border border-[#E5E5EA]">
-                            {['Primaria', 'Secondaria'].map(res => (
-                              <label key={res} className="flex items-center space-x-2 text-xs text-[#1D1D1F]">
-                                <input
-                                  type="checkbox"
-                                  name={`tipo_di_residenza_${res}`}
-                                  defaultChecked={currentImmobile && currentImmobile.tipo_di_residenza ? currentImmobile.tipo_di_residenza.includes(res) : false}
-                                  className="rounded text-[#0071E3] focus:ring-[#0071E3]"
-                                />
-                                <span>{res}</span>
-                              </label>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-xs font-semibold text-[#86868B] mb-1">vendibile_a_stranieri</label>
+                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Vendibile a Stranieri</label>
                           <select
                             name="vendibile_a_stranieri"
                             defaultValue={currentImmobile ? currentImmobile.vendibile_a_stranieri : 'No'}
-                            className="w-full px-3.5 py-2 bg-white border border-[#E5E5EA] rounded-xl text-sm focus:outline-none focus:border-[#0071E3] text-[#1D1D1F]"
+                            className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F]"
                           >
                             <option value="No">No</option>
                             <option value="Si">Si</option>
                           </select>
                         </div>
-
                         <div>
-                          <label className="block text-xs font-semibold text-[#86868B] mb-1">numero_di_mappale</label>
+                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Numero Mappale</label>
                           <input
                             type="text"
                             name="numero_di_mappale"
                             placeholder="es. 1234"
                             defaultValue={currentImmobile ? currentImmobile.numero_di_mappale : ''}
-                            className="w-full px-3.5 py-2 bg-white border border-[#E5E5EA] rounded-xl text-sm focus:outline-none focus:border-[#0071E3] text-[#1D1D1F]"
+                            className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
                           />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold text-[#86868B] mb-2 uppercase tracking-wider">Residenza</label>
+                          <div className="flex space-x-4 py-1.5">
+                            {['Primaria', 'Secondaria'].map(res => (
+                              <label key={res} className="flex items-center space-x-2 text-xs text-[#1D1D1F] cursor-pointer group">
+                                <input
+                                  type="checkbox"
+                                  name={`tipo_di_residenza_${res}`}
+                                  defaultChecked={currentImmobile && currentImmobile.tipo_di_residenza ? currentImmobile.tipo_di_residenza.includes(res) : false}
+                                  className="w-4 h-4 rounded text-[#0071E3] focus:ring-[#0071E3] focus:ring-offset-0 border-[#D2D2D7] transition-all"
+                                />
+                                <span className="group-hover:text-[#0071E3] transition-colors font-medium">{res}</span>
+                              </label>
+                            ))}
+                          </div>
                         </div>
                       </div>
                     </div>
 
-                    {/* Outside container: descrizione_immobile, planimetria */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="md:col-span-2">
-                        <label className="block text-xs font-semibold text-[#86868B] mb-1">descrizione_immobile</label>
-                        <textarea
-                          name="descrizione_immobile"
-                          rows="4"
-                          defaultValue={currentImmobile ? currentImmobile.descrizione_immobile : ''}
-                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all text-[#1D1D1F]"
-                        />
+                    <div className="glass-panel p-5 rounded-2xl space-y-4">
+                      <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                        <span className="text-sm">🏷️</span>
+                        <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Tipologia Specifica</span>
                       </div>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+                        {[
+                          "Appartamento", "Attico", "Villa", "Duplex", "Loft", "Casa a Schiera",
+                          "Casa Unifamiliare", "Ufficio", "Rustico", "Parcheggio all'Aperto",
+                          "Parcheggio al Coperto", "Garage", "Terreno Commerciale", "Terreno per Costruire"
+                        ].map(val => (
+                          <label key={val} className="flex items-center space-x-2 text-xs text-[#1D1D1F] cursor-pointer group py-0.5">
+                            <input
+                              type="checkbox"
+                              name={`tipo_${val}`}
+                              defaultChecked={currentImmobile && currentImmobile.tipo ? currentImmobile.tipo.includes(val) : false}
+                              className="w-3.5 h-3.5 rounded text-[#0071E3] focus:ring-[#0071E3] focus:ring-offset-0 border-[#D2D2D7] transition-all"
+                            />
+                            <span className="group-hover:text-[#0071E3] transition-colors font-medium truncate">{val}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
 
-                      <div className="md:col-span-2">
-                        <label className="block text-xs font-semibold text-[#86868B] mb-1">planimetria</label>
-                        <input
-                          type="file"
-                          name="planimetria_file"
-                          accept="image/*,application/pdf"
-                          className="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#0071E3]/10 file:text-[#0071E3] hover:file:bg-[#0071E3]/20 cursor-pointer"
-                        />
-                        {currentImmobile && currentImmobile.planimetria && (
-                          <div className="flex items-center gap-2 mt-1.5">
-                            <span className="text-[10px] text-gray-400">File attuale:</span>
-                            <a href={currentImmobile.planimetria} target="_blank" rel="noreferrer" className="text-[10px] text-[#0071E3] underline truncate max-w-[240px]">{currentImmobile.planimetria.split('/').pop()}</a>
+                    <div className="glass-panel p-5 rounded-2xl space-y-4">
+                      <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                        <span className="text-sm">📝</span>
+                        <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Descrizione & Planimetria</span>
+                      </div>
+                      
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Descrizione Esterna</label>
+                          <textarea
+                            name="descrizione_immobile"
+                            rows="4"
+                            defaultValue={currentImmobile ? currentImmobile.descrizione_immobile : ''}
+                            className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC] leading-relaxed"
+                            placeholder="Inserisci la descrizione pubblica dell'immobile..."
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">File Planimetria</label>
+                          {(() => {
+                            const isDeleted = tempPlanimetriaUrl === '';
+                            const previewSrc = isDeleted ? null : (tempPlanimetriaUrl || (currentImmobile && currentImmobile.planimetria));
+                            
+                            if (previewSrc) {
+                              const isNew = !!tempPlanimetriaUrl;
+                              const url = previewSrc;
+                              const isImage = url.startsWith('data:image/') || (!url.startsWith('data:') && (['jpg','jpeg','png','gif','webp','heic','heif','bmp','svg'].includes(url.split('.').pop().split('?')[0].toLowerCase())));
+                              
+                              return isImage ? (
+                                <div className="mb-3 relative rounded-xl overflow-hidden group" style={{border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 2px 12px rgba(0,0,0,0.06)'}}>
+                                  <img
+                                    src={url}
+                                    alt="Planimetria"
+                                    className="w-full h-40 object-contain bg-white rounded-xl transition-transform duration-500 group-hover:scale-[1.02]"
+                                  />
+                                  <div className="absolute inset-0" style={{background: 'linear-gradient(180deg, transparent 60%, rgba(0,0,0,0.3) 100%)'}} />
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setTempPlanimetriaUrl('');
+                                      triggerToast("Planimetria rimossa. Salva per confermare.", "info");
+                                    }}
+                                    className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white/80 hover:text-white transition-all duration-200 opacity-0 group-hover:opacity-100 z-10"
+                                    style={{background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.15)'}}
+                                    title="Rimuovi planimetria"
+                                  >
+                                    ✕
+                                  </button>
+                                  <div className="absolute bottom-0 left-0 right-0 p-3 flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{background: isNew ? '#FF9500' : '#34C759'}} />
+                                      <span className="text-[10px] text-white/90 font-medium">
+                                        {isNew ? 'Nuova planimetria (Anteprima)' : 'Planimetria attuale'}
+                                      </span>
+                                    </div>
+                                    {!isNew && (
+                                      <a href={url} target="_blank" rel="noreferrer" className="text-[10px] text-white/70 hover:text-white underline font-medium transition-colors">Apri originale ↗</a>
+                                    )}
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="mb-3 flex items-center gap-3 rounded-xl p-3 relative group" style={{background: 'rgba(255,255,255,0.5)', border: '1px solid rgba(0,0,0,0.06)'}}>
+                                  <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center flex-shrink-0">
+                                    <span className="text-lg">📄</span>
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <span className="block text-xs font-semibold text-[#1D1D1F] truncate">
+                                      {url.startsWith('data:') ? 'Nuova planimetria' : url.split('/').pop()}
+                                    </span>
+                                    <span className="block text-[10px] text-[#86868B]">
+                                      {isNew ? 'Nuova planimetria (Anteprima PDF)' : 'File attuale caricato'}
+                                    </span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setTempPlanimetriaUrl('');
+                                      triggerToast("Planimetria rimossa. Salva per confermare.", "info");
+                                    }}
+                                    className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-[#86868B] hover:text-[#FF3B30] hover:bg-black/5 transition-all duration-200"
+                                    title="Rimuovi planimetria"
+                                  >
+                                    ✕
+                                  </button>
+                                  {!isNew && (
+                                    <a href={url} target="_blank" rel="noreferrer" className="text-[10px] text-[#0071E3] hover:underline font-semibold flex-shrink-0 ml-1">Apri ↗</a>
+                                  )}
+                                </div>
+                              );
+                            }
+                            return null;
+                          })()}
+                          <div className="glass-input rounded-xl px-3 py-2">
+                            <div className="text-[10px] text-[#86868B] mb-1 font-medium">Carica file planimetria (immagine o PDF):</div>
+                            <input
+                              type="file"
+                              name="planimetria_file"
+                              accept="image/*,application/pdf"
+                              className="w-full text-xs text-[#86868B] file:mr-3 file:py-1.5 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-bold file:uppercase file:tracking-wide file:bg-[#0071E3]/10 file:text-[#0071E3] hover:file:bg-[#0071E3]/20 cursor-pointer transition-all"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  const reader = new FileReader();
+                                  reader.onload = (ev) => setTempPlanimetriaUrl(ev.target.result);
+                                  reader.readAsDataURL(file);
+                                } else {
+                                  setTempPlanimetriaUrl(null);
+                                }
+                              }}
+                            />
                           </div>
-                        )}
-                      </div>
+                          {((tempPlanimetriaUrl !== '' && tempPlanimetriaUrl !== null) || (tempPlanimetriaUrl === null && currentImmobile?.planimetria)) && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setTempPlanimetriaUrl('');
+                                triggerToast("Planimetria rimossa. Salva per confermare.", "info");
+                              }}
+                              className="mt-2 text-xs text-[#FF3B30] hover:underline font-semibold block"
+                            >
+                              Rimuovi planimetria
+                            </button>
+                          )}
+                        </div>
 
-                      <div className="md:col-span-2">
-                        <label className="block text-xs font-semibold text-[#86868B] mb-1">link_a_cartella_condivisa</label>
-                        <input
-                          type="url"
-                          name="link_a_cartella_condivisa"
-                          placeholder="es. https://drive.google.com/drive/folders/..."
-                          defaultValue={currentImmobile ? currentImmobile.link_a_cartella_condivisa : ''}
-                          className="w-full px-3.5 py-2 bg-white border border-[#E5E5EA] rounded-xl text-sm focus:outline-none focus:border-[#0071E3] text-[#1D1D1F]"
-                        />
+                        <div>
+                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Link Cartella Condivisa</label>
+                          <input
+                            type="url"
+                            name="link_a_cartella_condivisa"
+                            placeholder="es. https://drive.google.com/drive/folders/..."
+                            defaultValue={currentImmobile ? currentImmobile.link_a_cartella_condivisa : ''}
+                            className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
 
                   {/* ========= SEZIONE 3: CONTATTI ========= */}
-                  <div className={activeFormTab === 'contatti' ? 'space-y-4' : 'hidden'}>
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-[#0071E3] border-b pb-1">3. Contatti</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className={activeFormTab === 'contatti' ? 'space-y-5 animate-fade-in' : 'hidden'}>
+                    <div className="glass-panel p-5 rounded-2xl space-y-4 relative z-20">
+                      <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                        <span className="text-sm">👤</span>
+                        <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Proprietario</span>
+                      </div>
+                      
                       <div>
-                        <label className="block text-xs font-semibold text-[#86868B] mb-1">proprietario_oreferrente_id *</label>
-                        <select
-                          name="proprietario_id"
-                          defaultValue={currentImmobile ? currentImmobile.proprietario_id : ''}
-                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all text-[#1D1D1F]"
-                        >
-                          <option value="">Nessuno (Seleziona contatto)</option>
-                          {contatti.map(c => (
-                            <option key={c.id} value={c.id}>{c.cognome} {c.nome}</option>
-                          ))}
-                        </select>
+                        <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">
+                          Proprietario / Referente <span className="text-[#FF3B30]">*</span>
+                        </label>
+                        <input type="hidden" name="proprietario_id" value={selectedImmobileProprietarioId || ''} />
+
+                        {/* Pill list of active owner */}
+                        <div className="flex flex-wrap gap-1.5 mb-2 max-h-20 overflow-y-auto">
+                          {!selectedImmobileProprietarioId ? (
+                            <span className="text-[10px] text-gray-400 italic">Nessun proprietario/referente selezionato</span>
+                          ) : (() => {
+                            const match = contatti.find(c => String(c.id) === String(selectedImmobileProprietarioId));
+                            if (!match) return <span className="text-[10px] text-gray-400 italic">Nessun proprietario/referente selezionato</span>;
+                            return (
+                              <span className="inline-flex items-center gap-1 bg-[#0071E3]/10 text-[#0071E3] text-[10px] px-2 py-0.5 rounded-full font-medium">
+                                {match.nome || ''} {match.cognome || ''}
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedImmobileProprietarioId(null)}
+                                  className="hover:text-red-500 font-bold ml-0.5"
+                                >
+                                  ✕
+                                </button>
+                              </span>
+                            );
+                          })()}
+                        </div>
+
+                        <div className="relative">
+                          <input
+                            type="text"
+                            placeholder="🔍 Cerca proprietario da aggiungere..."
+                            value={searchImmobileProprietarioQuery}
+                            onChange={(e) => setSearchImmobileProprietarioQuery(e.target.value)}
+                            onFocus={() => setIsProprietarioSearchFocused(true)}
+                            onBlur={() => setTimeout(() => setIsProprietarioSearchFocused(false), 200)}
+                            className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none text-[#1D1D1F] hover:bg-[#E5E5EA]/50 focus:bg-white focus:border-[#0071E3] transition-all"
+                          />
+
+                          {isProprietarioSearchFocused && (
+                            <div className="absolute left-0 right-0 mt-1 bg-white border border-[#E5E5EA] rounded-2xl shadow-xl max-h-60 overflow-y-auto z-[60] p-1.5 space-y-1">
+                              {(() => {
+                                const filtered = contatti
+                                  .filter(c => String(c.id) !== String(selectedImmobileProprietarioId))
+                                  .filter(c => {
+                                    const qParts = searchImmobileProprietarioQuery.toLowerCase().trim().split(/\s+/).filter(Boolean);
+                                    if (qParts.length === 0) return true;
+                                    const nome = (c.nome || '').toLowerCase();
+                                    const cognome = (c.cognome || '').toLowerCase();
+                                    const societa = (c.societa || '').toLowerCase();
+                                    const rolesStr = (Array.isArray(c.ruolo) ? c.ruolo.join(' ') : (c.ruolo || '')).toLowerCase();
+                                    return qParts.every(part =>
+                                      nome.includes(part) ||
+                                      cognome.includes(part) ||
+                                      societa.includes(part) ||
+                                      rolesStr.includes(part)
+                                    );
+                                  });
+
+                                if (filtered.length === 0) {
+                                  return (
+                                    <div className="p-3 text-center text-xs text-[#86868B]">
+                                      Nessun contatto trovato
+                                      <button
+                                        type="button"
+                                        onMouseDown={() => {
+                                          setAddingContactForVisit('proprietario');
+                                          handleCreateContatto();
+                                        }}
+                                        className="block mx-auto mt-2 text-xs font-bold text-[#0071E3] hover:underline"
+                                      >
+                                        + Crea come nuovo contatto
+                                      </button>
+                                    </div>
+                                  );
+                                }
+
+                                return (
+                                  <>
+                                    {filtered.map(c => {
+                                      const rolesStr = Array.isArray(c.ruolo) ? c.ruolo.join(', ') : (c.ruolo || '');
+                                      return (
+                                        <button
+                                          key={c.id}
+                                          type="button"
+                                          onMouseDown={() => {
+                                            const parsedVal = isNaN(Number(c.id)) ? c.id : Number(c.id);
+                                            setSelectedImmobileProprietarioId(parsedVal);
+                                            setSearchImmobileProprietarioQuery('');
+                                          }}
+                                          className="w-full text-left px-3 py-2 rounded-xl text-xs hover:bg-[#F5F5F7] transition-all flex flex-col gap-0.5"
+                                        >
+                                          <span className="font-bold text-[#1D1D1F]">{c.cognome} {c.nome}</span>
+                                          {(c.societa || rolesStr) && (
+                                            <span className="text-[10px] text-[#86868B]">
+                                              {c.societa}{c.societa && rolesStr ? ' - ' : ''}{rolesStr}
+                                            </span>
+                                          )}
+                                        </button>
+                                      );
+                                    })}
+                                    <div className="border-t border-gray-100 pt-1 mt-1">
+                                      <button
+                                        type="button"
+                                        onMouseDown={() => {
+                                          setAddingContactForVisit('proprietario');
+                                          handleCreateContatto();
+                                        }}
+                                        className="w-full text-left px-3 py-2 rounded-xl text-xs font-semibold text-[#0071E3] hover:bg-[#0071E3]/5 transition-all"
+                                      >
+                                        + Aggiungi Nuovo Contatto...
+                                      </button>
+                                    </div>
+                                  </>
+                                );
+                              })()}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="glass-panel p-5 rounded-2xl space-y-4 relative z-10">
+                      <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                        <span className="text-sm">👥</span>
+                        <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Agenti Assegnati</span>
                       </div>
 
                       <div>
-                        <label className="block text-xs font-semibold text-[#86868B] mb-1">agente_id</label>
-                        <select
-                          name="agente_id"
-                          defaultValue={currentImmobile ? currentImmobile.agente_id : ''}
-                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all text-[#1D1D1F]"
-                        >
-                          <option value="">Nessuno</option>
-                          {contatti
-                            .filter(c => {
-                              const roles = c.ruolo;
-                              if (Array.isArray(roles)) {
-                                return roles.some(r => r.toLowerCase().includes('agente'));
-                              }
-                              return String(roles || '').toLowerCase().includes('agente');
+                        <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">
+                          Agenti Assegnati
+                        </label>
+                        <input type="hidden" name="agente_id" value={selectedImmobileAgenteIds.join(',')} />
+
+                        {/* Pill list of active agents */}
+                        <div className="flex flex-wrap gap-1.5 mb-2 max-h-20 overflow-y-auto">
+                          {selectedImmobileAgenteIds.length === 0 ? (
+                            <span className="text-[10px] text-gray-400 italic">Nessun agente assegnato</span>
+                          ) : (
+                            selectedImmobileAgenteIds.map(aid => {
+                              const match = contatti.find(c => String(c.id) === String(aid));
+                              if (!match) return null;
+                              return (
+                                <span key={aid} className="inline-flex items-center gap-1 bg-[#0071E3]/10 text-[#0071E3] text-[10px] px-2 py-0.5 rounded-full font-medium">
+                                  {match.nome || ''} {match.cognome || ''}
+                                  <button
+                                    type="button"
+                                    onClick={() => setSelectedImmobileAgenteIds(prev => prev.filter(id => String(id) !== String(aid)))}
+                                    className="hover:text-red-500 font-bold ml-0.5"
+                                  >
+                                    ✕
+                                  </button>
+                                </span>
+                              );
                             })
-                            .map(c => (
-                              <option key={c.id} value={c.id}>{c.cognome} {c.nome}</option>
-                            ))}
-                        </select>
+                          )}
+                        </div>
+
+                        <div className="relative">
+                          <input
+                            type="text"
+                            placeholder="🔍 Cerca agente da aggiungere..."
+                            value={searchImmobileAgenteQuery}
+                            onChange={(e) => setSearchImmobileAgenteQuery(e.target.value)}
+                            onFocus={() => setIsAgenteSearchFocused(true)}
+                            onBlur={() => setTimeout(() => setIsAgenteSearchFocused(false), 200)}
+                            className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none text-[#1D1D1F] hover:bg-[#E5E5EA]/50 focus:bg-white focus:border-[#0071E3] transition-all"
+                          />
+
+                          {isAgenteSearchFocused && (
+                            <div className="absolute left-0 right-0 mt-1 bg-white border border-[#E5E5EA] rounded-2xl shadow-xl max-h-60 overflow-y-auto z-[60] p-1.5 space-y-1">
+                              {(() => {
+                                const filtered = contatti
+                                  .filter(c => {
+                                    const roles = c.ruolo;
+                                    if (Array.isArray(roles)) {
+                                      return roles.some(r => r.toLowerCase().includes('agente'));
+                                    }
+                                    return String(roles || '').toLowerCase().includes('agente');
+                                  })
+                                  .filter(c => !selectedImmobileAgenteIds.map(String).includes(String(c.id)))
+                                  .filter(c => {
+                                    const qParts = searchImmobileAgenteQuery.toLowerCase().trim().split(/\s+/).filter(Boolean);
+                                    if (qParts.length === 0) return true;
+                                    const nome = (c.nome || '').toLowerCase();
+                                    const cognome = (c.cognome || '').toLowerCase();
+                                    const societa = (c.societa || '').toLowerCase();
+                                    const rolesStr = (Array.isArray(c.ruolo) ? c.ruolo.join(' ') : (c.ruolo || '')).toLowerCase();
+                                    return qParts.every(part =>
+                                      nome.includes(part) ||
+                                      cognome.includes(part) ||
+                                      societa.includes(part) ||
+                                      rolesStr.includes(part)
+                                    );
+                                  });
+
+                                if (filtered.length === 0) {
+                                  return (
+                                    <div className="p-3 text-center text-xs text-[#86868B]">
+                                      Nessun agente trovato
+                                      <button
+                                        type="button"
+                                        onMouseDown={() => {
+                                          setAddingContactForVisit('agente');
+                                          handleCreateContatto();
+                                        }}
+                                        className="block mx-auto mt-2 text-xs font-bold text-[#0071E3] hover:underline"
+                                      >
+                                        + Crea come nuovo contatto
+                                      </button>
+                                    </div>
+                                  );
+                                }
+
+                                return (
+                                  <>
+                                    {filtered.map(c => {
+                                      const rolesStr = Array.isArray(c.ruolo) ? c.ruolo.join(', ') : (c.ruolo || '');
+                                      return (
+                                        <button
+                                          key={c.id}
+                                          type="button"
+                                          onMouseDown={() => {
+                                            const parsedVal = isNaN(Number(c.id)) ? c.id : Number(c.id);
+                                            if (!selectedImmobileAgenteIds.map(String).includes(String(parsedVal))) {
+                                              setSelectedImmobileAgenteIds(prev => [...prev, parsedVal]);
+                                            }
+                                            setSearchImmobileAgenteQuery('');
+                                          }}
+                                          className="w-full text-left px-3 py-2 rounded-xl text-xs hover:bg-[#F5F5F7] transition-all flex flex-col gap-0.5"
+                                        >
+                                          <span className="font-bold text-[#1D1D1F]">{c.cognome} {c.nome}</span>
+                                          {(c.societa || rolesStr) && (
+                                            <span className="text-[10px] text-[#86868B]">
+                                              {c.societa}{c.societa && rolesStr ? ' - ' : ''}{rolesStr}
+                                            </span>
+                                          )}
+                                        </button>
+                                      );
+                                    })}
+                                    <div className="border-t border-gray-100 pt-1 mt-1">
+                                      <button
+                                        type="button"
+                                        onMouseDown={() => {
+                                          setAddingContactForVisit('agente');
+                                          handleCreateContatto();
+                                        }}
+                                        className="w-full text-left px-3 py-2 rounded-xl text-xs font-semibold text-[#0071E3] hover:bg-[#0071E3]/5 transition-all"
+                                      >
+                                        + Aggiungi Nuovo Contatto...
+                                      </button>
+                                    </div>
+                                  </>
+                                );
+                              })()}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
 
                   {/* ========= SEZIONE 4: AMMINISTRAZIONE ========= */}
-                  <div className={activeFormTab === 'amministrazione' ? 'space-y-4' : 'hidden'}>
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-[#0071E3] border-b pb-1">4. Amministrazione</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs font-semibold text-[#86868B] mb-1">mandato_firmato *</label>
-                        <select
-                          name="mandato_firmato"
-                          defaultValue={currentImmobile ? currentImmobile.mandato_firmato : 'No'}
-                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all text-[#1D1D1F]"
-                        >
-                          <option value="No">No</option>
-                          <option value="Stand By">Stand By</option>
-                          <option value="Si">Si</option>
-                        </select>
+                  <div className={activeFormTab === 'amministrazione' ? 'space-y-5 animate-fade-in' : 'hidden'}>
+                    <div className="glass-panel p-5 rounded-2xl space-y-4">
+                      <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                        <span className="text-sm">💼</span>
+                        <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Mandato & Accordi</span>
                       </div>
-
-                      <div>
-                        <label className="block text-xs font-semibold text-[#86868B] mb-1">tipo_di_mandato *</label>
-                        <select
-                          name="tipo_di_mandato"
-                          defaultValue={currentImmobile ? currentImmobile.tipo_di_mandato : 'Non in Esclusiva'}
-                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all text-[#1D1D1F]"
-                        >
-                          <option value="Non in Esclusiva">Non in Esclusiva</option>
-                          <option value="In Esclusiva">In Esclusiva</option>
-                        </select>
-                      </div>
-
-                      <div className="md:col-span-2">
-                        <label className="block text-xs font-semibold text-[#86868B] mb-1">mandato</label>
-                        <input
-                          type="file"
-                          name="mandato_file"
-                          accept="image/*,application/pdf"
-                          className="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#0071E3]/10 file:text-[#0071E3] hover:file:bg-[#0071E3]/20 cursor-pointer"
-                        />
-                        {currentImmobile && currentImmobile.mandato && (
-                          <div className="flex items-center gap-2 mt-1.5">
-                            <span className="text-[10px] text-gray-400">File attuale:</span>
-                            <a href={currentImmobile.mandato} target="_blank" rel="noreferrer" className="text-[10px] text-[#0071E3] underline truncate max-w-[240px]">{currentImmobile.mandato.split('/').pop()}</a>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Mandato Firmato <span className="text-[#FF3B30]">*</span></label>
+                          <select
+                            name="mandato_firmato"
+                            defaultValue={currentImmobile ? currentImmobile.mandato_firmato : 'No'}
+                            className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F]"
+                          >
+                            <option value="No">No</option>
+                            <option value="Stand By">Stand By</option>
+                            <option value="Si">Si</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Tipo di Mandato <span className="text-[#FF3B30]">*</span></label>
+                          <select
+                            name="tipo_di_mandato"
+                            defaultValue={currentImmobile ? currentImmobile.tipo_di_mandato : 'Non in Esclusiva'}
+                            className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F]"
+                          >
+                            <option value="Non in Esclusiva">Non in Esclusiva</option>
+                            <option value="In Esclusiva">In Esclusiva</option>
+                          </select>
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">File Mandato (Immagine o PDF)</label>
+                          <div className="glass-input rounded-xl px-3 py-2">
+                            <input
+                              type="file"
+                              name="mandato_file"
+                              accept="image/*,application/pdf"
+                              className="w-full text-xs text-[#86868B] file:mr-3 file:py-1.5 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-bold file:uppercase file:tracking-wide file:bg-[#0071E3]/10 file:text-[#0071E3] hover:file:bg-[#0071E3]/20 cursor-pointer transition-all"
+                            />
                           </div>
-                        )}
+                          {currentImmobile && currentImmobile.mandato && (
+                            <div className="flex items-center gap-2 mt-2 px-1">
+                              <div className="w-1.5 h-1.5 rounded-full bg-[#34C759]" />
+                              <a href={currentImmobile.mandato} target="_blank" rel="noreferrer" className="text-[10px] text-[#0071E3] hover:underline truncate max-w-[240px] font-medium">{currentImmobile.mandato.split('/').pop()}</a>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
 
                   {/* ========= SEZIONE 5: DOCUMENTI ========= */}
-                  <div className={activeFormTab === 'documenti' ? 'space-y-4' : 'hidden'}>
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-[#0071E3] border-b pb-1">5. Documenti</h4>
-                    <p className="text-[11px] text-[#86868B] -mt-2">
-                      Indica per ogni documento se è presente e carica il relativo file (Foto o PDF).
-                    </p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {[
-                        { key: 'estratto_registro_fondiario', label: 'estratto_registro_fondiario', desc: 'estratto_registro_fondiario_doc' },
-                        { key: 'descrittivo_tecnico', label: 'descrittivo_tecnico', desc: 'descrittivo_tecnico_doc' },
-                        { key: 'regolamento_condominiale', label: 'regolamento_condominiale', desc: 'regolamento_condominiale_doc' },
-                        { key: 'spese_condominiali_doc', label: 'spese_condominiali_doc', desc: 'spese_condominiali_doc', isFileOnly: true },
-                        { key: 'assicurazione_stabile', label: 'assicurazione_stabile', desc: 'assicurazione_stabile_doc' },
-                        { key: 'verbale_ultima_assemblea', label: 'verbale_ultima_assemblea', desc: 'verbale_ultima_assemblea_doc' },
-                        { key: 'fondo_rinnovamento', label: 'fondo_rinnovamento', desc: 'fondo_rinnovamento_doc' },
-                        { key: 'valore_di_stima', label: 'valore_di_stima', desc: 'valore_di_stima_doc' },
-                        { key: 'piano_assegnazioni_parti_comuni', label: 'piano_assegnazioni_parti_comuni', desc: 'piano_assegnazioni_parti_comuni_doc' },
-                        { key: 'rasi', label: 'rasi', desc: 'rasi_doc' },
-                        { key: 'certificato_radon', label: 'certificato_radon', desc: 'certificato_radon_doc' }
-                      ].map(doc => {
-                        const dbField = doc.key;
-                        return (
-                          <div key={doc.key} className="bg-[#F5F5F7] p-4 rounded-2xl border border-transparent space-y-3">
-                            <span className="block text-xs font-bold text-[#1D1D1F]">{doc.label}</span>
-                            <span className="block text-[10px] text-[#86868B] -mt-2">{doc.desc}</span>
-                            {doc.isFileOnly ? (
-                              <div className="pt-1">
-                                <div>
-                                  <label className="block text-[10px] text-[#86868B] mb-0.5">File</label>
-                                  <input
-                                    type="file"
-                                    name={dbField + "_file"}
-                                    accept="image/*,application/pdf"
-                                    className="w-full text-[10px] text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded-full file:border-0 file:text-[10px] file:font-semibold file:bg-[#0071E3]/10 file:text-[#0071E3] hover:file:bg-[#0071E3]/20 cursor-pointer"
-                                  />
-                                  {currentImmobile && currentImmobile[dbField] && (
-                                    <span className="block text-[8px] text-gray-400 mt-1 truncate" title={currentImmobile[dbField]}>
-                                      attuale: {currentImmobile[dbField].substring(0, 30)}...
-                                    </span>
-                                  )}
-                                </div>
+                  <div className={activeFormTab === 'documenti' ? 'space-y-5 animate-fade-in' : 'hidden'}>
+                    <div className="glass-panel p-5 rounded-2xl space-y-4">
+                      <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                        <span className="text-sm">📄</span>
+                        <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Documenti Immobile</span>
+                      </div>
+                      <p className="text-[11px] text-[#86868B] -mt-2">
+                        Indica lo stato di presenza di ciascun documento cartaceo o digitale e carica il rispettivo file.
+                      </p>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                        {[
+                          { key: 'estratto_registro_fondiario', label: 'Estratto Registro Fondiario', desc: 'estratto_registro_fondiario_doc' },
+                          { key: 'descrittivo_tecnico', label: 'Descrittivo Tecnico', desc: 'descrittivo_tecnico_doc' },
+                          { key: 'regolamento_condominiale', label: 'Regolamento Condominiale', desc: 'regolamento_condominiale_doc' },
+                          { key: 'spese_condominiali_doc', label: 'Spese Condominiali', desc: 'spese_condominiali_doc', isFileOnly: true },
+                          { key: 'assicurazione_stabile', label: 'Assicurazione Stabile', desc: 'assicurazione_stabile_doc' },
+                          { key: 'verbale_ultima_assemblea', label: 'Verbale Ultima Assemblea', desc: 'verbale_ultima_assemblea_doc' },
+                          { key: 'fondo_rinnovamento', label: 'Fondo Rinnovamento', desc: 'fondo_rinnovamento_doc' },
+                          { key: 'valore_di_stima', label: 'Valore di Stima', desc: 'valore_di_stima_doc' },
+                          { key: 'piano_assegnazioni_parti_comuni', label: 'Piano Assegnazioni Parti Comuni', desc: 'piano_assegnazioni_parti_comuni_doc' },
+                          { key: 'rasi', label: 'RASI', desc: 'rasi_doc' },
+                          { key: 'certificato_radon', label: 'Certificato Radon', desc: 'certificato_radon_doc' }
+                        ].map(doc => {
+                          const dbField = doc.key;
+                          return (
+                            <div key={doc.key} className="rounded-xl p-3.5 space-y-2.5 transition-all bg-white/40 border border-black/5 hover:border-black/10">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs">📎</span>
+                                <span className="text-[11px] font-bold text-[#1D1D1F]">{doc.label}</span>
                               </div>
-                            ) : (
-                              <div className="grid grid-cols-2 gap-2 pt-1">
+                              {doc.isFileOnly ? (
                                 <div>
-                                  <label className="block text-[10px] text-[#86868B] mb-0.5">Presente?</label>
-                                  <select
-                                    name={dbField}
-                                    defaultValue={currentImmobile ? currentImmobile[dbField] : 'No'}
-                                    className="w-full px-2.5 py-1.5 bg-white border border-[#E5E5EA] rounded-lg text-xs focus:outline-none"
-                                  >
-                                    <option value="No">No</option>
-                                    <option value="Si">Si</option>
-                                  </select>
+                                  <DocumentFileField dbField={dbField} currentImmobile={currentImmobile} setCurrentImmobile={setCurrentImmobile} isFileOnly={true} />
                                 </div>
-                                <div>
-                                  <label className="block text-[10px] text-[#86868B] mb-0.5">File</label>
-                                  <input
-                                    type="file"
-                                    name={dbField + "_doc_file"}
-                                    accept="image/*,application/pdf"
-                                    className="w-full text-[10px] text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded-full file:border-0 file:text-[10px] file:font-semibold file:bg-[#0071E3]/10 file:text-[#0071E3] hover:file:bg-[#0071E3]/20 cursor-pointer"
-                                  />
-                                  {currentImmobile && currentImmobile[dbField + "_doc"] && (
-                                    <span className="block text-[8px] text-gray-400 mt-1 truncate" title={currentImmobile[dbField + "_doc"]}>
-                                      attuale: {currentImmobile[dbField + "_doc"].substring(0, 30)}...
-                                    </span>
-                                  )}
+                              ) : (
+                                <div className="grid grid-cols-2 gap-2 items-end">
+                                  <div>
+                                    <label className="block text-[9px] text-[#86868B] mb-0.5 font-semibold uppercase">Presente?</label>
+                                    <select
+                                      name={dbField}
+                                      defaultValue={currentImmobile ? currentImmobile[dbField] : 'No'}
+                                      className="glass-input w-full px-2 py-1 rounded-lg text-xs text-[#1D1D1F]"
+                                    >
+                                      <option value="No">No</option>
+                                      <option value="Si">Si</option>
+                                    </select>
+                                  </div>
+                                  <div>
+                                    <label className="block text-[9px] text-[#86868B] mb-0.5 font-semibold uppercase">File</label>
+                                    <DocumentFileField dbField={dbField} currentImmobile={currentImmobile} setCurrentImmobile={setCurrentImmobile} isFileOnly={false} />
+                                  </div>
                                 </div>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
 
                   {/* ========= SEZIONE: NOTE INTERNE ========= */}
-                  <div className={activeFormTab === 'note_interne' ? 'space-y-4' : 'hidden'}>
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-[#0071E3] border-b pb-1">Note Interne</h4>
-                    <div>
-                      <label className="block text-xs font-semibold text-[#86868B] mb-1">note_interne</label>
-                      <textarea
-                        name="note_interne"
-                        rows="8"
-                        placeholder="Inserisci note interne riservate all'agenzia..."
-                        defaultValue={currentImmobile ? currentImmobile.note_interne : ''}
-                        className="w-full px-3.5 py-2.5 bg-white border border-[#E5E5EA] rounded-xl text-sm focus:outline-none focus:border-[#0071E3] text-[#1D1D1F] leading-relaxed"
-                      />
+                  <div className={activeFormTab === 'note_interne' ? 'space-y-5 animate-fade-in' : 'hidden'}>
+                    <div className="glass-panel p-5 rounded-2xl space-y-4">
+                      <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                        <span className="text-sm">🔒</span>
+                        <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Note Interne Riservate</span>
+                      </div>
+                      <div>
+                        <textarea
+                          name="note_interne"
+                          rows="8"
+                          placeholder="Inserisci note interne ad uso esclusivo dell'agenzia..."
+                          defaultValue={currentImmobile ? currentImmobile.note_interne : ''}
+                          className="glass-input w-full px-4 py-3 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC] leading-relaxed"
+                        />
+                      </div>
                     </div>
                   </div>
 
                   {/* ========= SEZIONE 6: LOG ========= */}
                   {currentImmobile && (
-                    <div className={activeFormTab === 'log' ? 'space-y-4' : 'hidden'}>
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-[#0071E3] border-b pb-1">6. Log</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                        <div>
-                          <label className="block font-semibold text-[#86868B] mb-1">creato_da</label>
-                          <input
-                            type="text"
-                            disabled
-                            value={currentImmobile.creato_da || '-'}
-                            className="w-full px-3.5 py-2 bg-gray-100 border border-transparent rounded-xl text-sm text-gray-500 cursor-not-allowed"
-                          />
+                    <div className={activeFormTab === 'log' ? 'space-y-5 animate-fade-in' : 'hidden'}>
+                      <div className="glass-panel p-5 rounded-2xl space-y-4">
+                        <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                          <span className="text-sm">🕒</span>
+                          <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Registro Tracciabilità</span>
                         </div>
-                        <div>
-                          <label className="block font-semibold text-[#86868B] mb-1">created_at</label>
-                          <input
-                            type="text"
-                            disabled
-                            value={currentImmobile.created_at ? new Date(currentImmobile.created_at).toLocaleString('it-CH') : '-'}
-                            className="w-full px-3.5 py-2 bg-gray-100 border border-transparent rounded-xl text-sm text-gray-500 cursor-not-allowed"
-                          />
-                        </div>
-                        <div>
-                          <label className="block font-semibold text-[#86868B] mb-1">ultima_modifica_il</label>
-                          <input
-                            type="text"
-                            disabled
-                            value={currentImmobile.ultima_modifica_il ? new Date(currentImmobile.ultima_modifica_il).toLocaleString('it-CH', {
-                              year: 'numeric',
-                              month: '2-digit',
-                              day: '2-digit',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            }) : '-'}
-                            className="w-full px-3.5 py-2 bg-gray-100 border border-transparent rounded-xl text-sm text-gray-500 cursor-not-allowed"
-                          />
-                        </div>
-                        <div>
-                          <label className="block font-semibold text-[#86868B] mb-1">ultima_modifica_fatta_da</label>
-                          <input
-                            type="text"
-                            disabled
-                            value={currentImmobile.ultima_modifica_fatta_da || '-'}
-                            className="w-full px-3.5 py-2 bg-gray-100 border border-transparent rounded-xl text-sm text-gray-500 cursor-not-allowed"
-                          />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Creato Da</label>
+                            <input
+                              type="text"
+                              disabled
+                              value={currentImmobile.creato_da || '-'}
+                              className="w-full px-4 py-2.5 rounded-xl text-sm cursor-not-allowed bg-black/5 text-[#86868B] border border-black/5"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Data di Creazione</label>
+                            <input
+                              type="text"
+                              disabled
+                              value={currentImmobile.created_at ? new Date(currentImmobile.created_at).toLocaleString('it-CH') : '-'}
+                              className="w-full px-4 py-2.5 rounded-xl text-sm cursor-not-allowed bg-black/5 text-[#86868B] border border-black/5"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Ultima Modifica Il</label>
+                            <input
+                              type="text"
+                              disabled
+                              value={currentImmobile.ultima_modifica_il ? new Date(currentImmobile.ultima_modifica_il).toLocaleString('it-CH', {
+                                year: 'numeric',
+                                month: '2-digit',
+                                day: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              }) : '-'}
+                              className="w-full px-4 py-2.5 rounded-xl text-sm cursor-not-allowed bg-black/5 text-[#86868B] border border-black/5"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Ultima Modifica di</label>
+                            <input
+                              type="text"
+                              disabled
+                              value={currentImmobile.ultima_modifica_fatta_da || '-'}
+                              className="w-full px-4 py-2.5 rounded-xl text-sm cursor-not-allowed bg-black/5 text-[#86868B] border border-black/5"
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -4595,35 +5385,60 @@ export default function App() {
 
                   </div>
 
-                  {/* Buttons */}
-                  <div className="p-6 border-t border-[#E5E5EA] bg-[#F5F5F7] flex space-x-2">
-                    {currentImmobile && (
+                  {/* Footer con bottoni */}
+                  <div className="p-4 sm:p-6 border-t border-white/20 flex flex-col sm:flex-row gap-3 sm:justify-between items-stretch sm:items-center" style={{background: 'rgba(250,250,252,0.85)', backdropFilter: 'blur(20px)'}}>
+                    {currentImmobile ? (
                       <button
                         type="button"
                         onClick={() => {
                           handleDeleteImmobile(currentImmobile.id);
                           setIsImmobileModalOpen(false);
                         }}
-                        className="flex-1 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 py-3 rounded-full font-semibold text-sm transition-all text-center"
+                        className="w-full sm:w-auto px-6 py-3 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 rounded-full font-semibold text-sm transition-all text-center order-3 sm:order-1"
                       >
                         Elimina Immobile
                       </button>
+                    ) : (
+                      <div className="hidden sm:block" />
                     )}
-                    <button
-                      type="submit"
-                      className="flex-1 bg-[#0071E3] hover:bg-[#0077ED] text-white py-3 rounded-full font-bold text-sm transition-all text-center shadow-sm"
-                    >
-                      Salva Scheda
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setIsImmobileModalOpen(false)}
-                      className="flex-1 bg-white hover:bg-gray-100 border border-[#D2D2D7] text-[#1D1D1F] py-3 rounded-full font-semibold text-sm transition-all text-center"
-                    >
-                      Annulla
-                    </button>
+                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto order-1 sm:order-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsImmobileModalOpen(false);
+                          setTempImmobileImageUrl(null);
+                          setTempPlanimetriaUrl(null);
+                          setSelectedImmobileProprietarioId(null);
+                          setSearchImmobileProprietarioQuery('');
+                          setIsProprietarioSearchFocused(false);
+                          setSelectedImmobileAgenteIds([]);
+                          setSearchImmobileAgenteQuery('');
+                          setIsAgenteSearchFocused(false);
+                        }}
+                        className="w-full sm:w-auto px-6 py-3 bg-white hover:bg-gray-100 border border-[#D2D2D7] text-[#1D1D1F] rounded-full font-semibold text-sm transition-all text-center order-2 sm:order-1"
+                      >
+                        Annulla
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isSavingImmobile}
+                        className="w-full sm:w-auto px-8 py-3 btn-glossy text-white rounded-full font-bold text-sm transition-all text-center shadow-sm disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 order-1 sm:order-2"
+                      >
+                        {isSavingImmobile ? (
+                          <>
+                            <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Salvataggio...
+                          </>
+                        ) : (
+                          'Salva Scheda'
+                        )}
+                      </button>
+                    </div>
                   </div>
-
+                  </fieldset>
                 </form>
               </div>
             </div>
@@ -4632,123 +5447,159 @@ export default function App() {
           {/* 2. MODALE CONTATTI (CREAZIONE E MODIFICA) */}
           {isContattoModalOpen && (
             <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 backdrop-blur-sm p-0 md:p-4">
-              <div className="bg-white w-full max-w-lg rounded-none md:rounded-3xl shadow-2xl border border-[#E5E5EA] overflow-hidden h-full md:h-[600px] flex flex-col text-[#1D1D1F]">
+              <div className="glass-modal w-full max-w-2xl rounded-none md:rounded-3xl shadow-2xl overflow-hidden h-full md:h-[660px] flex flex-col text-[#1D1D1F]">
 
-                <div className="px-6 py-4 border-b border-[#E5E5EA] flex justify-between items-center bg-[#F5F5F7]">
-                  <h3 className="text-lg font-bold tracking-tight">
-                    {currentContatto ? 'Aggiorna Dati Contatto' : 'Registra Nuovo Contatto CRM'}
-                  </h3>
+                {/* Header con gradiente sottile */}
+                <div className="relative px-6 py-5 border-b border-white/20 flex justify-between items-center" style={{background: 'linear-gradient(135deg, rgba(255,255,255,0.85) 0%, rgba(245,245,247,0.9) 100%)'}}>
+                  <div className="absolute bottom-0 left-0 right-0 h-[2px]" style={{background: 'linear-gradient(90deg, #0071E3 0%, #00C7FF 50%, #7B61FF 100%)', opacity: 0.6}} />
+                  <div className="space-y-0.5">
+                    <h3 className="text-lg font-bold tracking-tight text-[#1D1D1F] flex items-center gap-2.5">
+                      <span className="w-8 h-8 rounded-xl flex items-center justify-center text-base" style={{background: 'linear-gradient(135deg, #0071E3 0%, #00C7FF 100%)', color: 'white', boxShadow: '0 4px 12px rgba(0,113,227,0.25)'}}>
+                        👤
+                      </span>
+                      {currentContatto ? 'Aggiorna Dati Contatto' : 'Registra Nuovo Contatto'}
+                    </h3>
+                    <p className="text-[11px] text-[#86868B] pl-[42px]">Gestisci le informazioni del contatto del CRM</p>
+                  </div>
                   <button
+                    type="button"
                     onClick={() => setIsContattoModalOpen(false)}
-                    className="w-7 h-7 bg-white rounded-full border border-[#D2D2D7] flex items-center justify-center font-bold text-sm text-[#86868B] hover:text-[#1D1D1F]"
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-sm text-[#86868B] hover:text-[#1D1D1F] hover:bg-black/5 transition-all duration-200"
+                    style={{backdropFilter: 'blur(10px)', background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(0,0,0,0.06)'}}
                   >
                     ✕
                   </button>
                 </div>
 
                 <form onSubmit={handleSaveContatto} className="flex-1 flex flex-col overflow-hidden">
-                  <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                  <div className="flex-1 overflow-y-auto p-6 space-y-5">
                     {currentContatto && <input type="hidden" name="id" value={currentContatto.id} />}
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-[#86868B] mb-1">Cognome</label>
-                      <input
-                        type="text"
-                        name="cognome"
-                        placeholder="es. Boldi"
-                        defaultValue={currentContatto ? currentContatto.cognome : ''}
-                        className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all"
+                    {/* Informazioni Personali */}
+                    <div className="glass-panel p-5 rounded-2xl space-y-4">
+                      <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                        <span className="text-sm">📋</span>
+                        <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Informazioni Personali</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-semibold text-[#86868B] mb-1">Cognome</label>
+                          <input
+                            type="text"
+                            name="cognome"
+                            placeholder="es. Boldi"
+                            defaultValue={currentContatto ? currentContatto.cognome : ''}
+                            className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-[#86868B] mb-1">Nome</label>
+                          <input
+                            type="text"
+                            name="nome"
+                            placeholder="es. Massimiliano"
+                            defaultValue={currentContatto ? currentContatto.nome : ''}
+                            className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-[#86868B] mb-1">Società / Ente</label>
+                        <input
+                          type="text"
+                          name="societa"
+                          placeholder="es. HOME LAB Real Estate Sagl"
+                          defaultValue={currentContatto ? currentContatto.societa : ''}
+                          className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Ruoli del Contatto */}
+                    <div className="glass-panel p-5 rounded-2xl space-y-3">
+                      <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                        <span className="text-sm">🏷️</span>
+                        <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Ruoli del Contatto</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 bg-white/30 p-3 rounded-2xl border border-black/5">
+                        {["Proprietario", "Locatore", "Acquirente", "Affittuario", "Agente Immobiliare", "Intermediario", "Fotografo"].map(r => {
+                          const currentRoles = currentContatto ? (Array.isArray(currentContatto.ruolo) ? currentContatto.ruolo : String(currentContatto.ruolo || '').split(',').map(x => x.trim())) : [];
+                          const isChecked = currentRoles.includes(r);
+                          return (
+                            <label key={r} className="flex items-center space-x-2 text-xs font-semibold text-[#1D1D1F] cursor-pointer">
+                              <input
+                                type="checkbox"
+                                name={`ruolo_${r}`}
+                                defaultChecked={isChecked}
+                                className="rounded text-[#0071E3] focus:ring-[#0071E3] w-4 h-4"
+                              />
+                              <span>{r}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Contatti e Recapiti */}
+                    <div className="glass-panel p-5 rounded-2xl space-y-4">
+                      <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                        <span className="text-sm">📞</span>
+                        <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Recapiti</span>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-semibold text-[#86868B] mb-1">Telefono</label>
+                          <input
+                            type="tel"
+                            name="telefono"
+                            placeholder="+41 79 000 00 00"
+                            defaultValue={currentContatto ? currentContatto.telefono : ''}
+                            className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-[#86868B] mb-1">E-mail</label>
+                          <input
+                            type="email"
+                            name="mail"
+                            placeholder="nome@dominio.ch"
+                            defaultValue={currentContatto ? currentContatto.mail : ''}
+                            className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Note */}
+                    <div className="glass-panel p-5 rounded-2xl space-y-3">
+                      <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                        <span className="text-sm">📝</span>
+                        <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Note Libere Contatto</span>
+                      </div>
+                      <textarea
+                        name="note_contatto"
+                        rows="3"
+                        placeholder="Note operative, referenze e preferenze immobili..."
+                        defaultValue={currentContatto ? (currentContatto.note_contatto || currentContatto.note) : ''}
+                        className="w-full p-3.5 glass-input rounded-xl text-sm focus:outline-none resize-none"
                       />
                     </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-[#86868B] mb-1">Nome</label>
-                      <input
-                        type="text"
-                        name="nome"
-                        placeholder="es. Massimiliano"
-                        defaultValue={currentContatto ? currentContatto.nome : ''}
-                        className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all"
-                      />
-                    </div>
-                  </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Società / Ente</label>
-                    <input
-                      type="text"
-                      name="societa"
-                      placeholder="es. HOME LAB Real Estate Sagl"
-                      defaultValue={currentContatto ? currentContatto.societa : ''}
-                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-[#86868B] mb-2">Ruoli del Contatto</label>
-                    <div className="grid grid-cols-2 gap-2 bg-[#F5F5F7] p-3 rounded-2xl border border-transparent">
-                      {["Proprietario", "Locatore", "Acquirente", "Affittuario", "Agente Immobiliare", "Intermediario", "Fotografo"].map(r => {
-                        const currentRoles = currentContatto ? (Array.isArray(currentContatto.ruolo) ? currentContatto.ruolo : String(currentContatto.ruolo || '').split(',').map(x => x.trim())) : [];
-                        const isChecked = currentRoles.includes(r);
-                        return (
-                          <label key={r} className="flex items-center space-x-2 text-xs font-semibold text-[#1D1D1F] cursor-pointer">
-                            <input
-                              type="checkbox"
-                              name={`ruolo_${r}`}
-                              defaultChecked={isChecked}
-                              className="rounded text-[#0071E3] focus:ring-[#0071E3] w-4 h-4"
-                            />
-                            <span>{r}</span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-[#86868B] mb-1">Telefono</label>
-                      <input
-                        type="tel"
-                        name="telefono"
-                        placeholder="+41 79 000 00 00"
-                        defaultValue={currentContatto ? currentContatto.telefono : ''}
-                        className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-[#86868B] mb-1">E-mail</label>
-                      <input
-                        type="email"
-                        name="mail"
-                        placeholder="nome@dominio.ch"
-                        defaultValue={currentContatto ? currentContatto.mail : ''}
-                        className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-[#86868B] mb-1">Note Libere Contatto (Testo Lungo)</label>
-                    <textarea
-                      name="note_contatto"
-                      rows="3"
-                      placeholder="Note operative, referenze e preferenze immobili..."
-                      defaultValue={currentContatto ? (currentContatto.note_contatto || currentContatto.note) : ''}
-                      className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all"
-                    />
-                  </div>
-
-                  <div className="space-y-4 pt-2">
-                    <div>
-                      <div className="flex justify-between items-center mb-1">
-                        <label className="block text-xs font-semibold text-[#86868B]">Immobili Posseduti (Proprietario)</label>
+                    {/* Immobili Posseduti */}
+                    <div className="glass-panel p-5 rounded-2xl space-y-4">
+                      <div className="flex justify-between items-center pb-1 border-b border-black/5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">🔑</span>
+                          <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Immobili Posseduti (Proprietario)</span>
+                        </div>
                         <button
                           type="button"
                           onClick={() => {
                             setAddingPropertyForContact({ contactId: currentContatto?.id || 'new', type: 'posseduti' });
                             setIsImmobileModalOpen(true);
                             setCurrentImmobile(null);
+                            setSelectedImmobileProprietarioId(currentContatto ? currentContatto.id : null);
                           }}
                           className="text-[10px] text-[#0071E3] hover:underline font-semibold"
                         >
@@ -4761,10 +5612,10 @@ export default function App() {
                         placeholder="🔍 Cerca per nome, codice o comune..."
                         value={searchPossedutiQuery}
                         onChange={(e) => setSearchPossedutiQuery(e.target.value)}
-                        className="w-full px-2.5 py-1.5 mb-2 bg-[#F5F5F7] border border-transparent rounded-lg text-xs focus:outline-none focus:border-[#0071E3] transition-all"
+                        className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none"
                       />
 
-                      <div className="max-h-72 overflow-y-auto border border-[#E5E5EA] rounded-2xl p-2.5 bg-[#F5F5F7] grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <div className="max-h-72 overflow-y-auto border border-black/5 rounded-2xl p-2.5 bg-white/20 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                         {immobili.length === 0 ? (
                           <p className="text-xs text-gray-400 italic col-span-2 text-center py-4">Nessun immobile a catalogo</p>
                         ) : (
@@ -4809,7 +5660,8 @@ export default function App() {
                                     <div className="absolute top-2 left-2 flex gap-1 z-10 flex-wrap">
                                       <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold tracking-wide uppercase shadow-sm ${imm.stato === 'Disponibile' ? 'bg-[#34C759] text-white' :
                                           imm.stato === 'In Trattativa' ? 'bg-[#FF9500] text-white' :
-                                            imm.stato === 'Venduto' ? 'bg-[#8E8E93] text-white' : 'bg-[#0071E3] text-white'
+                                            imm.stato === 'Venduto' ? 'bg-[#8E8E93] text-white' :
+                                              imm.stato === 'Lead' ? 'bg-[#AF52DE] text-white' : 'bg-[#0071E3] text-white'
                                         }`}>
                                         {imm.stato}
                                       </span>
@@ -4890,15 +5742,20 @@ export default function App() {
                       </div>
                     </div>
 
-                    <div>
-                      <div className="flex justify-between items-center mb-1">
-                        <label className="block text-xs font-semibold text-[#86868B]">Immobili Gestiti (Agente)</label>
+                    {/* Immobili Gestiti */}
+                    <div className="glass-panel p-5 rounded-2xl space-y-4">
+                      <div className="flex justify-between items-center pb-1 border-b border-black/5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">💼</span>
+                          <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Immobili Gestiti (Agente)</span>
+                        </div>
                         <button
                           type="button"
                           onClick={() => {
                             setAddingPropertyForContact({ contactId: currentContatto?.id || 'new', type: 'gestiti' });
                             setIsImmobileModalOpen(true);
                             setCurrentImmobile(null);
+                            setSelectedImmobileProprietarioId(null);
                           }}
                           className="text-[10px] text-[#0071E3] hover:underline font-semibold"
                         >
@@ -4911,10 +5768,10 @@ export default function App() {
                         placeholder="🔍 Cerca per nome, codice o comune..."
                         value={searchGestitiQuery}
                         onChange={(e) => setSearchGestitiQuery(e.target.value)}
-                        className="w-full px-2.5 py-1.5 mb-2 bg-[#F5F5F7] border border-transparent rounded-lg text-xs focus:outline-none focus:border-[#0071E3] transition-all"
+                        className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none"
                       />
 
-                      <div className="max-h-72 overflow-y-auto border border-[#E5E5EA] rounded-2xl p-2.5 bg-[#F5F5F7] grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <div className="max-h-72 overflow-y-auto border border-black/5 rounded-2xl p-2.5 bg-white/20 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                         {immobili.length === 0 ? (
                           <p className="text-xs text-gray-400 italic col-span-2 text-center py-4">Nessun immobile a catalogo</p>
                         ) : (
@@ -4959,7 +5816,8 @@ export default function App() {
                                     <div className="absolute top-2 left-2 flex gap-1 z-10 flex-wrap">
                                       <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold tracking-wide uppercase shadow-sm ${imm.stato === 'Disponibile' ? 'bg-[#34C759] text-white' :
                                           imm.stato === 'In Trattativa' ? 'bg-[#FF9500] text-white' :
-                                            imm.stato === 'Venduto' ? 'bg-[#8E8E93] text-white' : 'bg-[#0071E3] text-white'
+                                            imm.stato === 'Venduto' ? 'bg-[#8E8E93] text-white' :
+                                              imm.stato === 'Lead' ? 'bg-[#AF52DE] text-white' : 'bg-[#0071E3] text-white'
                                         }`}>
                                         {imm.stato}
                                       </span>
@@ -5041,28 +5899,26 @@ export default function App() {
                     </div>
                   </div>
 
-                  </div>
-
-                  <div className="p-6 border-t border-[#E5E5EA] bg-[#F5F5F7] flex space-x-2">
-                    <button
-                      type="submit"
-                      className="flex-1 bg-[#0071E3] hover:bg-[#0077ED] text-white py-3 rounded-full font-bold text-sm transition-all text-center shadow-sm"
-                    >
-                      Salva Contatto
-                    </button>
+                  <div className="p-4 sm:p-6 border-t border-white/20 bg-[#F5F5F7]/80 backdrop-blur-md flex flex-col sm:flex-row gap-3 sm:justify-end items-stretch sm:items-center">
                     <button
                       type="button"
                       onClick={() => setIsContattoModalOpen(false)}
-                      className="flex-1 bg-white hover:bg-gray-100 border border-[#D2D2D7] text-[#1D1D1F] py-3 rounded-full font-semibold text-sm transition-all text-center"
+                      className="w-full sm:w-auto px-6 py-3 bg-white hover:bg-gray-100 border border-[#D2D2D7] text-[#1D1D1F] rounded-full font-semibold text-sm transition-all text-center order-2 sm:order-1"
                     >
                       Annulla
+                    </button>
+                    <button
+                      type="submit"
+                      className="w-full sm:w-auto px-8 py-3 bg-[#0071E3] hover:bg-[#0077ED] text-white rounded-full font-bold text-sm transition-all text-center shadow-sm order-1 sm:order-2"
+                    >
+                      Salva Contatto
                     </button>
                   </div>
                 </form>
 
               </div>
             </div>
-           )}
+          )}
 
           {/* Dettaglio inspector (Visite/Calendario) */}
           {isVisitaDetailModalOpen && viewingVisita && (() => {
@@ -5247,16 +6103,26 @@ export default function App() {
 
           {/* 3. MODALE VISITE E APPUNTAMENTI (CALENDARIO) */}
           {isVisitaModalOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-0 md:p-4">
-              <div className="bg-white w-full max-w-2xl rounded-none md:rounded-3xl shadow-2xl border border-[#E5E5EA] overflow-hidden h-full md:h-[660px] flex flex-col text-[#1D1D1F]">
+            <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 backdrop-blur-sm p-0 md:p-4">
+              <div className="glass-modal w-full max-w-2xl rounded-none md:rounded-3xl shadow-2xl overflow-hidden h-full md:h-[660px] flex flex-col text-[#1D1D1F]">
 
-                <div className="px-6 py-4 border-b border-[#E5E5EA] flex justify-between items-center bg-[#F5F5F7]">
-                  <h3 className="text-lg font-bold tracking-tight">
-                    {currentVisita ? 'Modifica Appuntamento' : 'Pianifica Attività / Visita'}
-                  </h3>
+                {/* Header con gradiente sottile */}
+                <div className="relative px-6 py-5 border-b border-white/20 flex justify-between items-center" style={{background: 'linear-gradient(135deg, rgba(255,255,255,0.85) 0%, rgba(245,245,247,0.9) 100%)'}}>
+                  <div className="absolute bottom-0 left-0 right-0 h-[2px]" style={{background: 'linear-gradient(90deg, #0071E3 0%, #00C7FF 50%, #7B61FF 100%)', opacity: 0.6}} />
+                  <div className="space-y-0.5">
+                    <h3 className="text-lg font-bold tracking-tight text-[#1D1D1F] flex items-center gap-2.5">
+                      <span className="w-8 h-8 rounded-xl flex items-center justify-center text-base" style={{background: 'linear-gradient(135deg, #0071E3 0%, #00C7FF 100%)', color: 'white', boxShadow: '0 4px 12px rgba(0,113,227,0.25)'}}>
+                        📅
+                      </span>
+                      {currentVisita ? 'Modifica Appuntamento' : 'Pianifica Attività / Visita'}
+                    </h3>
+                    <p className="text-[11px] text-[#86868B] pl-[42px]">Gestisci appuntamenti, visite e sopralluoghi immobiliari</p>
+                  </div>
                   <button
+                    type="button"
                     onClick={() => setIsVisitaModalOpen(false)}
-                    className="w-7 h-7 bg-white rounded-full border border-[#D2D2D7] flex items-center justify-center font-bold text-sm text-[#86868B] hover:text-[#1D1D1F]"
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-sm text-[#86868B] hover:text-[#1D1D1F] hover:bg-black/5 transition-all duration-200"
+                    style={{backdropFilter: 'blur(10px)', background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(0,0,0,0.06)'}}
                   >
                     ✕
                   </button>
@@ -5269,89 +6135,101 @@ export default function App() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       
                       {/* COLONNA SINISTRA: Informazioni Base */}
-                      <div className="space-y-4">
-                        <h4 className="text-xs font-bold uppercase tracking-wider text-[#86868B] pb-1 border-b border-gray-100">Dettagli Attività</h4>
+                      <div className="space-y-5">
                         
-                        {/* Nome Evento */}
-                        <div>
-                          <label className="block text-xs font-semibold text-[#86868B] mb-1">Nome Evento *</label>
-                          <input
-                            type="text"
-                            name="nome_evento"
-                            required
-                            placeholder="es. Visita con cliente, Sopralluogo..."
-                            defaultValue={currentVisita ? (currentVisita.nome_evento || currentVisita.tipo_visita) : ''}
-                            className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none text-[#1D1D1F] hover:bg-[#E5E5EA]/50 focus:bg-white focus:border-[#0071E3] transition-all"
-                          />
-                        </div>
+                        {/* Dettagli Attività */}
+                        <div className="glass-panel p-5 rounded-2xl space-y-4">
+                          <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                            <span className="text-sm">📌</span>
+                            <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Dettagli Attività</span>
+                          </div>
 
-                        {/* Inizio & Fine Evento */}
-                        <div className="space-y-3">
+                          {/* Nome Evento */}
                           <div>
-                            <label className="block text-xs font-semibold text-[#86868B] mb-1">Inizio Evento *</label>
+                            <label className="block text-xs font-semibold text-[#86868B] mb-1">Nome Evento *</label>
                             <input
-                              key={isCalendarAllDay ? "date-start" : "datetime-start"}
-                              type={isCalendarAllDay ? "date" : "datetime-local"}
-                              name="inizio_evento"
+                              type="text"
+                              name="nome_evento"
                               required
-                              defaultValue={currentVisita ? new Date(new Date(currentVisita.inizio_evento) - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, isCalendarAllDay ? 10 : 16) : new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, isCalendarAllDay ? 10 : 16)}
-                              className="w-full px-3.5 py-2.5 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none text-[#1D1D1F] hover:bg-[#E5E5EA]/50 focus:bg-white focus:border-[#0071E3] transition-all"
+                              placeholder="es. Visita con cliente, Sopralluogo..."
+                              defaultValue={currentVisita ? (currentVisita.nome_evento || currentVisita.tipo_visita) : ''}
+                              className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none"
                             />
                           </div>
-                          <div>
-                            <label className="block text-xs font-semibold text-[#86868B] mb-1">Fine Evento *</label>
+
+                          {/* Inizio & Fine Evento */}
+                          <div className="grid grid-cols-1 gap-3">
+                            <div>
+                              <label className="block text-xs font-semibold text-[#86868B] mb-1">Inizio Evento *</label>
+                              <input
+                                key={isCalendarAllDay ? "date-start" : "datetime-start"}
+                                type={isCalendarAllDay ? "date" : "datetime-local"}
+                                name="inizio_evento"
+                                required
+                                defaultValue={currentVisita ? new Date(new Date(currentVisita.inizio_evento) - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, isCalendarAllDay ? 10 : 16) : new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, isCalendarAllDay ? 10 : 16)}
+                                className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-semibold text-[#86868B] mb-1">Fine Evento *</label>
+                              <input
+                                key={isCalendarAllDay ? "date-end" : "datetime-end"}
+                                type={isCalendarAllDay ? "date" : "datetime-local"}
+                                name="fine_evento"
+                                required
+                                defaultValue={currentVisita && currentVisita.fine_evento ? new Date(new Date(currentVisita.fine_evento) - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, isCalendarAllDay ? 10 : 16) : (() => {
+                                  const baseDate = currentVisita ? new Date(currentVisita.inizio_evento) : new Date();
+                                  const offsetMultiplier = isCalendarAllDay ? 0 : 60 * 60 * 1000;
+                                  const nextDate = new Date(baseDate.getTime() + offsetMultiplier);
+                                  return new Date(nextDate - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, isCalendarAllDay ? 10 : 16);
+                                })()}
+                                className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Tutto il giorno checkbox */}
+                          <div className="flex items-center space-x-2 bg-white/30 p-2.5 rounded-xl border border-black/5">
                             <input
-                              key={isCalendarAllDay ? "date-end" : "datetime-end"}
-                              type={isCalendarAllDay ? "date" : "datetime-local"}
-                              name="fine_evento"
-                              required
-                              defaultValue={currentVisita && currentVisita.fine_evento ? new Date(new Date(currentVisita.fine_evento) - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, isCalendarAllDay ? 10 : 16) : (() => {
-                                const baseDate = currentVisita ? new Date(currentVisita.inizio_evento) : new Date();
-                                const offsetMultiplier = isCalendarAllDay ? 0 : 60 * 60 * 1000;
-                                const nextDate = new Date(baseDate.getTime() + offsetMultiplier);
-                                return new Date(nextDate - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, isCalendarAllDay ? 10 : 16);
-                              })()}
-                              className="w-full px-3.5 py-2.5 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none text-[#1D1D1F] hover:bg-[#E5E5EA]/50 focus:bg-white focus:border-[#0071E3] transition-all"
+                              type="checkbox"
+                              id="tutto_giorno"
+                              name="tutto_giorno"
+                              checked={isCalendarAllDay}
+                              onChange={(e) => setIsCalendarAllDay(e.target.checked)}
+                              className="rounded text-[#0071E3] focus:ring-[#0071E3] w-4 h-4 cursor-pointer"
                             />
+                            <label htmlFor="tutto_giorno" className="text-xs font-semibold text-gray-700 cursor-pointer select-none">
+                              📅 Tutto il giorno (senza orario)
+                            </label>
                           </div>
                         </div>
 
-                        {/* Tutto il giorno checkbox */}
-                        <div className="flex items-center space-x-2 bg-[#F5F5F7] p-2.5 rounded-xl border border-transparent">
-                          <input
-                            type="checkbox"
-                            id="tutto_giorno"
-                            name="tutto_giorno"
-                            checked={isCalendarAllDay}
-                            onChange={(e) => setIsCalendarAllDay(e.target.checked)}
-                            className="rounded text-[#0071E3] focus:ring-[#0071E3] w-4 h-4 cursor-pointer"
-                          />
-                          <label htmlFor="tutto_giorno" className="text-xs font-semibold text-gray-700 cursor-pointer select-none">
-                            📅 Tutto il giorno (senza orario)
-                          </label>
-                        </div>
-
-                        {/* Esito (Testo Lungo) */}
-                        <div>
-                          <label className="block text-xs font-semibold text-[#86868B] mb-1">Esito e Note Operative</label>
+                        {/* Esito e note */}
+                        <div className="glass-panel p-5 rounded-2xl space-y-3">
+                          <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                            <span className="text-sm">📝</span>
+                            <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Esito e Note Operative</span>
+                          </div>
                           <textarea
                             name="esito_e_note"
                             rows="4"
                             placeholder="Inserisci l'esito dettagliato, note o feedback dell'evento..."
                             defaultValue={currentVisita ? currentVisita.esito_e_note : ''}
-                            className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none text-[#1D1D1F] hover:bg-[#E5E5EA]/50 focus:bg-white focus:border-[#0071E3] transition-all resize-none"
+                            className="w-full p-3.5 glass-input rounded-xl text-sm focus:outline-none resize-none"
                           />
                         </div>
                       </div>
 
                       {/* COLONNA DESTRA: Relazioni e Target */}
-                      <div className="space-y-4">
-                        <h4 className="text-xs font-bold uppercase tracking-wider text-[#86868B] pb-1 border-b border-gray-100">Associazioni</h4>
-
-                        {/* Cliente */}
-                        <div className="relative">
-                          <div className="flex justify-between items-center mb-1">
-                            <label className="block text-xs font-semibold text-[#86868B]">Cliente</label>
+                      <div className="space-y-5">
+                        
+                        {/* Cliente - Stacking context relative z-30 */}
+                        <div className="glass-panel p-5 rounded-2xl space-y-3 relative z-30">
+                          <div className="flex justify-between items-center pb-1 border-b border-black/5">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm">👤</span>
+                              <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Cliente</span>
+                            </div>
                             {!selectedCalendarClientId && (
                               <button
                                 type="button"
@@ -5385,7 +6263,7 @@ export default function App() {
                               }
                               const rolesStr = Array.isArray(selectedClient.ruolo) ? selectedClient.ruolo.join(', ') : (selectedClient.ruolo || '');
                               return (
-                                <div className="flex items-center justify-between p-3 bg-[#F5F5F7] border border-[#E5E5EA] rounded-xl hover:border-[#D2D2D7] transition-all">
+                                <div className="flex items-center justify-between p-3 bg-white/40 border border-black/5 rounded-xl hover:border-black/10 transition-all">
                                   <div className="flex items-center gap-2.5">
                                     <div className="w-8 h-8 rounded-full bg-[#0071E3]/10 text-[#0071E3] flex items-center justify-center font-bold text-xs uppercase">
                                       {(selectedClient.nome || 'C')[0]}{(selectedClient.cognome || 'L')[0]}
@@ -5398,7 +6276,7 @@ export default function App() {
                                         <div className="text-[10px] text-[#86868B]">{selectedClient.societa}</div>
                                       )}
                                       {rolesStr && (
-                                        <div className="text-[9px] text-[#86868B] bg-white border border-[#E5E5EA] px-1.5 py-0.5 rounded-full inline-block mt-0.5 font-medium">
+                                        <div className="text-[9px] text-[#86868B] bg-white border border-black/5 px-1.5 py-0.5 rounded-full inline-block mt-0.5 font-medium">
                                           {rolesStr}
                                         </div>
                                       )}
@@ -5427,7 +6305,7 @@ export default function App() {
                                 onChange={(e) => setSearchVisitClientQuery(e.target.value)}
                                 onFocus={() => setIsClientSearchFocused(true)}
                                 onBlur={() => setTimeout(() => setIsClientSearchFocused(false), 200)}
-                                className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none text-[#1D1D1F] hover:bg-[#E5E5EA]/50 focus:bg-white focus:border-[#0071E3] transition-all"
+                                className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none"
                               />
 
                               {isClientSearchFocused && (
@@ -5510,10 +6388,13 @@ export default function App() {
                           )}
                         </div>
 
-                        {/* Partecipanti */}
-                        <div>
-                          <div className="flex justify-between items-center mb-1">
-                            <label className="block text-xs font-semibold text-[#86868B]">Partecipanti</label>
+                        {/* Partecipanti - Stacking context relative z-20 */}
+                        <div className="glass-panel p-5 rounded-2xl space-y-3 relative z-20">
+                          <div className="flex justify-between items-center pb-1 border-b border-black/5">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm">👥</span>
+                              <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Partecipanti</span>
+                            </div>
                             <button
                               type="button"
                               onClick={() => {
@@ -5558,7 +6439,7 @@ export default function App() {
                               onChange={(e) => setSearchVisitParticipantQuery(e.target.value)}
                               onFocus={() => setIsParticipantSearchFocused(true)}
                               onBlur={() => setTimeout(() => setIsParticipantSearchFocused(false), 200)}
-                              className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none text-[#1D1D1F] hover:bg-[#E5E5EA]/50 focus:bg-white focus:border-[#0071E3] transition-all"
+                              className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none"
                             />
 
                             {isParticipantSearchFocused && (
@@ -5645,10 +6526,13 @@ export default function App() {
                           </div>
                         </div>
 
-                        {/* Immobile in Oggetto */}
-                        <div>
-                          <div className="flex justify-between items-center mb-1">
-                            <label className="block text-xs font-semibold text-[#86868B]">Immobile di Riferimento</label>
+                        {/* Immobile in Oggetto - Stacking context relative z-10 */}
+                        <div className="glass-panel p-5 rounded-2xl space-y-3 relative z-10">
+                          <div className="flex justify-between items-center pb-1 border-b border-black/5">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm">🏠</span>
+                              <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Immobile di Riferimento</span>
+                            </div>
                             {!selectedVisitaImmobileId && (
                               <button
                                 type="button"
@@ -5656,6 +6540,7 @@ export default function App() {
                                   setAddingPropertyForVisit(true);
                                   setCurrentImmobile(null);
                                   setActiveFormTab('principale');
+                                  setSelectedImmobileProprietarioId(null);
                                   setIsImmobileModalOpen(true);
                                 }}
                                 className="text-[10px] font-bold text-[#0071E3] hover:underline"
@@ -5671,7 +6556,7 @@ export default function App() {
                               const selectedImm = immobili.find(imm => Number(imm.id) === Number(selectedVisitaImmobileId));
                               if (!selectedImm) return null;
                               return (
-                                <div className="bg-white rounded-2xl border border-[#E5E5EA] overflow-hidden hover:border-[#0071E3] transition-all group shadow-sm flex flex-col">
+                                <div className="bg-white rounded-2xl border border-black/5 overflow-hidden hover:border-[#0071E3] transition-all group shadow-sm flex flex-col">
                                   {/* Header Image */}
                                   <div 
                                     className="h-32 bg-cover bg-center relative flex items-end"
@@ -5699,7 +6584,8 @@ export default function App() {
                                     <div className="absolute top-2 left-2 flex gap-1 z-10 flex-wrap">
                                       <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold tracking-wide uppercase shadow-sm ${selectedImm.stato === 'Disponibile' ? 'bg-[#34C759] text-white' :
                                           selectedImm.stato === 'In Trattativa' ? 'bg-[#FF9500] text-white' :
-                                            selectedImm.stato === 'Venduto' ? 'bg-[#8E8E93] text-white' : 'bg-[#0071E3] text-white'
+                                            selectedImm.stato === 'Venduto' ? 'bg-[#8E8E93] text-white' :
+                                              selectedImm.stato === 'Lead' ? 'bg-[#AF52DE] text-white' : 'bg-[#0071E3] text-white'
                                         }`}>
                                         {selectedImm.stato}
                                       </span>
@@ -5765,11 +6651,11 @@ export default function App() {
                                 onChange={(e) => setSearchVisitaPropertyQuery(e.target.value)}
                                 onFocus={() => setIsPropertySearchFocused(true)}
                                 onBlur={() => setTimeout(() => setIsPropertySearchFocused(false), 200)}
-                                className="w-full px-2.5 py-1.5 bg-[#F5F5F7] border border-transparent rounded-lg text-xs focus:outline-none focus:border-[#0071E3] transition-all text-[#1D1D1F]"
+                                className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none"
                               />
 
                               {isPropertySearchFocused && (
-                                <div className="max-h-60 overflow-y-auto border border-[#E5E5EA] rounded-2xl p-2 bg-[#F5F5F7] flex flex-col gap-2">
+                                <div className="max-h-60 overflow-y-auto border border-black/5 rounded-2xl p-2 bg-white/20 flex flex-col gap-2">
                                   {immobili.length === 0 ? (
                                     <p className="text-xs text-gray-400 italic text-center py-4">Nessun immobile a catalogo</p>
                                   ) : (
@@ -5831,19 +6717,19 @@ export default function App() {
 
                   </div>
 
-                  <div className="p-6 border-t border-[#E5E5EA] bg-[#F5F5F7] flex space-x-2">
-                    <button
-                      type="submit"
-                      className="flex-1 bg-[#0071E3] hover:bg-[#0077ED] text-white py-3 rounded-full font-bold text-sm transition-all text-center shadow-sm"
-                    >
-                      Salva Appuntamento
-                    </button>
+                  <div className="p-4 sm:p-6 border-t border-white/20 bg-[#F5F5F7]/80 backdrop-blur-md flex flex-col sm:flex-row gap-3 sm:justify-end items-stretch sm:items-center">
                     <button
                       type="button"
                       onClick={() => setIsVisitaModalOpen(false)}
-                      className="flex-1 bg-white hover:bg-gray-100 border border-[#D2D2D7] text-[#1D1D1F] py-3 rounded-full font-semibold text-sm transition-all text-center"
+                      className="w-full sm:w-auto px-6 py-3 bg-white hover:bg-gray-100 border border-[#D2D2D7] text-[#1D1D1F] rounded-full font-semibold text-sm transition-all text-center order-2 sm:order-1"
                     >
                       Annulla
+                    </button>
+                    <button
+                      type="submit"
+                      className="w-full sm:w-auto px-8 py-3 bg-[#0071E3] hover:bg-[#0077ED] text-white rounded-full font-bold text-sm transition-all text-center shadow-sm order-1 sm:order-2"
+                    >
+                      Salva Appuntamento
                     </button>
                   </div>
                 </form>

@@ -40,6 +40,8 @@ export const ImmobiliTab = React.memo(({
   setFilterPrezzoMax,
   filterSuperficieMin,
   setFilterSuperficieMin,
+  filterSuperficieMax,
+  setFilterSuperficieMax,
   filterGarageMin,
   setFilterGarageMin,
   filterPostiAutoMin,
@@ -90,7 +92,10 @@ export const ImmobiliTab = React.memo(({
         const matchLocali = filterLocaliMin === 'Tutti' || Number(item.numero_di_locali || 0) >= Number(filterLocaliMin);
         const matchBagni = filterBagniMin === 'Tutti' || Number(item.numero_bagni || 0) >= Number(filterBagniMin);
         
-        const matchSuperficie = !filterSuperficieMin || Number(item.superficie_abitabile || item.superficie_sul || 0) >= Number(filterSuperficieMin);
+        const surfaceVal = Number(item.superficie_abitabile || item.superficie_sul || 0);
+        const matchSuperficieMin = !filterSuperficieMin || surfaceVal >= Number(filterSuperficieMin);
+        const matchSuperficieMax = !filterSuperficieMax || surfaceVal <= Number(filterSuperficieMax);
+        const matchSuperficie = matchSuperficieMin && matchSuperficieMax;
         
         const matchGarage = !filterGarageMin || Number(item.garage || 0) >= Number(filterGarageMin);
         const matchPostiAuto = !filterPostiAutoMin || Number(item.parcheggio || 0) >= Number(filterPostiAutoMin);
@@ -151,7 +156,7 @@ export const ImmobiliTab = React.memo(({
     immobili, searchProperty, filterPropertyType, filterTipo, filterStato,
     filterComune, filterVendibileStranieri, filterResidenza, filterMandatoFirmato,
     filterAgenteId, filterPrezzoMin, filterPrezzoMax, filterLocaliMin, filterBagniMin,
-    filterSuperficieMin, filterGarageMin, filterPostiAutoMin, sortProperty
+    filterSuperficieMin, filterSuperficieMax, filterGarageMin, filterPostiAutoMin, sortProperty
   ]);
 
   return (
@@ -254,195 +259,129 @@ export const ImmobiliTab = React.memo(({
       {showAdvancedFilters && (
         <div className="bg-white p-5 rounded-2xl border border-[#E5E5EA] shadow-sm animate-fade-in space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {/* Row 1: Dati Principali */}
             {/* Tipo */}
             <div>
               <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868B] mb-1">Tipo Immobile</label>
-              <select
-                value={filterTipo}
-                onChange={(e) => setFilterTipo(e.target.value)}
-                className="w-full px-3 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] transition-all"
-              >
-                <option value="Tutti">Tutti i tipi</option>
-                {[
-                  "Appartamento", "Attico", "Villa", "Duplex", "Loft", "Casa a Schiera",
-                  "Casa Unifamiliare", "Ufficio", "Rustico", "Parcheggio all'Aperto",
-                  "Parcheggio al Coperto", "Garage", "Terreno Commerciale", "Terreno per Costruire"
-                ].map(t => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </select>
+              <div className="relative">
+                <select
+                  value={filterTipo}
+                  onChange={(e) => setFilterTipo(e.target.value)}
+                  className="w-full pl-3 pr-8 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] transition-all appearance-none cursor-pointer"
+                >
+                  <option value="Tutti">Tutti i tipi</option>
+                  {[
+                    "Appartamento", "Attico", "Villa", "Duplex", "Loft", "Casa a Schiera",
+                    "Casa Unifamiliare", "Ufficio", "Rustico", "Parcheggio all'Aperto",
+                    "Parcheggio al Coperto", "Garage", "Terreno Commerciale", "Terreno per Costruire"
+                  ].map(t => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+                <span className="absolute inset-y-0 right-3 flex items-center text-gray-400 pointer-events-none">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </span>
+              </div>
             </div>
 
             {/* Stato */}
             <div>
               <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868B] mb-1">Stato</label>
-              <select
-                value={filterStato}
-                onChange={(e) => setFilterStato(e.target.value)}
-                className="w-full px-3 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] transition-all"
-              >
-                <option value="Tutti">Tutti gli stati</option>
-                <option value="Disponibile">Disponibile (incl. in Trattativa)</option>
-                <option value="In Trattativa">In Trattativa</option>
-                <option value="Venduto">Venduto</option>
-                <option value="Affittato">Affittato</option>
-              </select>
+              <div className="relative">
+                <select
+                  value={filterStato}
+                  onChange={(e) => setFilterStato(e.target.value)}
+                  className="w-full pl-3 pr-8 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] transition-all appearance-none cursor-pointer"
+                >
+                  <option value="Tutti">Tutti gli stati</option>
+                  <option value="Disponibile">Disponibile (incl. in Trattativa)</option>
+                  <option value="Lead">Lead</option>
+                  <option value="In Trattativa">In Trattativa</option>
+                  <option value="Venduto">Venduto</option>
+                  <option value="Affittato">Affittato</option>
+                </select>
+                <span className="absolute inset-y-0 right-3 flex items-center text-gray-400 pointer-events-none">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </span>
+              </div>
             </div>
 
             {/* Comune */}
             <div>
               <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868B] mb-1">Comune</label>
-              <select
-                value={filterComune}
-                onChange={(e) => setFilterComune(e.target.value)}
-                className="w-full px-3 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] transition-all"
-              >
-                <option value="Tutti">Tutti i comuni</option>
-                {uniqueComuni.map(c => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
+              <div className="relative">
+                <select
+                  value={filterComune}
+                  onChange={(e) => setFilterComune(e.target.value)}
+                  className="w-full pl-3 pr-8 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] transition-all appearance-none cursor-pointer"
+                >
+                  <option value="Tutti">Tutti i comuni</option>
+                  {uniqueComuni.map(c => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+                <span className="absolute inset-y-0 right-3 flex items-center text-gray-400 pointer-events-none">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </span>
+              </div>
             </div>
 
             {/* Agente Referente */}
             <div>
               <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868B] mb-1">Agente Referente</label>
-              <select
-                value={filterAgenteId}
-                onChange={(e) => setFilterAgenteId(e.target.value)}
-                className="w-full px-3 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] transition-all"
-              >
-                <option value="Tutti">Tutti gli agenti</option>
-                {contatti.filter(c => {
-                  const roles = c.ruolo;
-                  if (Array.isArray(roles)) {
-                    return roles.some(r => r.toLowerCase().includes('agente'));
-                  }
-                  return String(roles || '').toLowerCase().includes('agente');
-                }).map(ag => (
-                  <option key={ag.id} value={ag.id}>{ag.cognome} {ag.nome}</option>
-                ))}
-              </select>
+              <div className="relative">
+                <select
+                  value={filterAgenteId}
+                  onChange={(e) => setFilterAgenteId(e.target.value)}
+                  className="w-full pl-3 pr-8 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] transition-all appearance-none cursor-pointer"
+                >
+                  <option value="Tutti">Tutti gli agenti</option>
+                  {contatti.filter(c => {
+                    const roles = c.ruolo;
+                    if (Array.isArray(roles)) {
+                      return roles.some(r => r.toLowerCase().includes('agente'));
+                    }
+                    return String(roles || '').toLowerCase().includes('agente');
+                  }).map(ag => (
+                    <option key={ag.id} value={ag.id}>{ag.cognome} {ag.nome}</option>
+                  ))}
+                </select>
+                <span className="absolute inset-y-0 right-3 flex items-center text-gray-400 pointer-events-none">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </span>
+              </div>
             </div>
 
-            {/* Vendibile a stranieri */}
-            <div>
-              <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868B] mb-1">Vendibile a Stranieri</label>
-              <select
-                value={filterVendibileStranieri}
-                onChange={(e) => setFilterVendibileStranieri(e.target.value)}
-                className="w-full px-3 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none text-[#1D1D1F] transition-all"
-              >
-                <option value="Tutti">Tutti</option>
-                <option value="Si">Sì</option>
-                <option value="No">No</option>
-              </select>
-            </div>
-
-            {/* Tipo di Residenza */}
-            <div>
-              <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868B] mb-1">Tipo Residenza</label>
-              <select
-                value={filterResidenza}
-                onChange={(e) => setFilterResidenza(e.target.value)}
-                className="w-full px-3 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none text-[#1D1D1F] transition-all"
-              >
-                <option value="Tutti">Tutte</option>
-                <option value="Primaria">Primaria</option>
-                <option value="Secondaria">Secondaria</option>
-              </select>
-            </div>
-
-            {/* Mandato Firmato */}
-            <div>
-              <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868B] mb-1">Mandato Firmato</label>
-              <select
-                value={filterMandatoFirmato}
-                onChange={(e) => setFilterMandatoFirmato(e.target.value)}
-                className="w-full px-3 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none text-[#1D1D1F] transition-all"
-              >
-                <option value="Tutti">Tutti</option>
-                <option value="Si">Sì</option>
-                <option value="No">No</option>
-                <option value="Stand By">Stand By</option>
-              </select>
-            </div>
-
+            {/* Row 2: Caratteristiche Interne/Esterne */}
             {/* Locali Minimo */}
             <div>
               <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868B] mb-1">Locali (minimo)</label>
-              <select
-                value={filterLocaliMin}
-                onChange={(e) => setFilterLocaliMin(e.target.value)}
-                className="w-full px-3 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] transition-all"
-              >
-                <option value="Tutti">Qualsiasi</option>
-                <option value="1">1+ locali</option>
-                <option value="2">2+ locali</option>
-                <option value="3">3+ locali</option>
-                <option value="4">4+ locali</option>
-                <option value="5">5+ locali</option>
-              </select>
-            </div>
-
-            {/* Bagni Minimo */}
-            <div>
-              <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868B] mb-1">Bagni (minimo)</label>
-              <select
-                value={filterBagniMin}
-                onChange={(e) => setFilterBagniMin(e.target.value)}
-                className="w-full px-3 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] transition-all"
-              >
-                <option value="Tutti">Qualsiasi</option>
-                <option value="1">1+ bagni</option>
-                <option value="2">2+ bagni</option>
-                <option value="3">3+ bagni</option>
-                <option value="4">4+ bagni</option>
-              </select>
-            </div>
-
-            {/* Prezzo Min */}
-            <div>
-              <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868B] mb-1">Prezzo Minimo</label>
               <div className="relative">
-                <input
-                  type="number"
-                  placeholder="es. 500000"
-                  value={filterPrezzoMin}
-                  onChange={(e) => setFilterPrezzoMin(e.target.value)}
-                  className="w-full pl-3 pr-7 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] transition-all"
-                />
-                <span className="absolute inset-y-0 right-3 flex items-center text-gray-400 text-xs pointer-events-none font-semibold">CHF</span>
-              </div>
-            </div>
-
-            {/* Prezzo Max */}
-            <div>
-              <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868B] mb-1">Prezzo Massimo</label>
-              <div className="relative">
-                <input
-                  type="number"
-                  placeholder="es. 2000000"
-                  value={filterPrezzoMax}
-                  onChange={(e) => setFilterPrezzoMax(e.target.value)}
-                  className="w-full pl-3 pr-7 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] transition-all"
-                />
-                <span className="absolute inset-y-0 right-3 flex items-center text-gray-400 text-xs pointer-events-none font-semibold">CHF</span>
-              </div>
-            </div>
-
-            {/* Superficie Min */}
-            <div>
-              <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868B] mb-1">Superficie Min (mq)</label>
-              <div className="relative">
-                <input
-                  type="number"
-                  placeholder="es. 100"
-                  value={filterSuperficieMin}
-                  onChange={(e) => setFilterSuperficieMin(e.target.value)}
-                  className="w-full pl-3 pr-7 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] transition-all"
-                />
-                <span className="absolute inset-y-0 right-3 flex items-center text-gray-400 text-xs pointer-events-none font-semibold">m²</span>
+                <select
+                  value={filterLocaliMin}
+                  onChange={(e) => setFilterLocaliMin(e.target.value)}
+                  className="w-full pl-3 pr-8 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] transition-all appearance-none cursor-pointer"
+                >
+                  <option value="Tutti">Qualsiasi</option>
+                  <option value="1">1+ locali</option>
+                  <option value="2">2+ locali</option>
+                  <option value="3">3+ locali</option>
+                  <option value="4">4+ locali</option>
+                  <option value="5">5+ locali</option>
+                </select>
+                <span className="absolute inset-y-0 right-3 flex items-center text-gray-400 pointer-events-none">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </span>
               </div>
             </div>
 
@@ -454,7 +393,7 @@ export const ImmobiliTab = React.memo(({
                 placeholder="es. 1"
                 value={filterGarageMin}
                 onChange={(e) => setFilterGarageMin(e.target.value)}
-                className="w-full px-3 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none text-[#1D1D1F] transition-all"
+                className="w-full px-3 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] transition-all"
               />
             </div>
 
@@ -466,25 +405,170 @@ export const ImmobiliTab = React.memo(({
                 placeholder="es. 1"
                 value={filterPostiAutoMin}
                 onChange={(e) => setFilterPostiAutoMin(e.target.value)}
-                className="w-full px-3 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none text-[#1D1D1F] transition-all"
+                className="w-full px-3 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] transition-all"
               />
             </div>
 
+            {/* Bagni Minimo */}
+            <div>
+              <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868B] mb-1">Bagni (minimo)</label>
+              <div className="relative">
+                <select
+                  value={filterBagniMin}
+                  onChange={(e) => setFilterBagniMin(e.target.value)}
+                  className="w-full pl-3 pr-8 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] transition-all appearance-none cursor-pointer"
+                >
+                  <option value="Tutti">Qualsiasi</option>
+                  <option value="1">1+ bagni</option>
+                  <option value="2">2+ bagni</option>
+                  <option value="3">3+ bagni</option>
+                  <option value="4">4+ bagni</option>
+                </select>
+                <span className="absolute inset-y-0 right-3 flex items-center text-gray-400 pointer-events-none">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </span>
+              </div>
+            </div>
+
+            {/* Row 3: Prezzo e Superficie (Affiancati su 2 colonne ciascuno) */}
+            {/* Prezzo Range */}
+            <div className="sm:col-span-2">
+              <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868B] mb-1">Prezzo (Min - Max)</label>
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <input
+                    type="number"
+                    placeholder="Min"
+                    value={filterPrezzoMin}
+                    onChange={(e) => setFilterPrezzoMin(e.target.value)}
+                    className="w-full pl-3 pr-7 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] transition-all"
+                  />
+                  <span className="absolute inset-y-0 right-2.5 flex items-center text-gray-400 text-[10px] pointer-events-none font-semibold">CHF</span>
+                </div>
+                <span className="text-[#86868B] text-xs font-semibold">—</span>
+                <div className="relative flex-1">
+                  <input
+                    type="number"
+                    placeholder="Max"
+                    value={filterPrezzoMax}
+                    onChange={(e) => setFilterPrezzoMax(e.target.value)}
+                    className="w-full pl-3 pr-7 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] transition-all"
+                  />
+                  <span className="absolute inset-y-0 right-2.5 flex items-center text-gray-400 text-[10px] pointer-events-none font-semibold">CHF</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Superficie Range */}
+            <div className="sm:col-span-2">
+              <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868B] mb-1">Superficie (Min - Max mq)</label>
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <input
+                    type="number"
+                    placeholder="Min"
+                    value={filterSuperficieMin}
+                    onChange={(e) => setFilterSuperficieMin(e.target.value)}
+                    className="w-full pl-3 pr-7 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] transition-all"
+                  />
+                  <span className="absolute inset-y-0 right-2.5 flex items-center text-gray-400 text-[10px] pointer-events-none font-semibold">m²</span>
+                </div>
+                <span className="text-[#86868B] text-xs font-semibold">—</span>
+                <div className="relative flex-1">
+                  <input
+                    type="number"
+                    placeholder="Max"
+                    value={filterSuperficieMax}
+                    onChange={(e) => setFilterSuperficieMax(e.target.value)}
+                    className="w-full pl-3 pr-7 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] transition-all"
+                  />
+                  <span className="absolute inset-y-0 right-2.5 flex items-center text-gray-400 text-[10px] pointer-events-none font-semibold">m²</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Row 4: Aspetti Contrattuali e Bottoni */}
+            {/* Mandato Firmato */}
+            <div>
+              <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868B] mb-1">Mandato Firmato</label>
+              <div className="relative">
+                <select
+                  value={filterMandatoFirmato}
+                  onChange={(e) => setFilterMandatoFirmato(e.target.value)}
+                  className="w-full pl-3 pr-8 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] transition-all appearance-none cursor-pointer"
+                >
+                  <option value="Tutti">Tutti</option>
+                  <option value="Si">Sì</option>
+                  <option value="No">No</option>
+                  <option value="Stand By">Stand By</option>
+                </select>
+                <span className="absolute inset-y-0 right-3 flex items-center text-gray-400 pointer-events-none">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </span>
+              </div>
+            </div>
+
+            {/* Tipo di Residenza */}
+            <div>
+              <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868B] mb-1">Tipo Residenza</label>
+              <div className="relative">
+                <select
+                  value={filterResidenza}
+                  onChange={(e) => setFilterResidenza(e.target.value)}
+                  className="w-full pl-3 pr-8 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] transition-all appearance-none cursor-pointer"
+                >
+                  <option value="Tutti">Tutte</option>
+                  <option value="Primaria">Primaria</option>
+                  <option value="Secondaria">Secondaria</option>
+                </select>
+                <span className="absolute inset-y-0 right-3 flex items-center text-gray-400 pointer-events-none">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </span>
+              </div>
+            </div>
+
+            {/* Vendibile a stranieri */}
+            <div>
+              <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868B] mb-1">Vendibile a Stranieri</label>
+              <div className="relative">
+                <select
+                  value={filterVendibileStranieri}
+                  onChange={(e) => setFilterVendibileStranieri(e.target.value)}
+                  className="w-full pl-3 pr-8 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] transition-all appearance-none cursor-pointer"
+                >
+                  <option value="Tutti">Tutti</option>
+                  <option value="Si">Sì</option>
+                  <option value="No">No</option>
+                </select>
+                <span className="absolute inset-y-0 right-3 flex items-center text-gray-400 pointer-events-none">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </span>
+              </div>
+            </div>
+
             {/* Actions / Reset / Apply */}
-            <div className="flex items-end md:col-span-2 space-x-2">
+            <div className="flex items-end space-x-2">
               <button
                 type="button"
                 onClick={() => setShowAdvancedFilters(false)}
-                className="flex-1 py-2 bg-[#0071E3] hover:bg-[#0077ED] text-white text-xs font-semibold rounded-xl transition-all text-center flex items-center justify-center shadow-sm"
+                className="flex-1 py-2 bg-[#0071E3] hover:bg-[#0077ED] text-white text-xs font-semibold rounded-full transition-all text-center flex items-center justify-center shadow-sm"
               >
-                Applica Filtri
+                Applica
               </button>
               <button
                 type="button"
                 onClick={resetAllFilters}
-                className="flex-1 py-2 bg-white hover:bg-gray-100 border border-[#D2D2D7] text-[#1D1D1F] text-xs font-semibold rounded-xl transition-all text-center flex items-center justify-center"
+                className="flex-1 py-2 bg-white hover:bg-gray-100 border border-[#D2D2D7] text-[#1D1D1F] text-xs font-semibold rounded-full transition-all text-center flex items-center justify-center"
               >
-                Reset Filtri
+                Azzera
               </button>
             </div>
           </div>
@@ -567,7 +651,8 @@ export const ImmobiliTab = React.memo(({
                 <div className="absolute top-3 left-3 flex space-x-2 z-10">
                   <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase shadow-sm ${item.stato === 'Disponibile' ? 'bg-[#34C759] text-white' :
                       item.stato === 'In Trattativa' ? 'bg-[#FF9500] text-white' :
-                        item.stato === 'Venduto' ? 'bg-[#8E8E93] text-white' : 'bg-[#0071E3] text-white'
+                        item.stato === 'Venduto' ? 'bg-[#8E8E93] text-white' :
+                          item.stato === 'Lead' ? 'bg-[#AF52DE] text-white' : 'bg-[#0071E3] text-white'
                     }`}>
                     {item.stato}
                   </span>
@@ -591,9 +676,11 @@ export const ImmobiliTab = React.memo(({
                   </div>
                 )}
 
-                <span className="absolute bottom-3 right-3 bg-[#0071E3] text-white text-[11px] font-bold px-3 py-1 rounded-full shadow-sm z-10">
-                  In {item.immobile_in ? item.immobile_in.join(' / ') : ''}
-                </span>
+                {item.immobile_in && item.immobile_in.some(v => v === 'Vendita' || v === 'Affitto') && (
+                  <span className="absolute bottom-3 right-3 bg-[#0071E3] text-white text-[11px] font-bold px-3 py-1 rounded-full shadow-sm z-10">
+                    In {item.immobile_in.filter(v => v === 'Vendita' || v === 'Affitto').join(' / ')}
+                  </span>
+                )}
               </div>
 
               {/* Details */}

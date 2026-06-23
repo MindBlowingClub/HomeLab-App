@@ -239,3 +239,10 @@ CREATE TABLE IF NOT EXISTS public.immobili_logs (
     data_ora timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
+-- Abilitazione della Row Level Security (RLS) per i log
+ALTER TABLE public.immobili_logs ENABLE ROW LEVEL SECURITY;
+
+-- Policy di Sicurezza RLS per i log
+CREATE POLICY "Logs accessibili da autenticati" ON public.immobili_logs FOR ALL TO authenticated USING (true);
+
+

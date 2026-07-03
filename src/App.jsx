@@ -544,6 +544,7 @@ export default function App() {
     if (mainContentRef.current) {
       mainContentRef.current.scrollTop = 0;
     }
+    window.scrollTo(0, 0);
   }, [activeTab]);
 
   const [searchContact, setSearchContact] = useState('');
@@ -599,7 +600,9 @@ export default function App() {
         if (listScrollRef.current) {
           const anchor = listScrollRef.current.querySelector('[data-today-anchor="true"]');
           if (anchor) {
-            anchor.scrollIntoView({ behavior: 'auto', block: 'start' });
+            const containerTop = listScrollRef.current.getBoundingClientRect().top;
+            const anchorTop = anchor.getBoundingClientRect().top;
+            listScrollRef.current.scrollTop += (anchorTop - containerTop);
           }
         }
       }, 50);
@@ -1995,7 +1998,12 @@ export default function App() {
     if (listScrollRef.current) {
       const anchor = listScrollRef.current.querySelector('[data-today-anchor="true"]');
       if (anchor) {
-        anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const containerTop = listScrollRef.current.getBoundingClientRect().top;
+        const anchorTop = anchor.getBoundingClientRect().top;
+        listScrollRef.current.scrollTo({
+          top: listScrollRef.current.scrollTop + (anchorTop - containerTop),
+          behavior: 'smooth'
+        });
       }
     }
   };

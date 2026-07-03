@@ -1616,6 +1616,7 @@ export default function App() {
     );
     if (duplicato) {
       triggerToast("Codice immobile \"" + codice_immobile + "\" già utilizzato! Inserisci un codice diverso.", "error");
+      setIsSavingImmobile(false);
       return;
     }
 
@@ -1880,7 +1881,19 @@ export default function App() {
           }
         }
       } catch (err) {
-        console.error(err);
+        console.error("Errore salvataggio Supabase:", err);
+        
+        // Verifica se l'errore è una violazione di chiave/indice unico (es. codice_immobile duplicato)
+        const isUniqueViolation = err.code === '23505' || 
+                                  (err.message && err.message.toLowerCase().includes('unique constraint')) ||
+                                  (err.message && err.message.toLowerCase().includes('duplicate key'));
+        
+        if (isUniqueViolation) {
+          triggerToast("Codice Immobile già in uso! Inserisci un codice univoco.", "error");
+          setIsSavingImmobile(false);
+          return; // Blocca l'esecuzione mantenendo il modale aperto ed evitando il salvataggio offline non valido
+        }
+        
         triggerToast("Errore salvataggio Supabase. Salvataggio offline...", "warning");
         saveImmobileOffline(id, fields, changes, logDesc, userEmail);
       }

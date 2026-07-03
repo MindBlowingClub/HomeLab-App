@@ -74,6 +74,8 @@ body {
 input.glass-input, select.glass-input {
   height: 42px;
   box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
 }
 
 select.glass-input {

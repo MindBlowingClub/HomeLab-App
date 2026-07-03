@@ -115,7 +115,6 @@ export const DashboardTab = React.memo(({
           <div className="glass-panel p-6 rounded-3xl flex flex-col justify-between h-36 hover:scale-[1.01] hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300">
             <div className="flex justify-between items-start">
               <span className="text-xs font-semibold text-[#86868B] uppercase tracking-wider">Immobili in Vendita</span>
-              <span className="p-1.5 rounded-lg bg-blue-50 text-blue-600 text-xs">🏷️ In Vendita</span>
             </div>
             <div className="my-1">
               {isCRMLoading ? (
@@ -136,7 +135,6 @@ export const DashboardTab = React.memo(({
           <div className="glass-panel p-6 rounded-3xl flex flex-col justify-between h-36 hover:scale-[1.01] hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300">
             <div className="flex justify-between items-start">
               <span className="text-xs font-semibold text-[#86868B] uppercase tracking-wider">Immobili in Affitto</span>
-              <span className="p-1.5 rounded-lg bg-green-50 text-green-600 text-xs">🔑 In Affitto</span>
             </div>
             <div className="my-1">
               {isCRMLoading ? (
@@ -157,7 +155,6 @@ export const DashboardTab = React.memo(({
           <div className="glass-panel p-6 rounded-3xl flex flex-col justify-between h-36 hover:scale-[1.01] hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300 border border-blue-500/10 bg-gradient-to-br from-white to-blue-50/20">
             <div className="flex justify-between items-start">
               <span className="text-xs font-semibold text-blue-800 uppercase tracking-wider">Portafoglio Stimato</span>
-              <span className="p-1.5 rounded-lg bg-[#0071E3]/10 text-[#0071E3] text-xs font-semibold">💰 Valore</span>
             </div>
             <div className="my-1">
               {isCRMLoading ? (
@@ -178,7 +175,6 @@ export const DashboardTab = React.memo(({
           <div className="glass-panel p-6 rounded-3xl flex flex-col justify-between h-36 hover:scale-[1.01] hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300">
             <div className="flex justify-between items-start">
               <span className="text-xs font-semibold text-[#86868B] uppercase tracking-wider">Immobili in Trattativa</span>
-              <span className="p-1.5 rounded-lg bg-amber-50 text-amber-600 text-xs">🤝 Trattativa</span>
             </div>
             <div className="my-1">
               {isCRMLoading ? (
@@ -199,7 +195,6 @@ export const DashboardTab = React.memo(({
           <div className="glass-panel p-6 rounded-3xl flex flex-col justify-between h-36 hover:scale-[1.01] hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300">
             <div className="flex justify-between items-start">
               <span className="text-xs font-semibold text-[#86868B] uppercase tracking-wider">Immobili Venduti</span>
-              <span className="p-1.5 rounded-lg bg-indigo-50 text-indigo-600 text-xs">✨ Venduti</span>
             </div>
             <div className="my-1">
               {isCRMLoading ? (
@@ -220,7 +215,6 @@ export const DashboardTab = React.memo(({
           <div className="glass-panel p-6 rounded-3xl flex flex-col justify-between h-36 hover:scale-[1.01] hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300">
             <div className="flex justify-between items-start">
               <span className="text-xs font-semibold text-[#86868B] uppercase tracking-wider">Immobili Affittati</span>
-              <span className="p-1.5 rounded-lg bg-teal-50 text-teal-600 text-xs">🏡 Affittati</span>
             </div>
             <div className="my-1">
               {isCRMLoading ? (
@@ -244,7 +238,7 @@ export const DashboardTab = React.memo(({
         <h3 className="text-lg font-semibold tracking-tight text-[#1D1D1F] mb-4">Azioni Rapide</h3>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <button
-            onClick={() => { setIsImmobileModalOpen(true); setCurrentImmobile(null); setActiveFormTab('principale'); }}
+            onClick={() => { setIsImmobileModalOpen(true); setCurrentImmobile(null); setActiveFormTab('generale'); }}
             className="btn-glossy text-white p-4 rounded-2xl font-medium text-sm transition-all flex items-center justify-center space-x-2"
           >
             <IconPlus /> <span>Registra Nuovo Immobile</span>

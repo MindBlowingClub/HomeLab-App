@@ -92,7 +92,7 @@ export const ImmobiliTab = React.memo(({
         const matchLocali = filterLocaliMin === 'Tutti' || Number(item.numero_di_locali || 0) >= Number(filterLocaliMin);
         const matchBagni = filterBagniMin === 'Tutti' || Number(item.numero_bagni || 0) >= Number(filterBagniMin);
         
-        const surfaceVal = Number(item.superficie_abitabile || item.superficie_sul || 0);
+        const surfaceVal = Number(item.superficie_abitabile || item.superficie_utile || 0);
         const matchSuperficieMin = !filterSuperficieMin || surfaceVal >= Number(filterSuperficieMin);
         const matchSuperficieMax = !filterSuperficieMax || surfaceVal <= Number(filterSuperficieMax);
         const matchSuperficie = matchSuperficieMin && matchSuperficieMax;
@@ -121,13 +121,13 @@ export const ImmobiliTab = React.memo(({
           return bPrice - aPrice;
         }
         if (sortProperty === 'superficie-asc') {
-          const aSup = Number(a.superficie_abitabile || a.superficie_sul || 0);
-          const bSup = Number(b.superficie_abitabile || b.superficie_sul || 0);
+          const aSup = Number(a.superficie_abitabile || a.superficie_utile || 0);
+          const bSup = Number(b.superficie_abitabile || b.superficie_utile || 0);
           return aSup - bSup;
         }
         if (sortProperty === 'superficie-desc') {
-          const aSup = Number(a.superficie_abitabile || a.superficie_sul || 0);
-          const bSup = Number(b.superficie_abitabile || b.superficie_sul || 0);
+          const aSup = Number(a.superficie_abitabile || a.superficie_utile || 0);
+          const bSup = Number(b.superficie_abitabile || b.superficie_utile || 0);
           return bSup - aSup;
         }
         if (sortProperty === 'creazione-asc') {
@@ -271,9 +271,18 @@ export const ImmobiliTab = React.memo(({
                 >
                   <option value="Tutti">Tutti i tipi</option>
                   {[
-                    "Appartamento", "Attico", "Villa", "Duplex", "Loft", "Casa a Schiera",
-                    "Casa Unifamiliare", "Ufficio", "Rustico", "Parcheggio all'Aperto",
-                    "Parcheggio al Coperto", "Garage", "Terreno Commerciale", "Terreno per Costruire"
+                    "Abitazione ammobiliata", "App. a terrazza", "App. ultimo piano", "Appartamento",
+                    "Appartamento annesso", "Arcade", "Atelier", "Attico", "Bar", "Caffè", "Camera",
+                    "Cantina", "Casa a schiera", "Casa a terrazza", "Casa bifamiliare",
+                    "Casa plurifamiliare", "Casa unifamiliare", "Castello", "Centro commerciale",
+                    "Chalet", "Chiosco", "Club / Discoteca", "Commerci", "Commercio", "Dépendance",
+                    "Duplex/maisonette", "Edificio commerciale", "Fabbrica", "Fattoria", "Garage doppio",
+                    "Garage singolo", "Hotel", "Immob. residenziale/commerciale", "Industria/Commercio",
+                    "Locale per hobby", "Loft", "Magazzino", "Officina", "Parcheggio aperto",
+                    "Parcheggio coperto", "Parcheggio sotterraneo", "Posteggio", "Posteggio moto in garage",
+                    "Pub", "Ristorante", "Rustico", "Salona da parrucchiere", "Sfruttamento agricolo",
+                    "Soffitta", "Studio", "Studio medico", "Terreno commerciale", "Terreno per costruire",
+                    "Ufficio", "Villa"
                   ].map(t => (
                     <option key={t} value={t}>{t}</option>
                   ))}

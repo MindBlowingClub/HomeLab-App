@@ -3384,7 +3384,7 @@ export default function App() {
                           </span>
                         </div>
                         <div className="glass-panel p-4 rounded-2xl flex flex-col justify-between">
-                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">immobile_in</span>
+                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">immobile in</span>
                           <span className="text-sm font-bold text-[#1D1D1F]">
                             {viewingImmobile.immobile_in ? viewingImmobile.immobile_in.join(' / ') : '-'}
                           </span>
@@ -3394,31 +3394,31 @@ export default function App() {
                       {/* Main glass card holding the 17 specified fields */}
                       <div className="glass-panel p-5 rounded-2xl grid grid-cols-2 gap-4 text-sm">
                         <div>
-                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">prezzo_di_vendita</span>
+                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">prezzo di vendita</span>
                           <span className="text-base font-extrabold text-[#1D1D1F]">
                             {formatField(viewingImmobile.prezzo_di_vendita, "", true)}
                           </span>
                         </div>
                         <div>
-                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">prezzo_di_vendita_parcheggi</span>
+                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">prezzo di vendita parcheggi</span>
                           <span className="text-base font-extrabold text-[#1D1D1F]">
                             {formatField(viewingImmobile.prezzo_di_vendita_parcheggi, "", true)}
                           </span>
                         </div>
                         <div className="border-t border-black/5 pt-3">
-                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">prezzo_di_affitto</span>
+                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">prezzo di affitto</span>
                           <span className="text-base font-extrabold text-[#1D1D1F]">
                             {formatField(viewingImmobile.prezzo_di_affitto, "/mese", true)}
                           </span>
                         </div>
                         <div className="border-t border-black/5 pt-3">
-                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">prezzo_di_affitto_parcheggi</span>
+                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">prezzo di affitto parcheggi</span>
                           <span className="text-base font-extrabold text-[#1D1D1F]">
                             {formatField(viewingImmobile.prezzo_di_affitto_parcheggi, "/mese", true)}
                           </span>
                         </div>
                         <div className="border-t border-black/5 pt-3">
-                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">spese_condominiali</span>
+                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">spese condominiali</span>
                           <span className="text-base font-extrabold text-[#1D1D1F]">
                             {formatField(viewingImmobile.spese_condominiali, "/mese", true)}
                           </span>
@@ -3432,11 +3432,11 @@ export default function App() {
                           <span className="font-semibold text-[#1D1D1F]">{viewingImmobile.tipo ? viewingImmobile.tipo.join(', ') : '-'}</span>
                         </div>
                         <div className="border-t border-black/5 pt-3">
-                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">superficie_abitabile</span>
+                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">superficie abitabile</span>
                           <span className="font-semibold text-[#1D1D1F]">{formatField(viewingImmobile.superficie_abitabile, " m²")}</span>
                         </div>
                         <div className="border-t border-black/5 pt-3">
-                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">superficie_utile</span>
+                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">superficie utile</span>
                           <span className="font-semibold text-[#1D1D1F]">{formatField(viewingImmobile.superficie_utile, " m²")}</span>
                         </div>
                         <div className="border-t border-black/5 pt-3">
@@ -3444,19 +3444,19 @@ export default function App() {
                           <span className="font-semibold text-[#1D1D1F]">{formatField(viewingImmobile.piano)}</span>
                         </div>
                         <div className="border-t border-black/5 pt-3">
-                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">numero_piani</span>
+                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">numero piani</span>
                           <span className="font-semibold text-[#1D1D1F]">{formatField(viewingImmobile.numero_piani)}</span>
                         </div>
                         <div className="border-t border-black/5 pt-3">
-                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">superficie_terreno</span>
+                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">superficie terreno</span>
                           <span className="font-semibold text-[#1D1D1F]">{formatField(viewingImmobile.superficie_terreno, " m²")}</span>
                         </div>
                         <div className="border-t border-black/5 pt-3">
-                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">numero_di_locali</span>
+                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">numero di locali</span>
                           <span className="font-semibold text-[#1D1D1F]">{formatField(viewingImmobile.numero_di_locali)}</span>
                         </div>
                         <div className="border-t border-black/5 pt-3">
-                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">numero_bagni</span>
+                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">numero bagni</span>
                           <span className="font-semibold text-[#1D1D1F]">{formatField(viewingImmobile.numero_bagni)}</span>
                         </div>
                         <div className="border-t border-black/5 pt-3">
@@ -3468,23 +3468,23 @@ export default function App() {
                           <span className="font-semibold text-[#1D1D1F]">{formatField(viewingImmobile.parcheggio)}</span>
                         </div>
                         <div className="border-t border-black/5 pt-3">
-                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">anno_di_costruzione</span>
+                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">anno di costruzione</span>
                           <span className="font-semibold text-[#1D1D1F]">{formatField(viewingImmobile.anno_di_costruzione)}</span>
                         </div>
                         <div className="border-t border-black/5 pt-3">
-                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">ultimo_rinnovo</span>
+                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">ultimo rinnovo</span>
                           <span className="font-semibold text-[#1D1D1F]">{formatUltimoRinnovo(viewingImmobile.ultimo_rinnovo)}</span>
                         </div>
                         <div className="border-t border-black/5 pt-3">
-                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">tipo_di_residenza</span>
+                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">tipo di residenza</span>
                           <span className="font-semibold text-[#1D1D1F]">{viewingImmobile.tipo_di_residenza ? viewingImmobile.tipo_di_residenza.join(', ') : '-'}</span>
                         </div>
                         <div className="border-t border-black/5 pt-3">
-                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">vendibile_a_stranieri</span>
+                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">vendibile a stranieri</span>
                           <span className="font-semibold text-[#1D1D1F]">{formatField(viewingImmobile.vendibile_a_stranieri)}</span>
                         </div>
                         <div className="border-t border-black/5 pt-3 col-span-2">
-                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">numero_di_mappale</span>
+                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">numero di mappale</span>
                           <span className="font-semibold text-[#1D1D1F]">{formatField(viewingImmobile.numero_di_mappale)}</span>
                         </div>
                       </div>
@@ -3525,8 +3525,8 @@ export default function App() {
                         <div className="flex items-center space-x-3">
                           <span className="text-2xl">📂</span>
                           <div>
-                            <span className="font-bold text-sm block">link_a_cartella_condivisa</span>
-                            <span className="text-[10px] text-[#86868B] block mt-0.5">cartella_condivisa_url</span>
+                            <span className="font-bold text-sm block">link a cartella condivisa</span>
+                            <span className="text-[10px] text-[#86868B] block mt-0.5">cartella condivisa url</span>
                           </div>
                         </div>
                         {viewingImmobile.link_a_cartella_condivisa ? (
@@ -3572,7 +3572,7 @@ export default function App() {
                   {/* TAB: CONTATTI */}
                   {activeDetailTab === 'contatti' && (
                     <div className="space-y-5">
-                      <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider">anagrafiche_collegate</span>
+                      <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider">anagrafiche collegate</span>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div
                           onClick={() => {
@@ -3591,7 +3591,7 @@ export default function App() {
                               : ''
                           }`}
                         >
-                          <span className="block text-[9px] uppercase font-bold text-[#86868B]">proprietario_oreferrente_id</span>
+                          <span className="block text-[9px] uppercase font-bold text-[#86868B]">proprietario o referente</span>
                           <span className={`font-bold text-sm block mt-0.5 transition-colors ${viewingImmobile.proprietario_id ? 'group-hover:text-[#0071E3]' : ''}`}>
                             {getContactName(viewingImmobile.proprietario_id)}
                           </span>
@@ -3604,7 +3604,7 @@ export default function App() {
                         </div>
 
                         <div className="glass-panel p-4 rounded-2xl">
-                          <span className="block text-[9px] uppercase font-bold text-[#86868B]">agente_id</span>
+                          <span className="block text-[9px] uppercase font-bold text-[#86868B]">agente</span>
                           {(() => {
                             const agentIds = viewingImmobile.agente_id ? String(viewingImmobile.agente_id).split(',').map(id => id.trim()).filter(Boolean) : [];
                             if (agentIds.length === 0) {
@@ -3649,7 +3649,7 @@ export default function App() {
                     <div className="space-y-5">
                       <div className="glass-panel p-5 rounded-2xl grid grid-cols-2 gap-4">
                         <div>
-                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">mandato_firmato</span>
+                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">mandato firmato</span>
                           <span className={`inline-flex px-3 py-1 rounded-full text-xs font-bold uppercase shadow-sm ${viewingImmobile.mandato_firmato === 'Si' ? 'bg-[#34C759] text-white' :
                               viewingImmobile.mandato_firmato === 'Stand By' ? 'bg-[#FF9500] text-white' : 'bg-[#FF3B30] text-white'
                             }`}>
@@ -3657,7 +3657,7 @@ export default function App() {
                           </span>
                         </div>
                         <div>
-                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">tipo_di_mandato</span>
+                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">tipo di mandato</span>
                           <span className="text-sm font-bold text-[#1D1D1F]">
                             {formatField(viewingImmobile.tipo_di_mandato)}
                           </span>
@@ -3698,17 +3698,17 @@ export default function App() {
                         <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider">conformità & documenti</span>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {[
-                            { key: 'estratto_registro_fondiario', label: 'estratto_registro_fondiario', desc: 'estratto_registro_fondiario_doc' },
-                            { key: 'descrittivo_tecnico', label: 'descrittivo_tecnico', desc: 'descrittivo_tecnico_doc' },
-                            { key: 'regolamento_condominiale', label: 'regolamento_condominiale', desc: 'regolamento_condominiale_doc' },
-                            { key: 'spese_condominiali_doc', label: 'spese_condominiali_doc', desc: 'spese_condominiali_doc', isFileOnly: true },
-                            { key: 'assicurazione_stabile', label: 'assicurazione_stabile', desc: 'assicurazione_stabile_doc' },
-                            { key: 'verbale_ultima_assemblea', label: 'verbale_ultima_assemblea', desc: 'verbale_ultima_assemblea_doc' },
-                            { key: 'fondo_rinnovamento', label: 'fondo_rinnovamento', desc: 'fondo_rinnovamento_doc' },
-                            { key: 'valore_di_stima', label: 'valore_di_stima', desc: 'valore_di_stima_doc' },
-                            { key: 'piano_assegnazioni_parti_comuni', label: 'piano_assegnazioni_parti_comuni', desc: 'piano_assegnazioni_parti_comuni_doc' },
-                            { key: 'rasi', label: 'rasi', desc: 'rasi_doc' },
-                            { key: 'certificato_radon', label: 'certificato_radon', desc: 'certificato_radon_doc' }
+                            { key: 'estratto_registro_fondiario', label: 'estratto registro fondiario', desc: 'estratto registro fondiario doc' },
+                            { key: 'descrittivo_tecnico', label: 'descrittivo tecnico', desc: 'descrittivo tecnico doc' },
+                            { key: 'regolamento_condominiale', label: 'regolamento condominiale', desc: 'regolamento condominiale doc' },
+                            { key: 'spese_condominiali_doc', label: 'spese condominiali doc', desc: 'spese condominiali doc', isFileOnly: true },
+                            { key: 'assicurazione_stabile', label: 'assicurazione stabile', desc: 'assicurazione stabile doc' },
+                            { key: 'verbale_ultima_assemblea', label: 'verbale ultima assemblea', desc: 'verbale ultima assemblea doc' },
+                            { key: 'fondo_rinnovamento', label: 'fondo rinnovamento', desc: 'fondo rinnovamento doc' },
+                            { key: 'valore_di_stima', label: 'valore di stima', desc: 'valore di stima doc' },
+                            { key: 'piano_assegnazioni_parti_comuni', label: 'piano assegnazioni parti comuni', desc: 'piano assegnazioni parti comuni doc' },
+                            { key: 'rasi', label: 'rasi', desc: 'rasi doc' },
+                            { key: 'certificato_radon', label: 'certificato radon', desc: 'certificato radon doc' }
                           ].map(doc => {
                             const status = viewingImmobile[doc.key];
                             const fileUrl = doc.isFileOnly ? status : viewingImmobile[`${doc.key}_doc`];
@@ -3750,7 +3750,7 @@ export default function App() {
                   {activeDetailTab === 'note_interne' && (
                     <div className="space-y-5">
                       <div className="space-y-2">
-                        <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider">note_interne</span>
+                        <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider">note interne</span>
                         <div className="glass-panel p-5 rounded-2xl text-sm text-[#1D1D1F] whitespace-pre-wrap leading-relaxed min-h-[150px]">
                           {viewingImmobile.note_interne || (
                             <span className="text-gray-400 italic">Nessuna nota interna inserita per questo immobile.</span>

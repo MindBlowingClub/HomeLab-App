@@ -60,7 +60,7 @@ export const VisiteTab = React.memo(({
   // Memoized stats and filtered list
   const visiteStats = useMemo(() => {
     const uniqueAgents = Array.from(new Set([
-      ...visite.map(v => v.creato_da).filter(Boolean),
+      ...visite.map(v => (v.creato_da || '').toUpperCase()).filter(Boolean),
       ...contatti.filter(c => {
         const roles = Array.isArray(c.ruolo) ? c.ruolo : [c.ruolo];
         return roles.some(r => String(r).toLowerCase().includes('agente'));
@@ -78,8 +78,7 @@ export const VisiteTab = React.memo(({
         (item.esito_e_note || '').toLowerCase().includes(query);
 
       const matchesAgent = filterVisitAgent === 'Tutti' || 
-        item.creato_da === filterVisitAgent || 
-        (item.partecipanti || '').includes(filterVisitAgent);
+        (item.creato_da || '').toUpperCase() === filterVisitAgent.toUpperCase();
 
       const matchesClient = filterVisitClient === 'Tutti' || String(item.cliente_id) === String(filterVisitClient);
       const matchesProperty = filterVisitProperty === 'Tutti' || String(item.immobile_di_riferimento_id) === String(filterVisitProperty);
@@ -447,9 +446,9 @@ export const VisiteTab = React.memo(({
                   }
                   setCurrentCalendarDate(d);
                 }}
-                className="p-1.5 bg-[#F5F5F7] hover:bg-[#E5E5EA] rounded-xl text-[#1D1D1F] transition-all font-bold text-xs"
+                className="w-8 h-8 flex items-center justify-center bg-[#F5F5F7] hover:bg-[#E5E5EA] rounded-full text-[#1D1D1F] transition-all font-bold text-xs"
               >
-                ◀ Precedente
+                ◀
               </button>
               <button
                 onClick={() => {
@@ -463,9 +462,9 @@ export const VisiteTab = React.memo(({
                   }
                   setCurrentCalendarDate(d);
                 }}
-                className="p-1.5 bg-[#F5F5F7] hover:bg-[#E5E5EA] rounded-xl text-[#1D1D1F] transition-all font-bold text-xs"
+                className="w-8 h-8 flex items-center justify-center bg-[#F5F5F7] hover:bg-[#E5E5EA] rounded-full text-[#1D1D1F] transition-all font-bold text-xs"
               >
-                Successivo ▶
+                ▶
               </button>
             </div>
 
@@ -573,31 +572,81 @@ export const VisiteTab = React.memo(({
         </div>
       )}
 
+      {/* iOS Style Weekday Navigation Strip (for Day view) */}
+      {calendarView === 'day' && (
+        <div className="bg-white rounded-3xl border border-[#E5E5EA] shadow-sm p-4 mb-4 flex flex-col items-center">
+          {/* Weekday letters L, M, M, G, V, S, D */}
+          <div className="grid grid-cols-7 w-full max-w-md text-center text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-2">
+            <span>L</span>
+            <span>M</span>
+            <span>M</span>
+            <span>G</span>
+            <span>V</span>
+            <span>S</span>
+            <span>D</span>
+          </div>
+
+          {/* Day Numbers */}
+          <div className="grid grid-cols-7 w-full max-w-md text-center">
+            {weekDays.map((wDay, idx) => {
+              const isSelected = wDay.date.toDateString() === currentCalendarDate.toDateString();
+              const isToday = new Date().toDateString() === wDay.date.toDateString();
+              const isWeekend = wDay.date.getDay() === 0 || wDay.date.getDay() === 6;
+              return (
+                <button
+                  key={idx}
+                  onClick={() => setCurrentCalendarDate(wDay.date)}
+                  className="flex flex-col items-center justify-center"
+                >
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
+                    isSelected 
+                      ? 'bg-[#1D1D1F] text-white shadow-sm font-extrabold' 
+                      : isToday 
+                      ? 'bg-red-500 text-white shadow-sm font-extrabold'
+                      : isWeekend
+                      ? 'text-red-500 hover:bg-black/5'
+                      : 'text-[#1D1D1F] hover:bg-black/5'
+                  }`}>
+                    {wDay.dayNum}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Week/Day View Grid */}
       {(calendarView === 'week' || calendarView === 'day') && (
         <div className="bg-white rounded-3xl border border-[#E5E5EA] shadow-sm overflow-hidden flex flex-col">
           {/* Grid Header */}
-          <div className={`grid border-b border-[#E5E5EA] bg-[#F5F5F7] text-center shrink-0 ${calendarView === 'day' ? 'grid-cols-2' : 'grid-cols-8'}`}>
+          <div className={`grid border-b border-[#E5E5EA] bg-[#F5F5F7] text-center shrink-0 ${calendarView === 'day' ? 'grid-cols-[65px_1fr]' : 'grid-cols-[65px_repeat(7,1fr)]'}`}>
             <div className="py-3 text-[10px] font-bold text-[#86868B] border-r border-[#E5E5EA] flex items-center justify-center">
               Ora
             </div>
-            {displayDays.map((wDay, idx) => {
-              const isToday = new Date().toDateString() === wDay.date.toDateString();
-              return (
-                <div key={idx} className={`py-2 text-xs font-semibold ${isToday ? 'text-red-500' : 'text-[#1D1D1F]'}`}>
-                  <div className="text-[10px] uppercase font-bold text-[#86868B]">{wDay.dayName}</div>
-                  <div className={`mt-0.5 text-sm font-bold w-7 h-7 flex items-center justify-center mx-auto rounded-full ${
-                    isToday ? 'bg-red-500 text-white shadow-sm' : ''
-                  }`}>
-                    {wDay.dayNum}
+            {calendarView === 'day' ? (
+              <div className="py-3 text-xs font-bold text-[#1D1D1F] flex items-center justify-center capitalize">
+                {currentCalendarDate.toLocaleDateString('it-CH', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+              </div>
+            ) : (
+              displayDays.map((wDay, idx) => {
+                const isToday = new Date().toDateString() === wDay.date.toDateString();
+                return (
+                  <div key={idx} className={`py-2 text-xs font-semibold ${isToday ? 'text-red-500' : 'text-[#1D1D1F]'}`}>
+                    <div className="text-[10px] uppercase font-bold text-[#86868B]">{wDay.dayName}</div>
+                    <div className={`mt-0.5 text-sm font-bold w-7 h-7 flex items-center justify-center mx-auto rounded-full ${
+                      isToday ? 'bg-red-500 text-white shadow-sm' : ''
+                    }`}>
+                      {wDay.dayNum}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
 
           {/* All Day Events Row */}
-          <div className={`grid border-b border-[#E5E5EA] bg-gray-50/70 text-center shrink-0 divide-x divide-[#E5E5EA] ${calendarView === 'day' ? 'grid-cols-2' : 'grid-cols-8'}`}>
+          <div className={`grid border-b border-[#E5E5EA] bg-gray-50/70 text-center shrink-0 divide-x divide-[#E5E5EA] ${calendarView === 'day' ? 'grid-cols-[65px_1fr]' : 'grid-cols-[65px_repeat(7,1fr)]'}`}>
             <div className="py-2 text-[9px] font-bold text-gray-400 flex items-center justify-center bg-gray-100/50 select-none">
               tutto il giorno
             </div>
@@ -643,7 +692,7 @@ export const VisiteTab = React.memo(({
 
           {/* Scrollable grid body */}
           <div ref={calendarScrollRef} className="h-[550px] overflow-y-auto custom-scrollbar relative bg-white border-t border-[#E5E5EA]">
-            <div className={`grid divide-x divide-[#E5E5EA] relative min-h-[1440px] ${calendarView === 'day' ? 'grid-cols-2' : 'grid-cols-8'}`}>
+            <div className={`grid divide-x divide-[#E5E5EA] relative min-h-[1440px] ${calendarView === 'day' ? 'grid-cols-[65px_1fr]' : 'grid-cols-[65px_repeat(7,1fr)]'}`}>
               {/* Column 0: Hours Labels */}
               <div className="flex flex-col bg-gray-50/30 select-none divide-y divide-[#E5E5EA]">
                 {hoursList.map(hour => (
@@ -773,15 +822,14 @@ export const VisiteTab = React.memo(({
                       </div>
                     )}
 
-                    {/* Positioned Events */}
                     {positionedEvents.map(({ event, startMin, endMin, width, left }) => {
                       const top = startMin;
                       const height = endMin - startMin;
                       const outcomeStyles = event.esito_e_note === 'POSITIVO' 
-                        ? 'border-l-4 border-emerald-500 bg-emerald-500/10 text-emerald-800' 
+                        ? 'border-l-4 border-[#34C759] bg-[#EBF9EB] text-[#1E7D32]' 
                         : event.esito_e_note === 'NEGATIVO' 
-                        ? 'border-l-4 border-rose-500 bg-rose-500/10 text-rose-800' 
-                        : 'border-l-4 border-blue-500 bg-blue-500/10 text-blue-800';
+                        ? 'border-l-4 border-[#FF3B30] bg-[#FEEBEB] text-[#C62828]' 
+                        : 'border-l-4 border-[#0071E3] bg-[#E5F1FD] text-[#0051A3]';
 
                       return (
                         <div
@@ -797,7 +845,7 @@ export const VisiteTab = React.memo(({
                             e.dataTransfer.effectAllowed = "move";
                           }}
                           onClick={() => handleViewVisita(event)}
-                          className={`absolute rounded-lg cursor-pointer ${outcomeStyles} shadow-sm overflow-hidden p-2 hover:scale-[0.98] transition-all flex flex-col justify-start z-10 border border-[#E5E5EA]/20 select-none`}
+                          className={`absolute rounded-lg sm:rounded-xl cursor-pointer ${outcomeStyles} shadow-sm overflow-hidden ${calendarView === 'week' ? 'p-1 sm:p-1.5' : 'p-2 sm:p-2.5'} hover:scale-[0.98] transition-all flex flex-col justify-start z-10 border border-black/5 select-none`}
                           style={{
                             top: `${top + 1}px`,
                             height: `${height - 2}px`,
@@ -806,15 +854,27 @@ export const VisiteTab = React.memo(({
                           }}
                           title={`${event.nome_evento || event.tipo_visita} - ${getImmobileName(event.immobile_di_riferimento_id)}`}
                         >
-                          <div className="flex items-center gap-1 min-w-0 mb-0.5">
-                            <span className="shrink-0 text-[6.5px] tracking-wider uppercase font-black px-1.5 py-0.25 bg-black/5 text-black/70 rounded-full border border-black/5 leading-none">
+                          <div className="flex items-center gap-1 min-w-0">
+                            <span className="shrink-0 text-[6px] tracking-wider uppercase font-black px-1 py-0.25 bg-black/5 text-black/70 rounded border border-black/5 leading-none">
                               {isMyEvent(event) ? 'Tu' : getCreatorTag(event)}
                             </span>
-                            <div className="font-bold text-[10px] leading-tight truncate flex-1">{event.nome_evento || event.tipo_visita}</div>
+                            <div className="font-bold text-[9px] sm:text-[10px] leading-none truncate flex-1">{event.nome_evento || event.tipo_visita}</div>
                           </div>
-                          <div className="text-[8px] opacity-80 mt-0.5 truncate leading-none">{event.partecipanti || 'Senza partecipanti'}</div>
-                          {height > 40 && (
-                            <div className="text-[8px] opacity-75 mt-1 truncate leading-none font-medium">
+                          
+                          {height >= 45 && (
+                            <div className="text-[7.5px] sm:text-[8px] font-semibold opacity-90 truncate leading-none mt-1">
+                              {new Date(event.inizio_evento).toLocaleTimeString('it-CH', { hour: '2-digit', minute: '2-digit' })}{event.fine_evento ? ` - ${new Date(event.fine_evento).toLocaleTimeString('it-CH', { hour: '2-digit', minute: '2-digit' })}` : ''}
+                            </div>
+                          )}
+
+                          {height >= 70 && (
+                            <div className="text-[7.5px] sm:text-[8px] opacity-80 mt-1 truncate leading-none">
+                              {event.partecipanti || 'Senza partecipanti'}
+                            </div>
+                          )}
+                          
+                          {height >= 90 && (
+                            <div className="text-[7px] sm:text-[7.5px] opacity-75 mt-1 truncate leading-none font-medium">
                               🏢 {getImmobileName(event.immobile_di_riferimento_id)}
                             </div>
                           )}

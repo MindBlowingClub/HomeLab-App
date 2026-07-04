@@ -7003,7 +7003,7 @@ export default function App() {
               { id: 'dashboard', label: 'Dashboard', icon: <IconDashboard /> },
               { id: 'immobili', label: 'Immobili', icon: <IconImmobili /> },
               { id: 'contatti', label: 'Contatti', icon: <IconContatti /> },
-              { id: 'visite', label: 'Visite', icon: <IconCalendario /> },
+              { id: 'visite', label: 'Calendario', icon: <IconCalendario /> },
             ].map(tab => {
               const isActive = activeTab === tab.id;
               return (

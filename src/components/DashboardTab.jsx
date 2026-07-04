@@ -259,15 +259,15 @@ export const DashboardTab = React.memo(({
             onClick={handleCreateVisita}
             className="bg-white/45 backdrop-blur hover:bg-white/70 text-[#1D1D1F] p-4 rounded-2xl font-medium text-sm border border-white/40 shadow-sm transition-all flex items-center justify-center space-x-2 hover:scale-[1.01]"
           >
-            <IconPlus /> <span>Pianifica Visita/Shooting</span>
+            <IconPlus /> <span>Pianifica Attività/Visita</span>
           </button>
         </div>
       </div>
 
       {/* Prossime Attività in Calendario */}
       <div className="bg-white p-6 rounded-3xl border border-[#E5E5EA] shadow-sm">
-        <div className="flex justify-between items-center mb-4 pb-2 border-b border-[#F5F5F7]">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-2 border-b border-[#F5F5F7]">
+          <div className="flex items-center justify-between sm:justify-start gap-3 w-full sm:w-auto">
             <h3 className="text-lg font-semibold tracking-tight text-[#1D1D1F]">Prossime Attività</h3>
             <div className="flex bg-[#F5F5F7] p-1 rounded-xl shrink-0 border border-transparent">
               <button
@@ -292,12 +292,14 @@ export const DashboardTab = React.memo(({
               </button>
             </div>
           </div>
-          <button
-            onClick={() => setActiveTab('visite')}
-            className="text-xs text-[#0071E3] hover:text-[#005BB5] hover:underline font-semibold transition-colors"
-          >
-            Vedi calendario →
-          </button>
+          <div className="flex justify-end sm:justify-start w-full sm:w-auto">
+            <button
+              onClick={() => setActiveTab('visite')}
+              className="text-xs text-[#0071E3] hover:text-[#005BB5] hover:underline font-semibold transition-colors whitespace-nowrap"
+            >
+              Vedi calendario →
+            </button>
+          </div>
         </div>
 
         <div className="space-y-3">

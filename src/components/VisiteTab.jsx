@@ -424,68 +424,70 @@ export const VisiteTab = React.memo(({
       )}
 
       {/* Calendar Navigation Panel */}
-      <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white p-3.5 rounded-2xl border border-[#E5E5EA] shadow-sm">
+      <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white p-4 rounded-3xl border border-[#E5E5EA] shadow-sm">
         {calendarView !== 'list' ? (
-          <>
-            <div className="flex items-center space-x-1.5 w-full md:w-auto">
-              <button
-                onClick={() => {
-                  const d = new Date(currentCalendarDate);
-                  if (calendarView === 'month') {
-                    d.setMonth(d.getMonth() - 1);
-                  } else {
-                    d.setDate(d.getDate() - 7);
-                  }
-                  setCurrentCalendarDate(d);
-                }}
-                className="w-8 h-8 flex items-center justify-center bg-[#F5F5F7] hover:bg-[#E5E5EA] rounded-full text-[#1D1D1F] transition-all font-bold text-xs"
-              >
-                ◀
-              </button>
-              <button
-                onClick={() => {
-                  const d = new Date(currentCalendarDate);
-                  if (calendarView === 'month') {
-                    d.setMonth(d.getMonth() + 1);
-                  } else {
-                    d.setDate(d.getDate() + 7);
-                  }
-                  setCurrentCalendarDate(d);
-                }}
-                className="w-8 h-8 flex items-center justify-center bg-[#F5F5F7] hover:bg-[#E5E5EA] rounded-full text-[#1D1D1F] transition-all font-bold text-xs"
-              >
-                ▶
-              </button>
-              <button
-                onClick={() => setCurrentCalendarDate(new Date())}
-                className="px-3 py-1 bg-[#F5F5F7] hover:bg-[#E5E5EA] text-xs font-semibold rounded-lg text-gray-700 transition-all ml-1.5"
-              >
-                Oggi
-              </button>
-            </div>
-
-            <div className="text-sm font-bold text-[#1D1D1F] capitalize my-1 md:my-0">
-              {calendarView === 'month' ? (
-                `${MONTHS_IT[month]} ${year}`
-              ) : (
-                `Settimana del ${startOfWeek.toLocaleDateString('it-CH', { day: 'numeric', month: 'short' })} ${startOfWeek.getFullYear()}`
-              )}
-            </div>
-          </>
+          <div className="text-base font-bold text-[#1D1D1F] capitalize text-center md:order-2">
+            {calendarView === 'month' ? (
+              `${MONTHS_IT[month]} ${year}`
+            ) : (
+              `Settimana del ${startOfWeek.toLocaleDateString('it-CH', { day: 'numeric', month: 'short' })} ${startOfWeek.getFullYear()}`
+            )}
+          </div>
         ) : (
-          <div className="text-sm font-bold text-[#1D1D1F] w-full md:w-auto">
+          <div className="text-sm font-bold text-[#1D1D1F] text-center md:order-2">
             Elenco Completo Attività
           </div>
         )}
 
+        {calendarView !== 'list' ? (
+          <div className="flex items-center justify-center gap-1.5 w-full md:w-auto md:order-1">
+            <button
+              onClick={() => {
+                const d = new Date(currentCalendarDate);
+                if (calendarView === 'month') {
+                  d.setMonth(d.getMonth() - 1);
+                } else {
+                  d.setDate(d.getDate() - 7);
+                }
+                setCurrentCalendarDate(d);
+              }}
+              className="w-8 h-8 flex items-center justify-center bg-[#F5F5F7] hover:bg-[#E5E5EA] rounded-full text-[#1D1D1F] transition-all font-bold text-xs"
+            >
+              ◀
+            </button>
+            <button
+              onClick={() => {
+                const d = new Date(currentCalendarDate);
+                if (calendarView === 'month') {
+                  d.setMonth(d.getMonth() + 1);
+                } else {
+                  d.setDate(d.getDate() + 7);
+                }
+                setCurrentCalendarDate(d);
+              }}
+              className="w-8 h-8 flex items-center justify-center bg-[#F5F5F7] hover:bg-[#E5E5EA] rounded-full text-[#1D1D1F] transition-all font-bold text-xs"
+            >
+              ▶
+            </button>
+            <button
+              onClick={() => setCurrentCalendarDate(new Date())}
+              className="px-3 py-1.5 bg-[#F5F5F7] hover:bg-[#E5E5EA] text-xs font-semibold rounded-lg text-gray-700 transition-all ml-1"
+            >
+              Oggi
+            </button>
+          </div>
+        ) : (
+          <div className="hidden md:block md:order-1" />
+        )}
+
         {/* View Toggles & Actions */}
-        <div className="flex items-center gap-3 w-full md:w-auto justify-end">
-          <div className="flex bg-[#F5F5F7] p-1 rounded-xl overflow-x-auto shrink-0">
+        <div className="flex items-center justify-center gap-3 w-full md:w-auto md:order-3">
+          <div className="flex bg-[#F5F5F7] p-1 rounded-xl overflow-x-auto shrink-0 w-full sm:w-auto justify-center sm:justify-start">
             {[{ id: 'day', label: 'Giorno' }, { id: 'week', label: 'Settimana' }, { id: 'month', label: 'Mese' }, { id: 'list', label: 'Lista' }].map((view) => (
               <button
                 key={view.id}
                 onClick={() => setCalendarView(view.id)}
-                className={`px-3 py-1.5 sm:px-4 rounded-lg text-xs font-semibold tracking-tight transition-all whitespace-nowrap ${calendarView === view.id
+                className={`flex-1 sm:flex-initial px-3 py-1.5 sm:px-4 rounded-lg text-xs font-semibold tracking-tight transition-all whitespace-nowrap ${calendarView === view.id
                     ? 'bg-white text-[#1D1D1F] shadow-sm'
                     : 'text-[#86868B] hover:text-[#1D1D1F]'
                   }`}
@@ -499,7 +501,7 @@ export const VisiteTab = React.memo(({
           {calendarView === 'list' && (
             <button
               onClick={handleScrollToListToday}
-              className="px-3 py-1 bg-[#F5F5F7] hover:bg-[#E5E5EA] text-xs font-semibold rounded-lg text-gray-700 transition-all flex items-center gap-1.5 whitespace-nowrap"
+              className="px-3 py-1.5 bg-[#F5F5F7] hover:bg-[#E5E5EA] text-xs font-semibold rounded-lg text-gray-700 transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0"
             >
               📅 Oggi
             </button>

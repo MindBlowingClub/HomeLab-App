@@ -15,4 +15,7 @@ BEGIN
   );
   RETURN new;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+-- Revoca dei permessi di esecuzione pubblica e per utenti autenticati sulla funzione di trigger per sicurezza
+REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC, authenticated;

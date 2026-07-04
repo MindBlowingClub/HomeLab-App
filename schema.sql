@@ -130,12 +130,12 @@ ALTER TABLE public.immobili ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.visite ENABLE ROW LEVEL SECURITY;
 
 -- Policy di Sicurezza RLS per l'accesso autenticato
-CREATE POLICY "Profili visibili da autenticati" ON public.profiles FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Profili visibili da autenticati" ON public.profiles FOR SELECT TO authenticated USING (auth.uid() IS NOT NULL);
 CREATE POLICY "Modifica profilo personale" ON public.profiles FOR UPDATE TO authenticated USING (auth.uid() = id);
 
-CREATE POLICY "Contatti accessibili da autenticati" ON public.contatti FOR ALL TO authenticated USING (true);
-CREATE POLICY "Immobili accessibili da autenticati" ON public.immobili FOR ALL TO authenticated USING (true);
-CREATE POLICY "Visite accessibili da autenticati" ON public.visite FOR ALL TO authenticated USING (true);
+CREATE POLICY "Contatti accessibili da autenticati" ON public.contatti FOR ALL TO authenticated USING (auth.uid() IS NOT NULL);
+CREATE POLICY "Immobili accessibili da autenticati" ON public.immobili FOR ALL TO authenticated USING (auth.uid() IS NOT NULL);
+CREATE POLICY "Visite accessibili da autenticati" ON public.visite FOR ALL TO authenticated USING (auth.uid() IS NOT NULL);
 
 -- Trigger per l'inserimento del profilo automatico
 CREATE OR REPLACE FUNCTION public.handle_new_user()
@@ -151,11 +151,13 @@ BEGIN
   );
   RETURN new;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+
+REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC, authenticated;
 
 -- SEED DATA: CONTATTI
 INSERT INTO public.contatti (id, cognome, nome, societa, ruolo, telefono, mail, note, note_contatto, immobili_posseduti, immobili_gestiti) OVERRIDING SYSTEM VALUE VALUES
@@ -249,6 +251,6 @@ CREATE TABLE IF NOT EXISTS public.immobili_logs (
 ALTER TABLE public.immobili_logs ENABLE ROW LEVEL SECURITY;
 
 -- Policy di Sicurezza RLS per i log
-CREATE POLICY "Logs accessibili da autenticati" ON public.immobili_logs FOR ALL TO authenticated USING (true);
+CREATE POLICY "Logs accessibili da autenticati" ON public.immobili_logs FOR ALL TO authenticated USING (auth.uid() IS NOT NULL);
 
 

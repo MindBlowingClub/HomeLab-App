@@ -17,6 +17,7 @@ CREATE TABLE public.profiles (
     cognome text,
     ruolo text DEFAULT 'User',
     foto text,
+    richiede_cambio_password boolean DEFAULT true,
     updated_at timestamptz DEFAULT now(),
     created_at timestamptz DEFAULT now()
 );
@@ -140,12 +141,13 @@ CREATE POLICY "Visite accessibili da autenticati" ON public.visite FOR ALL TO au
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 BEGIN
-  INSERT INTO public.profiles (id, nome, cognome, ruolo)
+  INSERT INTO public.profiles (id, nome, cognome, ruolo, richiede_cambio_password)
   VALUES (
     new.id,
     COALESCE(new.raw_user_meta_data->>'nome', ''),
     COALESCE(new.raw_user_meta_data->>'cognome', ''),
-    COALESCE(new.raw_user_meta_data->>'ruolo', 'User')
+    COALESCE(new.raw_user_meta_data->>'ruolo', 'User'),
+    true
   );
   RETURN new;
 END;

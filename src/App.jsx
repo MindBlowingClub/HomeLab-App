@@ -684,6 +684,11 @@ export default function App() {
   const [isUserSettingsModalOpen, setIsUserSettingsModalOpen] = useState(false);
   const [isProfileEditing, setIsProfileEditing] = useState(false);
   const [tempProfileFotoUrl, setTempProfileFotoUrl] = useState(null);
+  const [showPasswordChangeForm, setShowPasswordChangeForm] = useState(false);
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [isPasswordChanging, setIsPasswordChanging] = useState(false);
 
   // Detail inspector (Immobili)
   const [viewingImmobile, setViewingImmobile] = useState(null);
@@ -919,16 +924,16 @@ export default function App() {
         // Profilo non ancora creato (trigger non eseguito): inseriscilo ora
         const { data: inserted, error: insertError } = await supabase
           .from('profiles')
-          .insert([{ id: userId, nome: 'Utente', cognome: 'HomeLab', ruolo: 'User' }])
+          .insert([{ id: userId, nome: 'Utente', cognome: 'HomeLab', ruolo: 'User', richiede_cambio_password: true }])
           .select()
           .maybeSingle();
-        setProfile((inserted ? { ...inserted, foto: localFoto || inserted.foto || '' } : null) || { nome: 'Utente', cognome: 'HomeLab', ruolo: 'User', foto: localFoto || '' });
+        setProfile((inserted ? { ...inserted, foto: localFoto || inserted.foto || '' } : null) || { id: userId, nome: 'Utente', cognome: 'HomeLab', ruolo: 'User', richiede_cambio_password: true, foto: localFoto || '' });
         if (insertError) console.warn("Impossibile creare profilo automatico:", insertError.message);
       }
     } catch (err) {
       console.warn("Profilo non trovato o errore:", err.message);
       const localFoto = localStorage.getItem(`homelab_user_foto_${userId}`);
-      setProfile({ nome: 'Utente', cognome: 'HomeLab', ruolo: 'User', foto: localFoto || '' });
+      setProfile({ id: userId, nome: 'Utente', cognome: 'HomeLab', ruolo: 'User', richiede_cambio_password: true, foto: localFoto || '' });
     }
   };
 
@@ -1365,6 +1370,96 @@ export default function App() {
     }
   };
 
+  const handleSetInitialPassword = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const password = formData.get('nuova_password');
+    const confirm = formData.get('conferma_password');
+
+    if (password !== confirm) {
+      triggerToast("Le password non coincidono", "error");
+      return;
+    }
+
+    if (!isRealSupabase) {
+      setProfile(prev => ({ ...prev, richiede_cambio_password: false }));
+      triggerToast("Password configurata (Demo)", "success");
+      return;
+    }
+
+    try {
+      const { error: authError } = await supabase.auth.updateUser({ password });
+      if (authError) throw authError;
+
+      const { error: dbError } = await supabase
+        .from('profiles')
+        .update({ richiede_cambio_password: false })
+        .eq('id', session.user.id);
+      if (dbError) throw dbError;
+
+      setProfile(prev => ({ ...prev, richiede_cambio_password: false }));
+      triggerToast("Password configurata con successo! Benvenuto.", "success");
+    } catch (err) {
+      triggerToast(err.message || "Errore durante l'aggiornamento della password", "error");
+    }
+  };
+
+  const handleUserChangePassword = async () => {
+    if (!newPassword || !oldPassword || !confirmNewPassword) {
+      triggerToast("Tutti i campi sono obbligatori", "error");
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      triggerToast("Le nuove password non coincidono", "error");
+      return;
+    }
+    if (newPassword.length < 6) {
+      triggerToast("La nuova password deve essere di almeno 6 caratteri", "error");
+      return;
+    }
+
+    setIsPasswordChanging(true);
+
+    if (!isRealSupabase) {
+      setTimeout(() => {
+        setIsPasswordChanging(false);
+        setOldPassword('');
+        setNewPassword('');
+        setConfirmNewPassword('');
+        setShowPasswordChangeForm(false);
+        triggerToast("Password aggiornata correttamente (Demo)", "success");
+      }, 800);
+      return;
+    }
+
+    try {
+      const { error: reauthError } = await supabase.auth.signInWithPassword({
+        email: session.user.email,
+        password: oldPassword,
+      });
+
+      if (reauthError) {
+        throw new Error("La vecchia password non è corretta.");
+      }
+
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (updateError) throw updateError;
+
+      setOldPassword('');
+      setNewPassword('');
+      setConfirmNewPassword('');
+      setShowPasswordChangeForm(false);
+      triggerToast("Password aggiornata con successo!", "success");
+    } catch (err) {
+      triggerToast(err.message || "Errore durante l'aggiornamento della password", "error");
+    } finally {
+      setIsPasswordChanging(false);
+    }
+  };
+
   const handleLogout = async () => {
     if (isRealSupabase && supabase) {
       await supabase.auth.signOut();
@@ -1406,6 +1501,11 @@ export default function App() {
       // Salva nel localStorage
       localStorage.setItem(`homelab_user_foto_${userId}`, fotoUrl);
 
+      const oldNome = profile?.nome || '';
+      const oldCognome = profile?.cognome || '';
+      const oldFullName = `${oldNome} ${oldCognome}`.trim().toUpperCase();
+      const newFullName = `${nome} ${cognome}`.trim().toUpperCase();
+
       if (isRealSupabase && supabase) {
         const { error } = await supabase
           .from('profiles')
@@ -1416,6 +1516,25 @@ export default function App() {
         try {
           await supabase.from('profiles').update({ foto: fotoUrl }).eq('id', userId);
         } catch (_) {}
+
+        // Se il nome completo è cambiato, aggiorna tutte le attività del calendario collegate
+        if (oldFullName !== newFullName && oldFullName !== '') {
+          const { error: updateVisiteError } = await supabase
+            .from('visite')
+            .update({ creato_da: newFullName })
+            .eq('creato_da', oldFullName);
+          if (updateVisiteError) console.warn("Errore aggiornamento creato_da in visite:", updateVisiteError.message);
+        }
+      }
+
+      // Aggiorna lo stato delle visite a livello locale (React state)
+      if (oldFullName !== newFullName && oldFullName !== '') {
+        setVisite(prev => prev.map(v => {
+          if ((v.creato_da || '').toUpperCase() === oldFullName) {
+            return { ...v, creato_da: newFullName };
+          }
+          return v;
+        }));
       }
 
       setProfile(prev => ({ ...prev, nome, cognome, foto: fotoUrl }));
@@ -2930,10 +3049,69 @@ export default function App() {
           </footer>
 
         </div>
+      ) : profile?.richiede_cambio_password ? (
+        /* ========================================================= */
+        /* Primo Cambio Password */
+        /* ========================================================= */
+        <div className="min-h-screen flex flex-col justify-between items-center px-4 py-12 relative z-10 text-[#1D1D1F] w-full">
+          {/* Header */}
+          <div className="flex items-center space-x-3 mt-4">
+            <div className="w-10 h-10 flex items-center justify-center">
+              <img src="https://vndajxcmgqjybhvppkqe.supabase.co/storage/v1/object/public/immobili-media/images/HomeLab-Nero.png" alt="Logo" className="w-full h-full object-contain" />
+            </div>
+            <div>
+              <h1 className="text-base font-bold tracking-tight text-[#1D1D1F]">HomeLab CRM</h1>
+              <p className="text-xs text-[#86868B] font-medium">Sicurezza Account</p>
+            </div>
+          </div>
+
+          {/* Form Card */}
+          <div className="w-full max-w-md glass-modal p-8 rounded-3xl transition-all duration-300 my-auto">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-bold text-[#1D1D1F] tracking-tight">Primo Accesso</h2>
+              <p className="text-xs text-[#86868B] mt-2">Per motivi di sicurezza, configura la tua nuova password personale prima di accedere al CRM.</p>
+            </div>
+
+            <form onSubmit={handleSetInitialPassword} className="space-y-4">
+              <div>
+                <label className="block text-[11px] font-semibold text-[#86868B] uppercase tracking-wider mb-1.5">Nuova Password</label>
+                <input
+                  type="password"
+                  required
+                  placeholder="Almeno 6 caratteri"
+                  name="nuova_password"
+                  className="w-full px-4 py-2.5 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all text-[#1D1D1F]"
+                  minLength="6"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-[#86868B] uppercase tracking-wider mb-1.5">Conferma Password</label>
+                <input
+                  type="password"
+                  required
+                  placeholder="Ripeti la password"
+                  name="conferma_password"
+                  className="w-full px-4 py-2.5 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all text-[#1D1D1F]"
+                  minLength="6"
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-3 bg-[#0071E3] hover:bg-[#0077ED] text-white rounded-xl font-bold text-sm transition-all shadow-sm flex items-center justify-center space-x-2 mt-6 active:scale-[0.98]"
+              >
+                Configura Password
+              </button>
+            </form>
+          </div>
+
+          {/* Footer */}
+          <footer className="text-center text-xs text-[#86868B] mt-8">
+            <p>© 2026 HomeLab App Starter • Connessione protetta</p>
+          </footer>
+        </div>
       ) : (
-        /* ========================================================= */
-        /* Protezione superata: Dashboard CRM Completa */
-        /* ========================================================= */
         <div className="flex flex-col md:flex-row h-screen bg-transparent text-[#1D1D1F] antialiased overflow-hidden relative z-10 w-full">
 
           {/* MOBILE TOP HEADER */}
@@ -4361,6 +4539,82 @@ export default function App() {
                         />
                       </div>
                     </div>
+
+                    {/* Collapsible Password Change Section */}
+                    {!isProfileEditing && (
+                      <div className="pt-4 border-t border-[#E5E5EA] space-y-4">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowPasswordChangeForm(!showPasswordChangeForm);
+                            setOldPassword('');
+                            setNewPassword('');
+                            setConfirmNewPassword('');
+                          }}
+                          className="w-full flex items-center justify-between py-1 text-xs font-bold text-[#0071E3] hover:underline"
+                        >
+                          <span className="flex items-center gap-1.5">
+                            🔑 Cambia Password Account
+                          </span>
+                          <span>{showPasswordChangeForm ? 'Nascondi' : 'Mostra'}</span>
+                        </button>
+
+                        {showPasswordChangeForm && (
+                          <div className="space-y-3.5 animate-fade-in bg-[#F5F5F7] p-4 rounded-2xl border border-[#E5E5EA]">
+                            <div>
+                              <label className="block text-[10px] font-bold text-[#86868B] mb-1 uppercase tracking-wider">Vecchia Password</label>
+                              <input
+                                type="password"
+                                value={oldPassword}
+                                onChange={(e) => setOldPassword(e.target.value)}
+                                placeholder="Password attuale"
+                                className="w-full px-3 py-2 bg-white border border-[#D2D2D7] rounded-xl text-xs focus:outline-none focus:border-[#0071E3] text-[#1D1D1F]"
+                                required
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-bold text-[#86868B] mb-1 uppercase tracking-wider">Nuova Password</label>
+                              <input
+                                type="password"
+                                value={newPassword}
+                                onChange={(e) => setNewPassword(e.target.value)}
+                                placeholder="Almeno 6 caratteri"
+                                className="w-full px-3 py-2 bg-white border border-[#D2D2D7] rounded-xl text-xs focus:outline-none focus:border-[#0071E3] text-[#1D1D1F]"
+                                minLength="6"
+                                required
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-bold text-[#86868B] mb-1 uppercase tracking-wider">Conferma Nuova Password</label>
+                              <input
+                                type="password"
+                                value={confirmNewPassword}
+                                onChange={(e) => setConfirmNewPassword(e.target.value)}
+                                placeholder="Ripeti nuova password"
+                                className="w-full px-3 py-2 bg-white border border-[#D2D2D7] rounded-xl text-xs focus:outline-none focus:border-[#0071E3] text-[#1D1D1F]"
+                                minLength="6"
+                                required
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={handleUserChangePassword}
+                              disabled={isPasswordChanging}
+                              className="w-full py-2 bg-[#0071E3] hover:bg-[#0077ED] text-white text-xs font-semibold rounded-xl transition-all shadow-sm flex items-center justify-center space-x-1.5 active:scale-[0.98] disabled:opacity-50 mt-2"
+                            >
+                              {isPasswordChanging ? (
+                                <svg className="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                </svg>
+                              ) : (
+                                <span>Salva Nuova Password</span>
+                              )}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {/* Logout Button */}
                     {!isProfileEditing && (

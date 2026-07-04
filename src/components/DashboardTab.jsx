@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { IconPlus } from './Icons';
 
 export const DashboardTab = React.memo(({
@@ -66,13 +66,19 @@ export const DashboardTab = React.memo(({
     .reduce((acc, curr) => acc + (Number(curr.prezzo_di_vendita) || 0), 0) / 1000000
   ).toFixed(2);
 
+  const [showMyEventsOnly, setShowMyEventsOnly] = useState(true);
+  const userDisplayName = profile?.nome ? `${profile.nome} ${profile.cognome || ''}`.trim().toUpperCase() : 'MASSIMILIANO BOLDI';
+
   const upcomingEvents = [...visite]
     .filter(v => new Date(v.inizio_evento) >= new Date().setHours(0, 0, 0, 0))
+    .filter(v => !showMyEventsOnly || (v.creato_da || '').toUpperCase() === userDisplayName)
     .sort((a, b) => new Date(a.inizio_evento) - new Date(b.inizio_evento));
 
   const totalEvents = upcomingEvents.length > 0
     ? upcomingEvents
-    : [...visite].sort((a, b) => new Date(a.inizio_evento) - new Date(b.inizio_evento));
+    : [...visite]
+        .filter(v => !showMyEventsOnly || (v.creato_da || '').toUpperCase() === userDisplayName)
+        .sort((a, b) => new Date(a.inizio_evento) - new Date(b.inizio_evento));
 
   const eventsToShow = totalEvents.slice(0, 5);
   const extraCount = totalEvents.length - 5;
@@ -261,7 +267,31 @@ export const DashboardTab = React.memo(({
       {/* Prossime Attività in Calendario */}
       <div className="bg-white p-6 rounded-3xl border border-[#E5E5EA] shadow-sm">
         <div className="flex justify-between items-center mb-4 pb-2 border-b border-[#F5F5F7]">
-          <h3 className="text-lg font-semibold tracking-tight text-[#1D1D1F]">Prossime Attività</h3>
+          <div className="flex items-center gap-3">
+            <h3 className="text-lg font-semibold tracking-tight text-[#1D1D1F]">Prossime Attività</h3>
+            <div className="flex bg-[#F5F5F7] p-1 rounded-xl shrink-0 border border-transparent">
+              <button
+                onClick={() => setShowMyEventsOnly(false)}
+                className={`px-3 py-1 rounded-lg text-[10px] font-semibold transition-all ${
+                  !showMyEventsOnly
+                    ? 'bg-white text-[#1D1D1F] shadow-sm'
+                    : 'text-[#86868B] hover:text-[#1D1D1F]'
+                }`}
+              >
+                Tutti
+              </button>
+              <button
+                onClick={() => setShowMyEventsOnly(true)}
+                className={`px-3 py-1 rounded-lg text-[10px] font-semibold transition-all whitespace-nowrap ${
+                  showMyEventsOnly
+                    ? 'bg-white text-[#1D1D1F] shadow-sm'
+                    : 'text-[#86868B] hover:text-[#1D1D1F]'
+                }`}
+              >
+                Solo mie
+              </button>
+            </div>
+          </div>
           <button
             onClick={() => setActiveTab('visite')}
             className="text-xs text-[#0071E3] hover:text-[#005BB5] hover:underline font-semibold transition-colors"

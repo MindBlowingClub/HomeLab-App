@@ -764,6 +764,14 @@ export default function App() {
     }
   }, []);
 
+  // Pre-filter calendar for all logged-in users (admin, editor, etc.)
+  useEffect(() => {
+    if (profile) {
+      const userDisplayName = `${profile.nome || ''} ${profile.cognome || ''}`.trim().toUpperCase();
+      setFilterVisitAgent(userDisplayName);
+    }
+  }, [profile]);
+
   // --- SUPABASE REALTIME SUBSCRIPTIONS ---
   useEffect(() => {
     if (!isRealSupabase || !supabase) return;
@@ -6398,7 +6406,17 @@ export default function App() {
                                 type={isCalendarAllDay ? "date" : "datetime-local"}
                                 name="inizio_evento"
                                 required
-                                defaultValue={currentVisita ? new Date(new Date(currentVisita.inizio_evento) - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, isCalendarAllDay ? 10 : 16) : new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, isCalendarAllDay ? 10 : 16)}
+                                defaultValue={currentVisita ? new Date(new Date(currentVisita.inizio_evento) - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, isCalendarAllDay ? 10 : 16) : (() => {
+                                   const rounded = new Date();
+                                   const minutes = rounded.getMinutes();
+                                   if (minutes < 30) {
+                                     rounded.setMinutes(0, 0, 0);
+                                   } else {
+                                     rounded.setHours(rounded.getHours() + 1);
+                                     rounded.setMinutes(0, 0, 0);
+                                   }
+                                   return new Date(rounded.getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, isCalendarAllDay ? 10 : 16);
+                                 })()}
                                 className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none"
                               />
                             </div>
@@ -6410,10 +6428,20 @@ export default function App() {
                                 name="fine_evento"
                                 required
                                 defaultValue={currentVisita && currentVisita.fine_evento ? new Date(new Date(currentVisita.fine_evento) - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, isCalendarAllDay ? 10 : 16) : (() => {
-                                  const baseDate = currentVisita ? new Date(currentVisita.inizio_evento) : new Date();
+                                  const baseDate = currentVisita ? new Date(currentVisita.inizio_evento) : (() => {
+                                    const rounded = new Date();
+                                    const minutes = rounded.getMinutes();
+                                    if (minutes < 30) {
+                                      rounded.setMinutes(0, 0, 0);
+                                    } else {
+                                      rounded.setHours(rounded.getHours() + 1);
+                                      rounded.setMinutes(0, 0, 0);
+                                    }
+                                    return rounded;
+                                  })();
                                   const offsetMultiplier = isCalendarAllDay ? 0 : 60 * 60 * 1000;
                                   const nextDate = new Date(baseDate.getTime() + offsetMultiplier);
-                                  return new Date(nextDate - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, isCalendarAllDay ? 10 : 16);
+                                  return new Date(nextDate.getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, isCalendarAllDay ? 10 : 16);
                                 })()}
                                 className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none"
                               />

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { IconSearch } from './Icons';
 
 export const VisiteTab = React.memo(({
@@ -45,6 +45,16 @@ export const VisiteTab = React.memo(({
 }) => {
   if (activeTab !== 'visite') return null;
 
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768 || window.matchMedia('(pointer: coarse)').matches);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   // Local helpers
   const getContactName = (id) => {
     const contact = contatti.find(c => c.id === id);
@@ -56,6 +66,13 @@ export const VisiteTab = React.memo(({
     const imm = immobili.find(i => Number(i.id) === Number(id));
     return imm ? (imm.nome || imm.nome_immobile) : 'Immobile sconosciuto';
   };
+
+  const hasActiveFilters = 
+    filterVisitAgent !== 'Tutti' || 
+    filterVisitClient !== 'Tutti' || 
+    filterVisitProperty !== 'Tutti' || 
+    filterVisitType !== 'Tutti' || 
+    filterVisitOutcome !== 'Tutti';
 
   // Memoized stats and filtered list
   const visiteStats = useMemo(() => {
@@ -292,46 +309,93 @@ export const VisiteTab = React.memo(({
               className="w-full pl-9 pr-4 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all text-[#1D1D1F]"
             />
           </div>
+          <div className="flex bg-[#F5F5F7] p-1 rounded-xl shrink-0 border border-transparent">
+            <button
+              onClick={() => setFilterVisitAgent('Tutti')}
+              className={`px-3 py-1 rounded-lg text-[10px] font-semibold transition-all ${
+                filterVisitAgent === 'Tutti'
+                  ? 'bg-white text-[#1D1D1F] shadow-sm'
+                  : 'text-[#86868B] hover:text-[#1D1D1F]'
+              }`}
+            >
+              Tutti
+            </button>
+            <button
+              onClick={() => {
+                const userDisplayName = profile?.nome ? `${profile.nome} ${profile.cognome || ''}`.trim().toUpperCase() : 'MASSIMILIANO BOLDI';
+                setFilterVisitAgent(userDisplayName);
+              }}
+              className={`px-3 py-1 rounded-lg text-[10px] font-semibold transition-all whitespace-nowrap ${
+                filterVisitAgent !== 'Tutti' && filterVisitAgent.toUpperCase() === (profile?.nome ? `${profile.nome} ${profile.cognome || ''}`.trim().toUpperCase() : 'MASSIMILIANO BOLDI')
+                  ? 'bg-white text-[#1D1D1F] shadow-sm'
+                  : 'text-[#86868B] hover:text-[#1D1D1F]'
+              }`}
+            >
+              Solo miei
+            </button>
+          </div>
           <button
             onClick={() => setShowAdvancedCalendarFilters(!showAdvancedCalendarFilters)}
             className={`px-3 py-2 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all shrink-0 ${
               showAdvancedCalendarFilters
-                ? 'bg-[#0071E3] text-white border-transparent'
-                : 'bg-[#F5F5F7] hover:bg-[#E5E5EA]/50 border-transparent text-[#1D1D1F]'
+                ? 'bg-[#0071E3] text-white border-transparent shadow-sm'
+                : hasActiveFilters
+                  ? 'bg-blue-50 hover:bg-blue-100/70 border-blue-200 text-[#0071E3] font-bold'
+                  : 'bg-[#F5F5F7] hover:bg-[#E5E5EA]/50 border-transparent text-[#1D1D1F]'
             }`}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
             </svg>
             <span>Filtri</span>
-            {(filterVisitAgent !== 'Tutti' || filterVisitClient !== 'Tutti' || filterVisitProperty !== 'Tutti' || filterVisitType !== 'Tutti' || filterVisitOutcome !== 'Tutti') && (
-              <span className={`w-2 h-2 rounded-full ${showAdvancedCalendarFilters ? 'bg-white' : 'bg-[#0071E3]'}`}></span>
+            {hasActiveFilters && (
+              <span className={`w-2 h-2 rounded-full ${showAdvancedCalendarFilters ? 'bg-white' : 'bg-[#0071E3] animate-pulse'}`}></span>
             )}
           </button>
         </div>
 
-        {/* View Toggles */}
-        <div className="flex bg-[#F5F5F7] p-1 rounded-xl w-full sm:w-auto overflow-x-auto shrink-0">
-          {[{ id: 'day', label: 'Giorno' }, { id: 'week', label: 'Settimana' }, { id: 'month', label: 'Mese' }, { id: 'list', label: 'Lista' }].map((view) => (
+        {/* View Toggles & Reset */}
+        <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+          {hasActiveFilters && (
             <button
-              key={view.id}
-              onClick={() => setCalendarView(view.id)}
-              className={`flex-1 sm:flex-initial px-4 py-1.5 rounded-lg text-xs font-semibold tracking-tight transition-all whitespace-nowrap ${calendarView === view.id
-                  ? 'bg-white text-[#1D1D1F] shadow-sm'
-                  : 'text-[#86868B] hover:text-[#1D1D1F]'
-                }`}
+              onClick={() => {
+                setSearchVisit('');
+                setFilterVisitAgent('Tutti');
+                setFilterVisitClient('Tutti');
+                setFilterVisitProperty('Tutti');
+                setFilterVisitType('Tutti');
+                setFilterVisitOutcome('Tutti');
+              }}
+              className="text-xs font-semibold text-red-500 hover:text-red-600 transition-colors px-2 py-1 flex items-center gap-1 hover:underline cursor-pointer shrink-0"
             >
-              {view.id === 'day' ? '☀️ ' : view.id === 'week' ? '🗓️ ' : view.id === 'month' ? '📅 ' : '📝 '}
-              {view.label}
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              <span>Azzera filtri</span>
             </button>
-          ))}
+          )}
+          <div className="flex bg-[#F5F5F7] p-1 rounded-xl overflow-x-auto shrink-0">
+            {[{ id: 'day', label: 'Giorno' }, { id: 'week', label: 'Settimana' }, { id: 'month', label: 'Mese' }, { id: 'list', label: 'Lista' }].map((view) => (
+              <button
+                key={view.id}
+                onClick={() => setCalendarView(view.id)}
+                className={`flex-1 sm:flex-initial px-4 py-1.5 rounded-lg text-xs font-semibold tracking-tight transition-all whitespace-nowrap ${calendarView === view.id
+                    ? 'bg-white text-[#1D1D1F] shadow-sm'
+                    : 'text-[#86868B] hover:text-[#1D1D1F]'
+                  }`}
+              >
+                {view.id === 'day' ? '☀️ ' : view.id === 'week' ? '🗓️ ' : view.id === 'month' ? '📅 ' : '📝 '}
+                {view.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* Advanced Filters Panel */}
       {showAdvancedCalendarFilters && (
         <div className="bg-white p-5 rounded-2xl border border-[#E5E5EA] shadow-sm animate-fade-in space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {/* Agente / Dipendente */}
             <div>
               <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868B] mb-1">Agente / Dipendente</label>
@@ -376,56 +440,7 @@ export const VisiteTab = React.memo(({
                 ))}
               </select>
             </div>
-
-            {/* Tipologia */}
-            <div>
-              <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868B] mb-1">Tipologia</label>
-              <select
-                value={filterVisitType}
-                onChange={(e) => setFilterVisitType(e.target.value)}
-                className="w-full px-3 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] transition-all"
-              >
-                <option value="Tutti">Tutte le tipologie</option>
-                <option value="Shooting Fotografico">Shooting Fotografico</option>
-                <option value="Visita Cliente">Visita Cliente</option>
-                <option value="Primo Incontro">Primo Incontro</option>
-                <option value="Sopralluogo Tecnico">Sopralluogo Tecnico</option>
-              </select>
-            </div>
-
-            {/* Esito */}
-            <div>
-              <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868B] mb-1">Esito</label>
-              <select
-                value={filterVisitOutcome}
-                onChange={(e) => setFilterVisitOutcome(e.target.value)}
-                className="w-full px-3 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] transition-all"
-              >
-                <option value="Tutti">Tutti gli esiti</option>
-                <option value="NEUTRO">Neutro</option>
-                <option value="POSITIVO">Positivo</option>
-                <option value="NEGATIVO">Negativo</option>
-              </select>
-            </div>
           </div>
-
-          {(searchVisit || filterVisitAgent !== 'Tutti' || filterVisitClient !== 'Tutti' || filterVisitProperty !== 'Tutti' || filterVisitType !== 'Tutti' || filterVisitOutcome !== 'Tutti') && (
-            <div className="flex justify-end">
-              <button
-                onClick={() => {
-                  setSearchVisit('');
-                  setFilterVisitAgent('Tutti');
-                  setFilterVisitClient('Tutti');
-                  setFilterVisitProperty('Tutti');
-                  setFilterVisitType('Tutti');
-                  setFilterVisitOutcome('Tutti');
-                }}
-                className="text-xs text-[#0071E3] hover:underline font-bold"
-              >
-                Resetta tutti i filtri ✕
-              </button>
-            </div>
-          )}
         </div>
       )}
 
@@ -439,8 +454,6 @@ export const VisiteTab = React.memo(({
                   const d = new Date(currentCalendarDate);
                   if (calendarView === 'month') {
                     d.setMonth(d.getMonth() - 1);
-                  } else if (calendarView === 'day') {
-                    d.setDate(d.getDate() - 1);
                   } else {
                     d.setDate(d.getDate() - 7);
                   }
@@ -455,8 +468,6 @@ export const VisiteTab = React.memo(({
                   const d = new Date(currentCalendarDate);
                   if (calendarView === 'month') {
                     d.setMonth(d.getMonth() + 1);
-                  } else if (calendarView === 'day') {
-                    d.setDate(d.getDate() + 1);
                   } else {
                     d.setDate(d.getDate() + 7);
                   }
@@ -471,8 +482,6 @@ export const VisiteTab = React.memo(({
             <div className="text-sm font-bold text-[#1D1D1F] capitalize">
               {calendarView === 'month' ? (
                 `${MONTHS_IT[month]} ${year}`
-              ) : calendarView === 'day' ? (
-                currentCalendarDate.toLocaleDateString('it-CH', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
               ) : (
                 `Settimana del ${startOfWeek.toLocaleDateString('it-CH', { day: 'numeric', month: 'short' })} ${startOfWeek.getFullYear()}`
               )}
@@ -803,12 +812,14 @@ export const VisiteTab = React.memo(({
                         onDragOver={(e) => e.preventDefault()}
                         onDrop={(e) => handleDropEvent(e, wDay.dayNum, wDay.month, wDay.year, hour)}
                       >
-                        <button
-                          onClick={() => handleAddOnDate(wDay.dayNum, wDay.month, wDay.year, hour)}
-                          className="absolute inset-0 opacity-0 group-hover:opacity-100 flex items-center justify-center text-xs font-bold text-[#0071E3] hover:bg-[#0071E3]/5 transition-all z-0"
-                        >
-                          ＋
-                        </button>
+                        {!isMobile && (
+                          <button
+                            onClick={() => handleAddOnDate(wDay.dayNum, wDay.month, wDay.year, hour)}
+                            className="absolute inset-0 opacity-0 group-hover:opacity-100 flex items-center justify-center text-xs font-bold text-[#0071E3] hover:bg-[#0071E3]/5 transition-all z-0"
+                          >
+                            ＋
+                          </button>
+                        )}
                       </div>
                     ))}
 
@@ -834,8 +845,12 @@ export const VisiteTab = React.memo(({
                       return (
                         <div
                           key={event.id}
-                          draggable={true}
+                          draggable={!isMobile}
                           onDragStart={(e) => {
+                            if (isMobile) {
+                              e.preventDefault();
+                              return;
+                            }
                             if (!canModifyEvent(event)) {
                               e.preventDefault();
                               triggerToast("Non hai i permessi per spostare questo evento", "error");
@@ -880,12 +895,14 @@ export const VisiteTab = React.memo(({
                           )}
 
                           {/* Resize Handle */}
-                          <div 
-                            className="absolute bottom-0 left-0 right-0 h-1.5 cursor-ns-resize hover:bg-[#0071E3]/20 bg-transparent flex items-center justify-center select-none z-20"
-                            onMouseDown={(e) => handleResizeMouseDown(e, event)}
-                          >
-                            <div className="w-5 h-0.5 bg-gray-400/30 rounded-full"></div>
-                          </div>
+                          {!isMobile && (
+                            <div 
+                              className="absolute bottom-0 left-0 right-0 h-1.5 cursor-ns-resize hover:bg-[#0071E3]/20 bg-transparent flex items-center justify-center select-none z-20"
+                              onMouseDown={(e) => handleResizeMouseDown(e, event)}
+                            >
+                              <div className="w-5 h-0.5 bg-gray-400/30 rounded-full"></div>
+                            </div>
+                          )}
                         </div>
                       );
                     })}

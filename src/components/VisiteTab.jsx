@@ -106,7 +106,7 @@ export const VisiteTab = React.memo(({
     });
 
     const totalActivities = filteredVisite.length;
-    const customerVisits = filteredVisite.filter(v => v.tipo_visita === 'Visita Cliente').length;
+    const customerVisits = filteredVisite.filter(v => v.cliente_id && String(v.cliente_id).trim() !== '').length;
     const withOutcome = filteredVisite.filter(v => v.esito_e_note === 'POSITIVO' || v.esito_e_note === 'NEGATIVO');
     const positiveCount = filteredVisite.filter(v => v.esito_e_note === 'POSITIVO').length;
     const successRate = withOutcome.length > 0 ? Math.round((positiveCount / withOutcome.length) * 100) : 0;
@@ -269,7 +269,7 @@ export const VisiteTab = React.memo(({
       </div>
 
       {/* CRM Stats Widgets */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-4">
         <div className="glass-panel p-4 rounded-2xl border border-[#E5E5EA] bg-white flex flex-col justify-between shadow-sm">
           <span className="text-[10px] uppercase font-bold tracking-wider text-[#86868B]">Attività Totali</span>
           <span className="text-2xl font-black text-[#1D1D1F] mt-1">{totalActivities}</span>
@@ -280,23 +280,16 @@ export const VisiteTab = React.memo(({
           <span className="text-2xl font-black text-[#0071E3] mt-1">{customerVisits}</span>
           <span className="text-[10px] text-gray-400 mt-0.5">Sopralluoghi di vendita/affitto</span>
         </div>
-        <div className="glass-panel p-4 rounded-2xl border border-[#E5E5EA] bg-white flex flex-col justify-between shadow-sm">
-          <span className="text-[10px] uppercase font-bold tracking-wider text-[#86868B]">Tasso Successo</span>
-          <span className="text-2xl font-black text-[#34C759] mt-1">{successRate}%</span>
-          <span className="text-[10px] text-gray-400 mt-0.5">Esiti POSITIVI su conclusi</span>
-        </div>
-        <div className="glass-panel p-4 rounded-2xl border border-[#E5E5EA] bg-white flex flex-col justify-between shadow-sm">
-          <span className="text-[10px] uppercase font-bold tracking-wider text-[#86868B]">Agente Più Attivo</span>
-          <span className="text-base font-bold text-[#1D1D1F] mt-1 truncate" title={mostActiveAgent}>
-            {mostActiveAgent}
-          </span>
-          <span className="text-[10px] text-gray-400 mt-0.5">{maxAgentActivities} attività registrate</span>
-        </div>
       </div>
 
       {/* Search Bar Row & Toggle */}
-      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white p-4 rounded-3xl border border-[#E5E5EA] shadow-sm">
-        <div className="flex items-center gap-3 w-full sm:flex-1">
+      <div className={`flex flex-col sm:flex-row gap-4 items-center justify-between bg-white p-4 rounded-3xl border transition-all duration-300 ${
+        hasActiveFilters 
+          ? 'border-blue-500/30 shadow-md shadow-blue-500/5 bg-gradient-to-r from-white via-blue-50/10 to-white' 
+          : 'border-[#E5E5EA] shadow-sm'
+      }`}>
+        {/* Search and Advanced Filters Button */}
+        <div className="flex gap-2 w-full sm:w-auto flex-1 max-w-lg">
           <div className="relative flex-1">
             <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
               <IconSearch />
@@ -308,31 +301,6 @@ export const VisiteTab = React.memo(({
               onChange={(e) => setSearchVisit(e.target.value)}
               className="w-full pl-9 pr-4 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all text-[#1D1D1F]"
             />
-          </div>
-          <div className="flex bg-[#F5F5F7] p-1 rounded-xl shrink-0 border border-transparent">
-            <button
-              onClick={() => setFilterVisitAgent('Tutti')}
-              className={`px-3 py-1 rounded-lg text-[10px] font-semibold transition-all ${
-                filterVisitAgent === 'Tutti'
-                  ? 'bg-white text-[#1D1D1F] shadow-sm'
-                  : 'text-[#86868B] hover:text-[#1D1D1F]'
-              }`}
-            >
-              Tutti
-            </button>
-            <button
-              onClick={() => {
-                const userDisplayName = profile?.nome ? `${profile.nome} ${profile.cognome || ''}`.trim().toUpperCase() : 'MASSIMILIANO BOLDI';
-                setFilterVisitAgent(userDisplayName);
-              }}
-              className={`px-3 py-1 rounded-lg text-[10px] font-semibold transition-all whitespace-nowrap ${
-                filterVisitAgent !== 'Tutti' && filterVisitAgent.toUpperCase() === (profile?.nome ? `${profile.nome} ${profile.cognome || ''}`.trim().toUpperCase() : 'MASSIMILIANO BOLDI')
-                  ? 'bg-white text-[#1D1D1F] shadow-sm'
-                  : 'text-[#86868B] hover:text-[#1D1D1F]'
-              }`}
-            >
-              Solo miei
-            </button>
           </div>
           <button
             onClick={() => setShowAdvancedCalendarFilters(!showAdvancedCalendarFilters)}
@@ -354,7 +322,7 @@ export const VisiteTab = React.memo(({
           </button>
         </div>
 
-        {/* View Toggles & Reset */}
+        {/* Reset button and Segmented Toggle */}
         <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
           {hasActiveFilters && (
             <button
@@ -374,20 +342,31 @@ export const VisiteTab = React.memo(({
               <span>Azzera filtri</span>
             </button>
           )}
-          <div className="flex bg-[#F5F5F7] p-1 rounded-xl overflow-x-auto shrink-0">
-            {[{ id: 'day', label: 'Giorno' }, { id: 'week', label: 'Settimana' }, { id: 'month', label: 'Mese' }, { id: 'list', label: 'Lista' }].map((view) => (
-              <button
-                key={view.id}
-                onClick={() => setCalendarView(view.id)}
-                className={`flex-1 sm:flex-initial px-4 py-1.5 rounded-lg text-xs font-semibold tracking-tight transition-all whitespace-nowrap ${calendarView === view.id
-                    ? 'bg-white text-[#1D1D1F] shadow-sm'
-                    : 'text-[#86868B] hover:text-[#1D1D1F]'
-                  }`}
-              >
-                {view.id === 'day' ? '☀️ ' : view.id === 'week' ? '🗓️ ' : view.id === 'month' ? '📅 ' : '📝 '}
-                {view.label}
-              </button>
-            ))}
+
+          <div className="flex bg-[#F5F5F7] p-1 rounded-xl shrink-0 border border-transparent">
+            <button
+              onClick={() => setFilterVisitAgent('Tutti')}
+              className={`px-4 py-1.5 rounded-lg text-xs font-semibold tracking-tight transition-all ${
+                filterVisitAgent === 'Tutti'
+                  ? 'bg-white text-[#1D1D1F] shadow-sm'
+                  : 'text-[#86868B] hover:text-[#1D1D1F]'
+              }`}
+            >
+              Tutti
+            </button>
+            <button
+              onClick={() => {
+                const userDisplayName = profile?.nome ? `${profile.nome} ${profile.cognome || ''}`.trim().toUpperCase() : 'MASSIMILIANO BOLDI';
+                setFilterVisitAgent(userDisplayName);
+              }}
+              className={`px-4 py-1.5 rounded-lg text-xs font-semibold tracking-tight transition-all whitespace-nowrap ${
+                filterVisitAgent !== 'Tutti' && filterVisitAgent.toUpperCase() === (profile?.nome ? `${profile.nome} ${profile.cognome || ''}`.trim().toUpperCase() : 'MASSIMILIANO BOLDI')
+                  ? 'bg-white text-[#1D1D1F] shadow-sm'
+                  : 'text-[#86868B] hover:text-[#1D1D1F]'
+              }`}
+            >
+              Solo miei
+            </button>
           </div>
         </div>
       </div>
@@ -445,10 +424,10 @@ export const VisiteTab = React.memo(({
       )}
 
       {/* Calendar Navigation Panel */}
-      <div className="flex items-center justify-between bg-white p-3 rounded-2xl border border-[#E5E5EA] shadow-sm">
+      <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white p-3.5 rounded-2xl border border-[#E5E5EA] shadow-sm">
         {calendarView !== 'list' ? (
           <>
-            <div className="flex items-center space-x-1.5">
+            <div className="flex items-center space-x-1.5 w-full md:w-auto">
               <button
                 onClick={() => {
                   const d = new Date(currentCalendarDate);
@@ -477,36 +456,55 @@ export const VisiteTab = React.memo(({
               >
                 ▶
               </button>
+              <button
+                onClick={() => setCurrentCalendarDate(new Date())}
+                className="px-3 py-1 bg-[#F5F5F7] hover:bg-[#E5E5EA] text-xs font-semibold rounded-lg text-gray-700 transition-all ml-1.5"
+              >
+                Oggi
+              </button>
             </div>
 
-            <div className="text-sm font-bold text-[#1D1D1F] capitalize">
+            <div className="text-sm font-bold text-[#1D1D1F] capitalize my-1 md:my-0">
               {calendarView === 'month' ? (
                 `${MONTHS_IT[month]} ${year}`
               ) : (
                 `Settimana del ${startOfWeek.toLocaleDateString('it-CH', { day: 'numeric', month: 'short' })} ${startOfWeek.getFullYear()}`
               )}
             </div>
-
-            <button
-              onClick={() => setCurrentCalendarDate(new Date())}
-              className="px-3 py-1 bg-[#F5F5F7] hover:bg-[#E5E5EA] text-xs font-semibold rounded-lg text-gray-700 transition-all"
-            >
-              Oggi
-            </button>
           </>
         ) : (
-          <>
-            <div className="text-sm font-bold text-[#1D1D1F]">
-              Elenco Completo Attività
-            </div>
+          <div className="text-sm font-bold text-[#1D1D1F] w-full md:w-auto">
+            Elenco Completo Attività
+          </div>
+        )}
+
+        {/* View Toggles & Actions */}
+        <div className="flex items-center gap-3 w-full md:w-auto justify-end">
+          <div className="flex bg-[#F5F5F7] p-1 rounded-xl overflow-x-auto shrink-0">
+            {[{ id: 'day', label: 'Giorno' }, { id: 'week', label: 'Settimana' }, { id: 'month', label: 'Mese' }, { id: 'list', label: 'Lista' }].map((view) => (
+              <button
+                key={view.id}
+                onClick={() => setCalendarView(view.id)}
+                className={`px-3 py-1.5 sm:px-4 rounded-lg text-xs font-semibold tracking-tight transition-all whitespace-nowrap ${calendarView === view.id
+                    ? 'bg-white text-[#1D1D1F] shadow-sm'
+                    : 'text-[#86868B] hover:text-[#1D1D1F]'
+                  }`}
+              >
+                {view.id === 'day' ? '☀️ ' : view.id === 'week' ? '🗓️ ' : view.id === 'month' ? '📅 ' : '📝 '}
+                {view.label}
+              </button>
+            ))}
+          </div>
+
+          {calendarView === 'list' && (
             <button
               onClick={handleScrollToListToday}
-              className="px-3 py-1 bg-[#F5F5F7] hover:bg-[#E5E5EA] text-xs font-semibold rounded-lg text-gray-700 transition-all flex items-center gap-1.5"
+              className="px-3 py-1 bg-[#F5F5F7] hover:bg-[#E5E5EA] text-xs font-semibold rounded-lg text-gray-700 transition-all flex items-center gap-1.5 whitespace-nowrap"
             >
-              📅 Vai a Oggi
+              📅 Oggi
             </button>
-          </>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Month View Grid */}

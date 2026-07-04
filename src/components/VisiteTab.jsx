@@ -477,11 +477,18 @@ export const VisiteTab = React.memo(({
             </button>
           </div>
         ) : (
-          <div className="hidden md:block md:order-1" />
+          <div className="flex items-center justify-center gap-1.5 w-full md:w-auto md:order-1">
+            <button
+              onClick={handleScrollToListToday}
+              className="px-3 py-1.5 bg-[#F5F5F7] hover:bg-[#E5E5EA] text-xs font-semibold rounded-lg text-gray-700 transition-all flex items-center gap-1.5 whitespace-nowrap"
+            >
+              📅 Oggi
+            </button>
+          </div>
         )}
 
         {/* View Toggles & Actions */}
-        <div className="flex items-center justify-center gap-3 w-full md:w-auto md:order-3">
+        <div className="flex items-center justify-center w-full md:w-auto md:order-3">
           <div className="flex bg-[#F5F5F7] p-1 rounded-xl overflow-x-auto shrink-0 w-full sm:w-auto justify-center sm:justify-start">
             {[{ id: 'day', label: 'Giorno' }, { id: 'week', label: 'Settimana' }, { id: 'month', label: 'Mese' }, { id: 'list', label: 'Lista' }].map((view) => (
               <button
@@ -497,15 +504,6 @@ export const VisiteTab = React.memo(({
               </button>
             ))}
           </div>
-
-          {calendarView === 'list' && (
-            <button
-              onClick={handleScrollToListToday}
-              className="px-3 py-1.5 bg-[#F5F5F7] hover:bg-[#E5E5EA] text-xs font-semibold rounded-lg text-gray-700 transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0"
-            >
-              📅 Oggi
-            </button>
-          )}
         </div>
       </div>
 

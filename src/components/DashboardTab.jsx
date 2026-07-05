@@ -108,8 +108,17 @@ export const DashboardTab = React.memo(({
           </div>
         </div>
         <div className="text-right text-xs text-[#86868B]">
-          <p className="font-medium text-[#1D1D1F]">Ufficio Lugano</p>
-          <p>Status: <span className="text-[#34C759] font-medium">Attivo (Giugno 2026)</span></p>
+          <p className="font-semibold text-[#1D1D1F]">
+            {(() => {
+              const dStr = new Date().toLocaleDateString('it-IT', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+              });
+              return dStr.charAt(0).toUpperCase() + dStr.slice(1);
+            })()}
+          </p>
         </div>
       </div>
 

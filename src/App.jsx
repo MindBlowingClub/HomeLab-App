@@ -4165,11 +4165,11 @@ export default function App() {
 
                 <div className="bg-[#F5F5F7] p-6 border-b border-[#E5E5EA] flex justify-between items-start">
                   <div className="flex items-center space-x-4">
-                    <div className="w-16 h-16 rounded-full bg-[#E5E5EA] text-[#1D1D1F] flex items-center justify-center font-bold text-xl border border-white shadow-inner">
+                    <div className="w-16 h-16 rounded-full bg-[#E5E5EA] text-[#1D1D1F] flex items-center justify-center font-bold text-xl border border-white shadow-inner shrink-0">
                       {(viewingContatto.nome || 'U').charAt(0)}{(viewingContatto.cognome || '').charAt(0)}
                     </div>
-                    <div className="space-y-1">
-                      <h3 className="text-xl font-bold tracking-tight text-[#1D1D1F] leading-snug">
+                    <div className="space-y-1 min-w-0">
+                      <h3 className="text-xl font-bold tracking-tight text-[#1D1D1F] leading-snug truncate">
                         {viewingContatto.cognome} {viewingContatto.nome}
                       </h3>
                       <div className="flex flex-wrap gap-2 items-center">
@@ -4177,7 +4177,7 @@ export default function App() {
                           {Array.isArray(viewingContatto.ruolo) ? viewingContatto.ruolo.join(', ') : (viewingContatto.ruolo || '')}
                         </span>
                         {viewingContatto.societa && (
-                          <span className="text-xs text-[#86868B] font-medium">
+                          <span className="text-xs text-[#86868B] font-medium truncate">
                             🏢 {viewingContatto.societa}
                           </span>
                         )}
@@ -4186,7 +4186,7 @@ export default function App() {
                   </div>
                   <button
                     onClick={() => setIsContactDetailModalOpen(false)}
-                    className="w-7 h-7 bg-white/80 hover:bg-white rounded-full border border-[#D2D2D7] flex items-center justify-center font-bold text-sm text-[#86868B] transition-colors shadow-sm"
+                    className="w-7 h-7 bg-white/80 hover:bg-white rounded-full border border-[#D2D2D7] flex items-center justify-center font-bold text-sm text-[#86868B] transition-colors shadow-sm shrink-0"
                   >
                     ✕
                   </button>
@@ -6393,20 +6393,36 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="p-4 sm:p-6 border-t border-white/20 bg-[#F5F5F7]/80 backdrop-blur-md flex flex-col sm:flex-row gap-3 sm:justify-end items-stretch sm:items-center">
-                    <button
-                      type="button"
-                      onClick={() => setIsContattoModalOpen(false)}
-                      className="w-full sm:w-auto px-6 py-3 bg-white hover:bg-gray-100 border border-[#D2D2D7] text-[#1D1D1F] rounded-full font-semibold text-sm transition-all text-center order-2 sm:order-1"
-                    >
-                      Annulla
-                    </button>
-                    <button
-                      type="submit"
-                      className="w-full sm:w-auto px-8 py-3 bg-[#0071E3] hover:bg-[#0077ED] text-white rounded-full font-bold text-sm transition-all text-center shadow-sm order-1 sm:order-2"
-                    >
-                      Salva Contatto
-                    </button>
+                  <div className="p-4 sm:p-6 border-t border-white/20 bg-[#F5F5F7]/80 backdrop-blur-md flex flex-col sm:flex-row gap-3 sm:justify-between items-stretch sm:items-center">
+                    {currentContatto ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleDeleteContatto(currentContatto.id);
+                          setIsContattoModalOpen(false);
+                        }}
+                        className="w-full sm:w-auto px-6 py-3 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 rounded-full font-semibold text-sm transition-all text-center order-3 sm:order-1"
+                      >
+                        Elimina Contatto
+                      </button>
+                    ) : (
+                      <div className="hidden sm:block" />
+                    )}
+                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto order-1 sm:order-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsContattoModalOpen(false)}
+                        className="w-full sm:w-auto px-6 py-3 bg-white hover:bg-gray-100 border border-[#D2D2D7] text-[#1D1D1F] rounded-full font-semibold text-sm transition-all text-center"
+                      >
+                        Annulla
+                      </button>
+                      <button
+                        type="submit"
+                        className="w-full sm:w-auto px-8 py-3 bg-[#0071E3] hover:bg-[#0077ED] text-white rounded-full font-bold text-sm transition-all text-center shadow-sm"
+                      >
+                        Salva Contatto
+                      </button>
+                    </div>
                   </div>
                 </form>
 

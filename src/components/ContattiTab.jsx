@@ -139,7 +139,6 @@ export const ContattiTab = React.memo(({
                 <th className="py-4 px-6">Società</th>
                 <th className="py-4 px-6">Ruolo principale</th>
                 <th className="py-4 px-6">Recapiti</th>
-                <th className="py-4 px-6 text-right">Azioni</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#E5E5EA]">
@@ -165,17 +164,11 @@ export const ContattiTab = React.memo(({
                       <div className="h-3 bg-[#E5E5EA] rounded-full w-28" />
                       <div className="h-3 bg-[#E5E5EA] rounded-full w-32" />
                     </td>
-                    <td className="py-4 px-6 text-right">
-                      <div className="flex items-center justify-end space-x-1.5">
-                        <div className="w-8 h-8 bg-[#E5E5EA] rounded-xl" />
-                        <div className="w-8 h-8 bg-[#E5E5EA] rounded-xl" />
-                      </div>
-                    </td>
                   </tr>
                 ))
               ) : contatti.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="py-8 text-center text-xs text-[#86868B]">
+                  <td colSpan="4" className="py-8 text-center text-xs text-[#86868B]">
                     Nessun contatto trovato.
                   </td>
                 </tr>
@@ -192,7 +185,9 @@ export const ContattiTab = React.memo(({
                           {(item.nome || 'U').charAt(0)}{(item.cognome || '').charAt(0)}
                         </div>
                         <div>
-                          <span className="font-bold text-sm block text-[#1D1D1F] group-hover:text-[#0071E3] transition-colors">{item.cognome} {item.nome}</span>
+                          <span className="font-bold text-sm block text-[#1D1D1F] group-hover:text-[#0071E3] transition-colors">
+                            {sortContactOrder === 'nome-cognome' ? `${item.nome || ''} ${item.cognome || ''}` : `${item.cognome || ''} ${item.nome || ''}`}
+                          </span>
                           <span className="text-[11px] text-[#86868B] block truncate max-w-[200px]">{item.note_contatto || item.note}</span>
                         </div>
                       </div>
@@ -213,22 +208,6 @@ export const ContattiTab = React.memo(({
                       <div className="flex items-center text-[#86868B]">
                         <span className="mr-1.5 text-gray-400">✉️</span>
                         {item.mail}
-                      </div>
-                    </td>
-                    <td className="py-4 px-6 text-right">
-                      <div className="flex items-center justify-end space-x-1.5" onClick={(e) => e.stopPropagation()}>
-                        <button
-                          onClick={() => handleEditContatto(item)}
-                          className="p-2 bg-[#F5F5F7] hover:bg-[#E5E5EA] rounded-xl text-gray-700 transition-all"
-                        >
-                          <IconEdit />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteContatto(item.id)}
-                          className="p-2 bg-red-50 hover:bg-red-100 rounded-xl text-red-600 transition-all"
-                        >
-                          <IconTrash />
-                        </button>
                       </div>
                     </td>
                   </tr>
@@ -273,29 +252,13 @@ export const ContattiTab = React.memo(({
                     {(item.nome || 'U').charAt(0)}{(item.cognome || '').charAt(0)}
                   </div>
                   <div>
-                    <span className="font-bold text-sm text-[#1D1D1F] block group-hover:text-[#0071E3] transition-colors">{item.cognome} {item.nome}</span>
+                    <span className="font-bold text-sm text-[#1D1D1F] block group-hover:text-[#0071E3] transition-colors">
+                      {sortContactOrder === 'nome-cognome' ? `${item.nome || ''} ${item.cognome || ''}` : `${item.cognome || ''} ${item.nome || ''}`}
+                    </span>
                     {item.societa && (
                       <span className="text-xs text-[#86868B] block font-medium mt-0.5">{item.societa}</span>
                     )}
                   </div>
-                </div>
-                
-                {/* Actions */}
-                <div className="flex items-center space-x-1" onClick={(e) => e.stopPropagation()}>
-                  <button
-                    onClick={() => handleEditContatto(item)}
-                    className="p-2 bg-[#F5F5F7] hover:bg-[#E5E5EA] rounded-xl text-gray-700 transition-all"
-                    title="Modifica"
-                  >
-                    <IconEdit />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteContatto(item.id)}
-                    className="p-2 bg-red-50 hover:bg-red-100 rounded-xl text-red-600 transition-all"
-                    title="Elimina"
-                  >
-                    <IconTrash />
-                  </button>
                 </div>
               </div>
 

@@ -551,7 +551,7 @@ export const VisiteTab = React.memo(({
                      {dayEvents.map(event => {
                        const dateObj = new Date(event.inizio_evento);
                        const timeStr = dateObj.toLocaleTimeString('it-CH', { hour: '2-digit', minute: '2-digit' });
-                       const outcomeColor = event.esito_e_note === 'POSITIVO' ? 'bg-emerald-500' : event.esito_e_note === 'NEGATIVO' ? 'bg-rose-500' : 'bg-blue-500';
+                       const outcomeColor = isMyEvent(event) ? 'bg-[#0071E3]' : 'bg-[#FF9500]';
                        return (
                          <div
                            key={event.id}
@@ -667,22 +667,20 @@ export const VisiteTab = React.memo(({
               return (
                 <div 
                   key={dayIdx} 
-                  className={`p-1 min-h-[36px] flex flex-col gap-1 justify-center relative ${
+                  className={`p-1 min-h-[36px] flex flex-col gap-1 justify-center relative min-w-0 ${
                     isToday ? 'bg-[#0071E3]/2' : ''
                   }`}
                 >
                   {dayAllDayEvents.map(event => {
-                    const outcomeStyles = event.esito_e_note === 'POSITIVO' 
-                      ? 'border-l-4 border-emerald-500 bg-emerald-500/10 text-emerald-800' 
-                      : event.esito_e_note === 'NEGATIVO' 
-                      ? 'border-l-4 border-rose-500 bg-rose-500/10 text-rose-800' 
-                      : 'border-l-4 border-blue-500 bg-blue-500/10 text-blue-800';
+                    const outcomeStyles = isMyEvent(event)
+                      ? 'border-l-4 border-[#0071E3] bg-[#0071E3]/10 text-[#0051A3]'
+                      : 'border-l-4 border-[#FF9500] bg-[#FF9500]/10 text-[#B25900]';
 
                     return (
                       <div
                         key={event.id}
                         onClick={() => handleViewVisita(event)}
-                        className={`text-[8.5px] font-bold px-1.5 py-0.5 rounded cursor-pointer ${outcomeStyles} shadow-sm flex items-center gap-1 hover:scale-[0.98] transition-all truncate`}
+                        className={`text-[8.5px] font-bold px-1.5 py-0.5 rounded cursor-pointer ${outcomeStyles} shadow-sm flex items-center gap-1 hover:scale-[0.98] transition-all min-w-0 w-full overflow-hidden`}
                         title={`Tutto il giorno: ${event.nome_evento || event.tipo_visita} - ${getImmobileName(event.immobile_di_riferimento_id)}`}
                       >
                         <span className="shrink-0 text-[6.5px] tracking-wider uppercase font-black px-1.5 py-0.25 bg-black/5 text-black/70 rounded-full border border-black/5 leading-none">
@@ -834,11 +832,9 @@ export const VisiteTab = React.memo(({
                     {positionedEvents.map(({ event, startMin, endMin, width, left }) => {
                       const top = startMin;
                       const height = endMin - startMin;
-                      const outcomeStyles = event.esito_e_note === 'POSITIVO' 
-                        ? 'border-l-4 border-[#34C759] bg-[#EBF9EB] text-[#1E7D32]' 
-                        : event.esito_e_note === 'NEGATIVO' 
-                        ? 'border-l-4 border-[#FF3B30] bg-[#FEEBEB] text-[#C62828]' 
-                        : 'border-l-4 border-[#0071E3] bg-[#E5F1FD] text-[#0051A3]';
+                      const outcomeStyles = isMyEvent(event)
+                        ? 'border-l-4 border-[#0071E3] bg-[#E5F1FD] text-[#0051A3]'
+                        : 'border-l-4 border-[#FF9500] bg-[#FFF2E0] text-[#B25900]';
 
                       return (
                         <div

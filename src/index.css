@@ -35,8 +35,6 @@ body {
 
 .liquid-bg {
   background: linear-gradient(135deg, #FFECEE 0%, #E6EEFF 35%, #F7EFFF 70%, #E6FFF9 100%);
-  background-size: 300% 300%;
-  animation: liquidMesh 15s ease-in-out infinite;
 }
 
 .glass-panel {

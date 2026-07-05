@@ -515,6 +515,50 @@ export default function App() {
   const [localLogs, setLocalLogs] = useState(INITIAL_IMMOBILI_LOGS);
   const [immobileLogs, setImmobileLogs] = useState([]);
 
+  // PWA Install states and detection
+  const [showInstallPrompt, setShowInstallPrompt] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+
+  useEffect(() => {
+    // Check if already in standalone mode (installed)
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+    if (isStandalone) return;
+
+    // Detect user agent
+    const ua = window.navigator.userAgent.toLowerCase();
+    const isIosDevice = /iphone|ipad|ipod/.test(ua);
+    const isMobileDevice = /android|iphone|ipad|ipod|mobi|mini|iemobile|wpdesktop/.test(ua);
+
+    if (isMobileDevice) {
+      if (isIosDevice) {
+        setIsIOS(true);
+        // Show iOS prompt if it has not been dismissed before
+        const dismissed = localStorage.getItem('homelab_install_dismissed');
+        if (!dismissed) {
+          // Delay slightly so the user is settled in the app
+          setTimeout(() => {
+            setShowInstallPrompt(true);
+          }, 3000);
+        }
+      } else {
+        // Listen to beforeinstallprompt event for Android/Chrome
+        const handleBeforeInstallPrompt = (e) => {
+          e.preventDefault();
+          setDeferredPrompt(e);
+          const dismissed = localStorage.getItem('homelab_install_dismissed');
+          if (!dismissed) {
+            setTimeout(() => {
+              setShowInstallPrompt(true);
+            }, 3000);
+          }
+        };
+        window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+        return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      }
+    }
+  }, []);
+
   // Offline support states
   const [isOffline, setIsOffline] = useState(typeof window !== 'undefined' ? !navigator.onLine : false);
   const [offlineQueue, setOfflineQueue] = useState(() => {
@@ -7294,6 +7338,61 @@ export default function App() {
               );
             })}
           </nav>
+
+          {showInstallPrompt && (
+            <div className="fixed bottom-24 left-4 right-4 z-[100] sm:max-w-sm sm:left-auto bg-white/95 backdrop-blur-md border border-[#E5E5EA] p-4 rounded-3xl shadow-2xl flex flex-col space-y-3 text-[#1D1D1F] animate-fade-in">
+              <div className="flex justify-between items-start">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-2xl bg-[#1B343F] flex items-center justify-center text-lg shadow-inner shrink-0">
+                    🏠
+                  </div>
+                  <div className="min-w-0">
+                    <h4 className="font-bold text-sm text-[#1D1D1F]">Aggiungi HomeLab</h4>
+                    <p className="text-[10px] text-[#86868B] truncate">Usa l'app dalla tua schermata Home</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowInstallPrompt(false);
+                    localStorage.setItem('homelab_install_dismissed', 'true');
+                  }}
+                  className="w-6 h-6 rounded-full bg-black/5 hover:bg-black/10 flex items-center justify-center text-xs font-bold text-[#86868B]"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {isIOS ? (
+                <div className="text-[11px] leading-relaxed text-[#1D1D1F] bg-[#F5F5F7] p-3 rounded-2xl border border-black/5">
+                  Tocca il pulsante <strong className="font-semibold">Condividi</strong>
+                  <svg className="w-4 h-4 inline-block align-text-bottom mx-1 text-[#0071E3]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                    <polyline points="16 6 12 2 8 6" />
+                    <line x1="12" y1="2" x2="12" y2="15" />
+                  </svg>
+                  e seleziona <strong className="font-semibold">"Aggiungi alla schermata Home"</strong>.
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (deferredPrompt) {
+                      deferredPrompt.prompt();
+                      const { outcome } = await deferredPrompt.userChoice;
+                      if (outcome === 'accepted') {
+                        setShowInstallPrompt(false);
+                      }
+                      setDeferredPrompt(null);
+                    }
+                  }}
+                  className="w-full bg-[#0071E3] hover:bg-[#0077ED] text-white py-2.5 rounded-2xl font-bold text-xs transition-all shadow-sm text-center cursor-pointer"
+                >
+                  Installa Applicazione
+                </button>
+              )}
+            </div>
+          )}
 
         </div>
       )}

@@ -816,8 +816,12 @@ export default function App() {
   // Pre-filter calendar for all logged-in users (admin, editor, etc.)
   useEffect(() => {
     if (profile) {
-      const userDisplayName = `${profile.nome || ''} ${profile.cognome || ''}`.trim().toUpperCase();
-      setFilterVisitAgent(userDisplayName);
+      if (isViewer()) {
+        setFilterVisitAgent('Tutti');
+      } else {
+        const userDisplayName = `${profile.nome || ''} ${profile.cognome || ''}`.trim().toUpperCase();
+        setFilterVisitAgent(userDisplayName);
+      }
     }
   }, [profile]);
 
@@ -2177,6 +2181,12 @@ export default function App() {
     return userRole.includes('admin') || userRole.includes('editor');
   };
 
+  const isViewer = () => {
+    if (!profile) return false;
+    const userRole = String(profile.ruolo || '').toLowerCase();
+    return userRole.includes('viewer');
+  };
+
   const isMyEvent = (event) => {
     if (!profile) return false;
     const userDisplayName = `${profile.nome || ''} ${profile.cognome || ''}`.trim().toUpperCase();
@@ -3477,7 +3487,7 @@ export default function App() {
             />
 
             {/* Global FAB (Apple Liquid Style) */}
-            {['immobili', 'contatti', 'visite'].includes(activeTab) && (
+            {['immobili', 'contatti', 'visite'].includes(activeTab) && !isViewer() && (
               <div className="fixed bottom-24 right-6 md:bottom-8 md:right-8 z-50 flex items-center justify-center group">
                 {/* Liquid glow aura */}
                 <div className="absolute inset-0 bg-gradient-to-tr from-[#0071E3] to-[#00C7FF] rounded-full blur-xl opacity-40 scale-95 group-hover:scale-125 transition-all duration-700 pointer-events-none animate-pulse" />
@@ -4179,15 +4189,17 @@ export default function App() {
                 </div>
 
                 <div className="p-6 border-t border-white/20 bg-[#F5F5F7]/80 backdrop-blur-md flex space-x-2">
-                  <button
-                    onClick={() => {
-                      setIsDetailModalOpen(false);
-                      handleEditImmobile(viewingImmobile);
-                    }}
-                    className="flex-1 bg-[#0071E3] hover:bg-[#0077ED] text-white py-3 rounded-full font-bold text-sm transition-all text-center shadow-sm flex items-center justify-center space-x-1"
-                  >
-                    <IconEdit /> <span>Modifica Scheda</span>
-                  </button>
+                  {!isViewer() && (
+                    <button
+                      onClick={() => {
+                        setIsDetailModalOpen(false);
+                        handleEditImmobile(viewingImmobile);
+                      }}
+                      className="flex-1 bg-[#0071E3] hover:bg-[#0077ED] text-white py-3 rounded-full font-bold text-sm transition-all text-center shadow-sm flex items-center justify-center space-x-1"
+                    >
+                      <IconEdit /> <span>Modifica Scheda</span>
+                    </button>
+                  )}
                   <button
                     onClick={handleCloseImmobileDetail}
                     className="flex-1 bg-white hover:bg-gray-100 border border-[#D2D2D7] text-[#1D1D1F] py-3 rounded-full font-semibold text-sm transition-all text-center"
@@ -4438,15 +4450,17 @@ export default function App() {
                 </div>
 
                 <div className="p-6 border-t border-[#E5E5EA] bg-[#F5F5F7] flex space-x-2">
-                  <button
-                    onClick={() => {
-                      setIsContactDetailModalOpen(false);
-                      handleEditContatto(viewingContatto);
-                    }}
-                    className="flex-1 bg-[#0071E3] hover:bg-[#0077ED] text-white py-3 rounded-full font-bold text-sm transition-all text-center shadow-sm flex items-center justify-center space-x-1"
-                  >
-                    <IconEdit /> <span>Modifica Contatto</span>
-                  </button>
+                  {!isViewer() && (
+                    <button
+                      onClick={() => {
+                        setIsContactDetailModalOpen(false);
+                        handleEditContatto(viewingContatto);
+                      }}
+                      className="flex-1 bg-[#0071E3] hover:bg-[#0077ED] text-white py-3 rounded-full font-bold text-sm transition-all text-center shadow-sm flex items-center justify-center space-x-1"
+                    >
+                      <IconEdit /> <span>Modifica Contatto</span>
+                    </button>
+                  )}
                   <button
                     onClick={() => setIsContactDetailModalOpen(false)}
                     className="flex-1 bg-white hover:bg-gray-100 border border-[#D2D2D7] text-[#1D1D1F] py-3 rounded-full font-semibold text-sm transition-all text-center"

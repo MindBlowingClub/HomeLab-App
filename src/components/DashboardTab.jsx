@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { IconPlus } from './Icons';
 
 export const DashboardTab = React.memo(({
@@ -55,18 +55,27 @@ export const DashboardTab = React.memo(({
   const fmtTime = (d) => d.toLocaleTimeString('it-CH', { hour: '2-digit', minute: '2-digit' });
 
   // Filtered lists and stats
-  const activeVenditaCount = immobili.filter(imm => imm.immobile_in && imm.immobile_in.includes('Vendita') && imm.stato !== 'Venduto' && imm.stato !== 'Lead').length;
-  const activeAffittoCount = immobili.filter(imm => imm.immobile_in && imm.immobile_in.includes('Affitto') && imm.stato !== 'Affittato' && imm.stato !== 'Lead').length;
+  const activeVenditaCount = immobili.filter(imm => imm.immobile_in && imm.immobile_in.includes('Vendita') && imm.stato !== 'Venduto' && imm.stato !== 'Affittato' && imm.stato !== 'Lead').length;
+  const activeAffittoCount = immobili.filter(imm => imm.immobile_in && imm.immobile_in.includes('Affitto') && imm.stato !== 'Venduto' && imm.stato !== 'Affittato' && imm.stato !== 'Lead').length;
   const activeTrattativaCount = immobili.filter(imm => imm.stato === 'In Trattativa').length;
   const vendutoCount = immobili.filter(imm => imm.stato === 'Venduto').length;
   const affittatoCount = immobili.filter(imm => imm.stato === 'Affittato').length;
 
   const portafoglioValore = (immobili
-    .filter(imm => imm.immobile_in && imm.immobile_in.includes('Vendita') && imm.stato !== 'Venduto' && imm.stato !== 'Lead')
+    .filter(imm => imm.immobile_in && imm.immobile_in.includes('Vendita') && imm.stato !== 'Venduto' && imm.stato !== 'Affittato' && imm.stato !== 'Lead')
     .reduce((acc, curr) => acc + (Number(curr.prezzo_di_vendita) || 0), 0) / 1000000
   ).toFixed(2);
 
+  const isViewer = profile?.ruolo && String(profile.ruolo).toLowerCase().includes('viewer');
   const [showMyEventsOnly, setShowMyEventsOnly] = useState(true);
+
+  useEffect(() => {
+    if (profile) {
+      const isUserViewer = profile.ruolo && String(profile.ruolo).toLowerCase().includes('viewer');
+      setShowMyEventsOnly(!isUserViewer);
+    }
+  }, [profile]);
+
   const userDisplayName = profile?.nome ? `${profile.nome} ${profile.cognome || ''}`.trim().toUpperCase() : 'MASSIMILIANO BOLDI';
 
   const upcomingEvents = [...visite]
@@ -106,19 +115,6 @@ export const DashboardTab = React.memo(({
               </span>
             )}
           </div>
-        </div>
-        <div className="text-right text-xs text-[#86868B]">
-          <p className="font-semibold text-[#1D1D1F]">
-            {(() => {
-              const dStr = new Date().toLocaleDateString('it-IT', {
-                weekday: 'long',
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric'
-              });
-              return dStr.charAt(0).toUpperCase() + dStr.slice(1);
-            })()}
-          </p>
         </div>
       </div>
 
@@ -249,29 +245,31 @@ export const DashboardTab = React.memo(({
       </div>
 
       {/* Quick Actions Panel */}
-      <div className="glass-panel p-6 rounded-3xl">
-        <h3 className="text-lg font-semibold tracking-tight text-[#1D1D1F] mb-4">Azioni Rapide</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <button
-            onClick={() => { setIsImmobileModalOpen(true); setCurrentImmobile(null); setActiveFormTab('generale'); }}
-            className="btn-glossy text-white p-4 rounded-2xl font-medium text-sm transition-all flex items-center justify-center space-x-2"
-          >
-            <IconPlus /> <span>Registra Nuovo Immobile</span>
-          </button>
-          <button
-            onClick={handleCreateContatto}
-            className="bg-white/45 backdrop-blur hover:bg-white/70 text-[#1D1D1F] p-4 rounded-2xl font-medium text-sm border border-white/40 shadow-sm transition-all flex items-center justify-center space-x-2 hover:scale-[1.01]"
-          >
-            <IconPlus /> <span>Aggiungi Contatto</span>
-          </button>
-          <button
-            onClick={handleCreateVisita}
-            className="bg-white/45 backdrop-blur hover:bg-white/70 text-[#1D1D1F] p-4 rounded-2xl font-medium text-sm border border-white/40 shadow-sm transition-all flex items-center justify-center space-x-2 hover:scale-[1.01]"
-          >
-            <IconPlus /> <span>Pianifica Attività/Visita</span>
-          </button>
+      {!isViewer && (
+        <div className="glass-panel p-6 rounded-3xl">
+          <h3 className="text-lg font-semibold tracking-tight text-[#1D1D1F] mb-4">Azioni Rapide</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <button
+              onClick={() => { setIsImmobileModalOpen(true); setCurrentImmobile(null); setActiveFormTab('generale'); }}
+              className="btn-glossy text-white p-4 rounded-2xl font-medium text-sm transition-all flex items-center justify-center space-x-2"
+            >
+              <IconPlus /> <span>Registra Nuovo Immobile</span>
+            </button>
+            <button
+              onClick={handleCreateContatto}
+              className="bg-white/45 backdrop-blur hover:bg-white/70 text-[#1D1D1F] p-4 rounded-2xl font-medium text-sm border border-white/40 shadow-sm transition-all flex items-center justify-center space-x-2 hover:scale-[1.01]"
+            >
+              <IconPlus /> <span>Aggiungi Contatto</span>
+            </button>
+            <button
+              onClick={handleCreateVisita}
+              className="bg-white/45 backdrop-blur hover:bg-white/70 text-[#1D1D1F] p-4 rounded-2xl font-medium text-sm border border-white/40 shadow-sm transition-all flex items-center justify-center space-x-2 hover:scale-[1.01]"
+            >
+              <IconPlus /> <span>Pianifica Attività/Visita</span>
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Prossime Attività in Calendario */}
       <div className="bg-white p-6 rounded-3xl border border-[#E5E5EA] shadow-sm">

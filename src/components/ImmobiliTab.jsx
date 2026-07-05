@@ -107,17 +107,13 @@ export const ImmobiliTab = React.memo(({
       })
       .sort((a, b) => {
         if (sortProperty === 'prezzo-asc') {
-          const aIsRent = a.immobile_in && a.immobile_in.includes('Affitto');
-          const bIsRent = b.immobile_in && b.immobile_in.includes('Affitto');
-          const aPrice = aIsRent ? Number(a.prezzo_di_affitto || 0) : Number(a.prezzo_di_vendita || 0);
-          const bPrice = bIsRent ? Number(b.prezzo_di_affitto || 0) : Number(b.prezzo_di_vendita || 0);
+          const aPrice = Number(a.prezzo_di_vendita || 0);
+          const bPrice = Number(b.prezzo_di_vendita || 0);
           return aPrice - bPrice;
         }
         if (sortProperty === 'prezzo-desc') {
-          const aIsRent = a.immobile_in && a.immobile_in.includes('Affitto');
-          const bIsRent = b.immobile_in && b.immobile_in.includes('Affitto');
-          const aPrice = aIsRent ? Number(a.prezzo_di_affitto || 0) : Number(a.prezzo_di_vendita || 0);
-          const bPrice = bIsRent ? Number(b.prezzo_di_affitto || 0) : Number(b.prezzo_di_vendita || 0);
+          const aPrice = Number(a.prezzo_di_vendita || 0);
+          const bPrice = Number(b.prezzo_di_vendita || 0);
           return bPrice - aPrice;
         }
         if (sortProperty === 'superficie-asc') {

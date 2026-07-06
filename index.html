@@ -3,14 +3,14 @@
 
 <head>
   <meta charset="UTF-8" />
-  <link rel="icon" type="image/png" href="https://vndajxcmgqjybhvppkqe.supabase.co/storage/v1/object/public/immobili-media/images/HomeLab-Nero.png" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>HomeLab CRM - Real Estate Office</title>
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="HomeLab" />
-  <link rel="apple-touch-icon" href="https://vndajxcmgqjybhvppkqe.supabase.co/storage/v1/object/public/immobili-media/images/HomeLab-Nero.png" />
+  <link rel="apple-touch-icon" href="/favicon.svg" />
   <script>
     document.addEventListener('gesturestart', function (e) {
       e.preventDefault();
@@ -18,34 +18,49 @@
 
     // Generatore dinamico di Icona con sfondo personalizzato (#1B343F) per iOS/Android Home Screen
     (function() {
-      const logoUrl = 'https://vndajxcmgqjybhvppkqe.supabase.co/storage/v1/object/public/immobili-media/images/HomeLab-LOGO%20RIDOTTO-Bianco.png';
       const bgColor = '#1B343F';
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = function() {
-        const canvas = document.createElement('canvas');
-        canvas.width = 180;
-        canvas.height = 180;
-        const ctx = canvas.getContext('2d');
-        
-        // Sfondo solido color #1B343F
-        ctx.fillStyle = bgColor;
-        ctx.fillRect(0, 0, 180, 180);
-        
-        // Centra il logo ridotto bianco (dimensione 126x126 per un padding equilibrato di 27px)
-        const size = 126;
-        const offset = (180 - size) / 2;
-        ctx.drawImage(img, offset, offset, size, size);
-        
-        const dataUrl = canvas.toDataURL('image/png');
-        
-        // Aggiorna apple-touch-icon
-        let appleLink = document.querySelector('link[rel="apple-touch-icon"]');
-        if (appleLink) {
-          appleLink.href = dataUrl;
-        }
-      };
-      img.src = logoUrl;
+      const canvas = document.createElement('canvas');
+      canvas.width = 180;
+      canvas.height = 180;
+      const ctx = canvas.getContext('2d');
+      
+      // Sfondo solido color #1B343F
+      ctx.fillStyle = bgColor;
+      ctx.fillRect(0, 0, 180, 180);
+      
+      // Disegna un'icona stilizzata a forma di casa
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineWidth = 10;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      
+      // Tetto e mura
+      ctx.beginPath();
+      ctx.moveTo(90, 45); // Vertice tetto
+      ctx.lineTo(40, 85); // Sinistra tetto
+      ctx.lineTo(55, 85); // Allineamento muro
+      ctx.lineTo(55, 135); // Muro sinistro
+      ctx.lineTo(125, 135); // Muro destro
+      ctx.lineTo(125, 85); // Allineamento muro
+      ctx.lineTo(140, 85); // Destra tetto
+      ctx.closePath();
+      ctx.stroke();
+      
+      // Porta
+      ctx.beginPath();
+      ctx.moveTo(80, 135);
+      ctx.lineTo(80, 105);
+      ctx.lineTo(100, 105);
+      ctx.lineTo(100, 135);
+      ctx.stroke();
+      
+      const dataUrl = canvas.toDataURL('image/png');
+      
+      // Aggiorna apple-touch-icon
+      let appleLink = document.querySelector('link[rel="apple-touch-icon"]');
+      if (appleLink) {
+        appleLink.href = dataUrl;
+      }
     })();
   </script>
 </head>

@@ -521,6 +521,7 @@ export default function App() {
   const [visite, setVisite] = useState(isRealSupabase ? [] : INITIAL_VISITE);
   const [localLogs, setLocalLogs] = useState(INITIAL_IMMOBILI_LOGS);
   const [immobileLogs, setImmobileLogs] = useState([]);
+  const [visitaLogs, setVisitaLogs] = useState([]);
 
   // PWA Install states and detection
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
@@ -961,6 +962,31 @@ export default function App() {
       setImmobileLogs([]);
     }
   }, [viewingImmobile, localLogs, isRealSupabase]);
+
+  useEffect(() => {
+    if (viewingVisita) {
+      if (isRealSupabase && supabase) {
+        const fetchVisitaLogs = async () => {
+          const { data, error } = await supabase
+            .from('visite_logs')
+            .select('*')
+            .eq('visita_id', viewingVisita.id)
+            .order('data_ora', { ascending: false });
+          if (error) {
+            console.error("Errore caricamento log visita:", error);
+            triggerToast("Errore caricamento log visita: " + error.message, "error");
+          } else if (data) {
+            setVisitaLogs(data);
+          }
+        };
+        fetchVisitaLogs();
+      } else {
+        setVisitaLogs([]);
+      }
+    } else {
+      setVisitaLogs([]);
+    }
+  }, [viewingVisita, isRealSupabase]);
 
   const fetchProfile = async (userId) => {
     try {
@@ -6747,13 +6773,9 @@ export default function App() {
                           }}
                           className="bg-white rounded-2xl border border-[#E5E5EA] overflow-hidden group shadow-sm flex flex-col cursor-pointer hover:border-[#0071E3]/40 hover:shadow-md transition-all duration-200"
                         >
-                          <div 
+                          <SecureImageBackground 
+                            url={propertyObj.immagine_di_riferimento}
                             className="h-36 bg-cover bg-center relative flex items-end"
-                            style={{
-                              backgroundImage: propertyObj.immagine_di_riferimento 
-                                ? `url(${propertyObj.immagine_di_riferimento})` 
-                                : 'linear-gradient(to bottom right, #E5E5EA, #D2D2D7)'
-                            }}
                           >
                             <div className="absolute inset-0 bg-black/15 group-hover:bg-black/10 transition-colors"></div>
                             <div className="absolute top-2 left-2 flex gap-1 z-10">
@@ -6764,7 +6786,7 @@ export default function App() {
                             <div className="absolute bottom-2 left-2 text-white text-xs font-bold drop-shadow-md z-10">
                               {propertyObj.comune}{propertyObj.nazione ? `, ${propertyObj.nazione}` : ''}
                             </div>
-                          </div>
+                          </SecureImageBackground>
                           <div className="p-3.5">
                             <h4 className="font-bold text-sm text-[#1D1D1F] line-clamp-1 leading-tight group-hover:text-[#0071E3] transition-colors">
                               {propertyObj.nome_immobile}
@@ -6784,6 +6806,40 @@ export default function App() {
                         <div className="bg-[#F5F5F7] p-4 rounded-2xl text-xs text-gray-700 leading-relaxed whitespace-pre-wrap border border-transparent">
                           {viewingVisita.esito_e_note}
                         </div>
+                      </div>
+                    )}
+
+                    {/* Event logs timeline for Admin */}
+                    {profile?.ruolo && profile.ruolo.toLowerCase().includes('admin') && (
+                      <div className="space-y-3 pt-3 border-t border-black/5">
+                        <span className="block font-bold text-[#86868B] uppercase tracking-wide text-[9px]">Cronologia Modifiche Evento</span>
+                        {visitaLogs.length === 0 ? (
+                          <div className="glass-panel p-4 rounded-xl text-center text-xs text-gray-400 italic">
+                            Nessuna modifica registrata
+                          </div>
+                        ) : (
+                          <div className="space-y-2.5 max-h-[220px] overflow-y-auto pr-1">
+                            {visitaLogs.map((log) => (
+                              <div key={log.id} className="glass-panel p-3 rounded-xl space-y-1 relative shadow-sm hover:shadow transition-all bg-[#F5F5F7]/40 border border-black/5">
+                                <div className="flex justify-between items-center text-[9px] border-b border-black/5 pb-1">
+                                  <span className="font-bold text-[#0071E3]">{log.utente}</span>
+                                  <span className="text-gray-400 font-medium">
+                                    {log.data_ora ? new Date(log.data_ora).toLocaleString('it-CH', {
+                                      year: 'numeric',
+                                      month: '2-digit',
+                                      day: '2-digit',
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    }) : '-'}
+                                  </span>
+                                </div>
+                                <p className="text-[10px] text-gray-600 leading-normal whitespace-pre-wrap pt-1">
+                                  {log.descrizione}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
 

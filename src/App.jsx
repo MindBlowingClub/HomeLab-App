@@ -1724,11 +1724,11 @@ export default function App() {
     }
   };
 
-  const handleUploadOrBase64 = async (fileField, existingValue, oldFileUrlToDelete = null) => {
+  const handleUploadOrBase64 = async (fileField, existingValue, oldFileUrlToDelete = null, bucketNameOverride = null) => {
     let newUrl = existingValue || "";
     if (fileField && fileField.size > 0) {
       if (isRealSupabase && !isOffline && navigator.onLine) {
-        const url = await uploadToSupabase(fileField);
+        const url = await uploadToSupabase(fileField, bucketNameOverride);
         if (!url) {
           throw new Error("Impossibile generare l'URL pubblico per il file caricato.");
         }
@@ -1827,85 +1827,99 @@ export default function App() {
       immagine_di_riferimento = await handleUploadOrBase64(
         formData.get('immagine_di_riferimento_file'),
         tempImmobileImageUrl === '' ? '' : (existing ? existing.immagine_di_riferimento : ""),
-        existing ? existing.immagine_di_riferimento : null
+        existing ? existing.immagine_di_riferimento : null,
+        'immobili-media'
       );
 
       mandato = await handleUploadOrBase64(
         formData.get('mandato_file'),
         formData.get('mandato_deleted') === 'true' ? '' : (existing ? existing.mandato : ""),
-        existing ? existing.mandato : null
+        existing ? existing.mandato : null,
+        'immobili-documenti'
       );
 
       planimetria = await handleUploadOrBase64(
         formData.get('planimetria_file'),
         tempPlanimetriaUrl === '' || formData.get('planimetria_deleted') === 'true' ? '' : (existing ? existing.planimetria : ""),
-        existing ? existing.planimetria : null
+        existing ? existing.planimetria : null,
+        'immobili-documenti'
       );
 
       estratto_registro_fondiario_doc = await handleUploadOrBase64(
         formData.get('estratto_registro_fondiario_doc_file'),
         formData.get('estratto_registro_fondiario_doc_deleted') === 'true' ? '' : (existing ? existing.estratto_registro_fondiario_doc : ""),
-        existing ? existing.estratto_registro_fondiario_doc : null
+        existing ? existing.estratto_registro_fondiario_doc : null,
+        'immobili-documenti'
       );
 
       descrittivo_tecnico_doc = await handleUploadOrBase64(
         formData.get('descrittivo_tecnico_doc_file'),
         formData.get('descrittivo_tecnico_doc_deleted') === 'true' ? '' : (existing ? existing.descrittivo_tecnico_doc : ""),
-        existing ? existing.descrittivo_tecnico_doc : null
+        existing ? existing.descrittivo_tecnico_doc : null,
+        'immobili-documenti'
       );
 
       regolamento_condominiale_doc = await handleUploadOrBase64(
         formData.get('regolamento_condominiale_doc_file'),
         formData.get('regolamento_condominiale_doc_deleted') === 'true' ? '' : (existing ? existing.regolamento_condominiale_doc : ""),
-        existing ? existing.regolamento_condominiale_doc : null
+        existing ? existing.regolamento_condominiale_doc : null,
+        'immobili-documenti'
       );
 
       spese_condominiali_doc = await handleUploadOrBase64(
         formData.get('spese_condominiali_doc_file'),
         formData.get('spese_condominiali_doc_deleted') === 'true' ? '' : (existing ? existing.spese_condominiali_doc : ""),
-        existing ? existing.spese_condominiali_doc : null
+        existing ? existing.spese_condominiali_doc : null,
+        'immobili-documenti'
       );
 
       assicurazione_stabile_doc = await handleUploadOrBase64(
         formData.get('assicurazione_stabile_doc_file'),
         formData.get('assicurazione_stabile_doc_deleted') === 'true' ? '' : (existing ? existing.assicurazione_stabile_doc : ""),
-        existing ? existing.assicurazione_stabile_doc : null
+        existing ? existing.assicurazione_stabile_doc : null,
+        'immobili-documenti'
       );
 
       verbale_ultima_assemblea_doc = await handleUploadOrBase64(
         formData.get('verbale_ultima_assemblea_doc_file'),
         formData.get('verbale_ultima_assemblea_doc_deleted') === 'true' ? '' : (existing ? existing.verbale_ultima_assemblea_doc : ""),
-        existing ? existing.verbale_ultima_assemblea_doc : null
+        existing ? existing.verbale_ultima_assemblea_doc : null,
+        'immobili-documenti'
       );
 
       fondo_rinnovamento_doc = await handleUploadOrBase64(
         formData.get('fondo_rinnovamento_doc_file'),
         formData.get('fondo_rinnovamento_doc_deleted') === 'true' ? '' : (existing ? existing.fondo_rinnovamento_doc : ""),
-        existing ? existing.fondo_rinnovamento_doc : null
+        existing ? existing.fondo_rinnovamento_doc : null,
+        'immobili-documenti'
       );
 
       valore_di_stima_doc = await handleUploadOrBase64(
         formData.get('valore_di_stima_doc_file'),
         formData.get('valore_di_stima_doc_deleted') === 'true' ? '' : (existing ? existing.valore_di_stima_doc : ""),
-        existing ? existing.valore_di_stima_doc : null
+        existing ? existing.valore_di_stima_doc : null,
+        'immobili-documenti'
       );
 
       piano_assegnazioni_parti_comuni_doc = await handleUploadOrBase64(
         formData.get('piano_assegnazioni_parti_comuni_doc_file'),
         formData.get('piano_assegnazioni_parti_comuni_doc_deleted') === 'true' ? '' : (existing ? existing.piano_assegnazioni_parti_comuni_doc : ""),
-        existing ? existing.piano_assegnazioni_parti_comuni_doc : null
+        existing ? existing.piano_assegnazioni_parti_comuni_doc : null,
+        'immobili-documenti'
       );
 
       rasi_doc = await handleUploadOrBase64(
         formData.get('rasi_doc_file'),
         formData.get('rasi_doc_deleted') === 'true' ? '' : (existing ? existing.rasi_doc : ""),
-        existing ? existing.rasi_doc : null
+        existing ? existing.rasi_doc : null,
+        'immobili-documenti'
       );
 
       certificato_radon_doc = await handleUploadOrBase64(
         formData.get('certificato_radon_doc_file'),
         formData.get('certificato_radon_doc_deleted') === 'true' ? '' : (existing ? existing.certificato_radon_doc : ""),
-        existing ? existing.certificato_radon_doc : null
+        existing ? existing.certificato_radon_doc : null,
+        'immobili-documenti'
       );
     } catch (fileErr) {
       console.error("File processing error:", fileErr);

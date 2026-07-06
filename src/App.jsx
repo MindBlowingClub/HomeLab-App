@@ -2759,6 +2759,39 @@ export default function App() {
 
     const isActuallyOffline = isOffline || !navigator.onLine;
 
+    // Change detection for logging
+    const changes = [];
+    const userEmail = currentSession?.user?.email ? currentSession.user.email.toUpperCase() : "UTENTE CRM";
+    let logDesc = "";
+
+    if (id) {
+      const existing = visite.find(v => v.id === id);
+      const compareVisiteFields = [
+        { key: 'nome_evento', label: 'Nome Evento' },
+        { key: 'tipo_visita', label: 'Tipo Visita' },
+        { key: 'inizio_evento', label: 'Inizio' },
+        { key: 'fine_evento', label: 'Fine' },
+        { key: 'esito_e_note', label: 'Esito/Note' },
+        { key: 'tutto_giorno', label: 'Tutto Giorno' },
+        { key: 'partecipanti', label: 'Partecipanti' },
+        { key: 'immobile_di_riferimento_id', label: 'ID Immobile' },
+        { key: 'cliente_id', label: 'ID Cliente' }
+      ];
+
+      compareVisiteFields.forEach(f => {
+        let oldVal = existing?.[f.key];
+        let newVal = fields[f.key];
+        if (oldVal === undefined || oldVal === null) oldVal = "";
+        if (newVal === undefined || newVal === null) newVal = "";
+        if (String(oldVal) !== String(newVal)) {
+          changes.push(`${f.label}: "${oldVal}" ➔ "${newVal}"`);
+        }
+      });
+      logDesc = `Modifica appuntamento "${existing?.nome_evento || 'Senza nome'}": ${changes.join(', ')}`;
+    } else {
+      logDesc = `Creazione appuntamento: "${fields.nome_evento || 'Senza nome'}" in data ${fields.inizio_evento || ''}`;
+    }
+
     if (isRealSupabase && !isActuallyOffline) {
       try {
         if (id) {
@@ -2770,6 +2803,15 @@ export default function App() {
           if (error) throw error;
           setVisite(visite.map(item => item.id === id ? (data[0] || { id, ...fields }) : item));
           triggerToast("Appuntamento aggiornato");
+
+          if (changes.length > 0 && supabase) {
+            await supabase.from('visite_logs').insert([{
+              visita_id: id,
+              descrizione: logDesc,
+              utente: userEmail,
+              data_ora: new Date().toISOString()
+            }]);
+          }
         } else {
           const { data, error } = await supabase
             .from('visite')
@@ -2778,6 +2820,15 @@ export default function App() {
           if (error) throw error;
           setVisite([...visite, data[0]]);
           triggerToast("Nuovo evento aggiunto a calendario");
+
+          if (supabase && data[0]) {
+            await supabase.from('visite_logs').insert([{
+              visita_id: data[0].id,
+              descrizione: logDesc,
+              utente: userEmail,
+              data_ora: new Date().toISOString()
+            }]);
+          }
         }
       } catch (err) {
         console.error(err);
@@ -2856,6 +2907,16 @@ export default function App() {
       const isActuallyOffline = isOffline || !navigator.onLine;
       if (isRealSupabase && !isActuallyOffline) {
         try {
+          if (supabase) {
+            const userEmail = currentSession?.user?.email ? currentSession.user.email.toUpperCase() : "UTENTE CRM";
+            await supabase.from('visite_logs').insert([{
+              visita_id: id,
+              descrizione: `Eliminazione appuntamento "${event?.nome_evento || ''}" di tipo ${event?.tipo_visita || ''} in data ${event?.inizio_evento || ''}`,
+              utente: userEmail,
+              data_ora: new Date().toISOString()
+            }]);
+          }
+
           const { error } = await supabase
             .from('visite')
             .delete()
@@ -2919,6 +2980,16 @@ export default function App() {
         if (error) throw error;
         setVisite(visite.map(item => item.id === event.id ? { ...item, ...fields } : item));
         triggerToast("Appuntamento spostato");
+
+        if (supabase) {
+          const userEmail = currentSession?.user?.email ? currentSession.user.email.toUpperCase() : "UTENTE CRM";
+          await supabase.from('visite_logs').insert([{
+            visita_id: event.id,
+            descrizione: `Spostamento appuntamento "${event.nome_evento}": Inizio "${event.inizio_evento}" ➔ "${fields.inizio_evento}", Fine "${event.fine_evento}" ➔ "${fields.fine_evento}"`,
+            utente: userEmail,
+            data_ora: new Date().toISOString()
+          }]);
+        }
       } catch (err) {
         console.error(err);
         triggerToast("Errore durante lo spostamento", "error");
@@ -2988,6 +3059,16 @@ export default function App() {
             .eq('id', event.id);
           if (error) throw error;
           triggerToast("Durata aggiornata");
+
+          if (supabase) {
+            const userEmail = currentSession?.user?.email ? currentSession.user.email.toUpperCase() : "UTENTE CRM";
+            await supabase.from('visite_logs').insert([{
+              visita_id: event.id,
+              descrizione: `Modifica durata appuntamento "${event.nome_evento}": Fine "${event.fine_evento}" ➔ "${updatedFields.fine_evento}"`,
+              utente: userEmail,
+              data_ora: new Date().toISOString()
+            }]);
+          }
         } catch (err) {
           console.error(err);
           triggerToast("Errore aggiornamento durata", "error");

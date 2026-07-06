@@ -1566,13 +1566,21 @@ export default function App() {
       const userId = currentSession?.user?.id || 'simulated-uuid-12345';
       let fotoUrl = profile?.foto || '';
 
+      const oldFoto = profile?.foto || '';
+
       if (tempProfileFotoUrl === '') {
         fotoUrl = '';
+        if (oldFoto && isRealSupabase) {
+          deleteFromSupabase(oldFoto).catch(err => console.error("Errore cancellazione vecchia foto:", err));
+        }
       } else if (fotoFile && fotoFile.size > 0) {
         if (isRealSupabase) {
           const uploadedUrl = await uploadToSupabase(fotoFile, 'profili-avatar');
           if (uploadedUrl) {
             fotoUrl = uploadedUrl;
+            if (oldFoto) {
+              deleteFromSupabase(oldFoto).catch(err => console.error("Errore cancellazione vecchia foto sostituita:", err));
+            }
           }
         } else {
           fotoUrl = await readAsBase64(fotoFile);

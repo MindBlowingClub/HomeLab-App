@@ -8,7 +8,20 @@ const signedUrlCache = new Map();
  * Hook personalizzato per risolvere URL Supabase privati in Signed URL temporanei autorizzati.
  */
 export const useSecureUrl = (url, expires = 3600) => {
-  const [secureUrl, setSecureUrl] = useState(null);
+  const getCachedUrl = () => {
+    if (!url) return null;
+    if (typeof url !== 'string' || url.startsWith('data:') || !url.includes('/storage/v1/object/')) {
+      return url;
+    }
+    const cacheKey = `${url}_${expires}`;
+    const cached = signedUrlCache.get(cacheKey);
+    if (cached && cached.expiry > Date.now()) {
+      return cached.url;
+    }
+    return null;
+  };
+
+  const [secureUrl, setSecureUrl] = useState(getCachedUrl);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {

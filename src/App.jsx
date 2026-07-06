@@ -523,6 +523,8 @@ export default function App() {
   const [immobileLogs, setImmobileLogs] = useState([]);
   const [visitaLogs, setVisitaLogs] = useState([]);
   const [contattoLogs, setContattoLogs] = useState([]);
+  const [activeContactDetailTab, setActiveContactDetailTab] = useState('generale');
+  const [activeContactFormTab, setActiveContactFormTab] = useState('generale');
 
   // PWA Install states and detection
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
@@ -2820,6 +2822,7 @@ export default function App() {
     setSelectedGestiti(item.immobili_gestiti || []);
     setSearchPossedutiQuery('');
     setSearchGestitiQuery('');
+    setActiveContactFormTab('generale');
     setIsContattoModalOpen(true);
   };
 
@@ -2829,18 +2832,21 @@ export default function App() {
     setSelectedGestiti([]);
     setSearchPossedutiQuery('');
     setSearchGestitiQuery('');
+    setActiveContactFormTab('generale');
     setIsContattoModalOpen(true);
   };
 
   const handleViewContatto = (item, context = null) => {
     setPreviousContattoModalContext(context);
     setViewingContatto(item);
+    setActiveContactDetailTab('generale');
     setIsContactDetailModalOpen(true);
   };
 
   const handleCloseContattoDetail = () => {
     setIsContactDetailModalOpen(false);
     setViewingContatto(null);
+    setActiveContactDetailTab('generale');
     if (previousContattoModalContext) {
       if (previousContattoModalContext.type === 'immobile') {
         setViewingImmobile(previousContattoModalContext.item);
@@ -3886,30 +3892,25 @@ export default function App() {
                   </button>
                 </div>
 
-                {/* Tab Bar inner Inspector (con lo stesso stile della modale di modifica) */}
-                <div className="px-6 py-2.5 border-b border-white/20 overflow-x-auto flex space-x-1 scrollbar-none" style={{ background: 'rgba(245,245,247,0.7)', backdropFilter: 'blur(20px)' }}>
+                {/* Tab Bar inner Inspector (con lo stesso stile flat a linea dei contatti) */}
+                <div className="flex border-b border-black/5 bg-[#F5F5F7] px-6 shrink-0 overflow-x-auto scrollbar-none">
                   {[
-                    { id: 'generale', label: '🏗️ Dettagli & Prezzi' },
-                    { id: 'caratteristiche', label: '✨ Caratteristiche' },
-                    { id: 'contatti', label: '👤 Contatti' },
-                    { id: 'amministrazione', label: '📁 Amministrazione' },
-                    { id: 'documenti', label: '📄 Documenti' },
-                    { id: 'note_interne', label: '🔒 Note' },
-                    { id: 'eventi', label: '📅 Eventi' },
-                    { id: 'log', label: '📊 Log' }
+                    { id: 'generale', label: 'Dettagli & Prezzi' },
+                    { id: 'caratteristiche', label: 'Caratteristiche' },
+                    { id: 'contatti', label: 'Contatti' },
+                    { id: 'amministrazione', label: 'Amministrazione' },
+                    { id: 'documenti', label: 'Documenti' },
+                    { id: 'note_interne', label: 'Note' },
+                    { id: 'eventi', label: 'Eventi' },
+                    { id: 'log', label: 'Log' }
                   ].map(tab => (
                     <button
                       key={tab.id}
                       type="button"
                       onClick={() => setActiveDetailTab(tab.id)}
-                      className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold tracking-tight whitespace-nowrap transition-all duration-300 ${activeDetailTab === tab.id
-                          ? 'text-white shadow-md'
-                          : 'text-[#86868B] hover:text-[#1D1D1F] hover:bg-white/50'
-                        }`}
-                      style={activeDetailTab === tab.id ? {
-                        background: 'linear-gradient(135deg, #0071E3 0%, #0088FF 100%)',
-                        boxShadow: '0 4px 12px rgba(0,113,227,0.25), inset 0 1px 0 rgba(255,255,255,0.2)'
-                      } : {}}
+                      className={`py-3 text-xs font-bold border-b-2 tracking-wide uppercase mr-5 transition-all whitespace-nowrap ${
+                        activeDetailTab === tab.id ? 'border-[#0071E3] text-[#0071E3]' : 'border-transparent text-gray-400 hover:text-[#1D1D1F]'
+                      }`}
                     >
                       {tab.label}
                     </button>
@@ -4572,241 +4573,284 @@ export default function App() {
                   </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6 space-y-6 text-[#1D1D1F]">
-                  <div className="bg-[#F5F5F7] p-5 rounded-2xl border border-[#E5E5EA] space-y-4">
-                    <h4 className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Recapiti Diretti</h4>
-
-                    <div className="flex items-center justify-between text-sm">
-                      <div>
-                        <span className="block text-xs text-[#86868B]">Telefono:</span>
-                        <span className="font-semibold">{viewingContatto.telefono}</span>
-                      </div>
-                      <a
-                        href={`tel:${viewingContatto.telefono}`}
-                        className="bg-[#34C759] hover:bg-[#30B651] text-white px-4 py-1.5 rounded-full text-xs font-semibold transition-all shadow-sm"
+                 <div className="flex border-b border-black/5 bg-[#F5F5F7] px-6 shrink-0">
+                    <button
+                      onClick={() => setActiveContactDetailTab('generale')}
+                      className={`py-3 text-xs font-bold border-b-2 tracking-wide uppercase mr-5 transition-all ${
+                        activeContactDetailTab === 'generale' ? 'border-[#0071E3] text-[#0071E3]' : 'border-transparent text-gray-400 hover:text-gray-600'
+                      }`}
+                    >
+                      Generale
+                    </button>
+                    <button
+                      onClick={() => setActiveContactDetailTab('immobili')}
+                      className={`py-3 text-xs font-bold border-b-2 tracking-wide uppercase mr-5 transition-all ${
+                        activeContactDetailTab === 'immobili' ? 'border-[#0071E3] text-[#0071E3]' : 'border-transparent text-gray-400 hover:text-gray-600'
+                      }`}
+                    >
+                      Immobili
+                    </button>
+                    <button
+                      onClick={() => setActiveContactDetailTab('attivita')}
+                      className={`py-3 text-xs font-bold border-b-2 tracking-wide uppercase mr-5 transition-all ${
+                        activeContactDetailTab === 'attivita' ? 'border-[#0071E3] text-[#0071E3]' : 'border-transparent text-gray-400 hover:text-gray-600'
+                      }`}
+                    >
+                      Attività
+                    </button>
+                    {profile?.ruolo && profile.ruolo.toLowerCase().includes('admin') && (
+                      <button
+                        onClick={() => setActiveContactDetailTab('log')}
+                        className={`py-3 text-xs font-bold border-b-2 tracking-wide uppercase transition-all ${
+                          activeContactDetailTab === 'log' ? 'border-[#0071E3] text-[#0071E3]' : 'border-transparent text-gray-400 hover:text-gray-600'
+                        }`}
                       >
-                        Chiama
-                      </a>
-                    </div>
-
-                    <div className="flex items-center justify-between text-sm border-t border-gray-200/60 pt-3">
-                      <div>
-                        <span className="block text-xs text-[#86868B]">Indirizzo Email:</span>
-                        <span className="font-semibold break-all">{viewingContatto.mail}</span>
-                      </div>
-                      <a
-                        href={`mailto:${viewingContatto.mail}`}
-                        className="bg-[#0071E3] hover:bg-[#0077ED] text-white px-4 py-1.5 rounded-full text-xs font-semibold transition-all shadow-sm"
-                      >
-                        Scrivi
-                      </a>
-                    </div>
+                        Cronologia
+                      </button>
+                    )}
                   </div>
 
-                  <div className="space-y-1">
-                    <h4 className="text-xs font-bold text-[#86868B] uppercase tracking-wider border-b pb-1">Note operative</h4>
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                      {viewingContatto.note_contatto || viewingContatto.note || "Nessuna nota aggiuntiva registrata per questo contatto."}
-                    </p>
-                  </div>
+                  <div className="flex-1 overflow-y-auto p-6 space-y-6 text-[#1D1D1F]">
+                    {activeContactDetailTab === 'generale' && (
+                      <>
+                        <div className="bg-[#F5F5F7] p-5 rounded-2xl border border-[#E5E5EA] space-y-4">
+                          <h4 className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Recapiti Diretti</h4>
 
-                  <div className="space-y-4">
-                    <h4 className="text-xs font-bold text-[#86868B] uppercase tracking-wider border-b pb-1">Immobili Collegati</h4>
-
-                    {/* Immobili Posseduti */}
-                    <div className="space-y-2">
-                      <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Immobili Posseduti (Proprietà)</span>
-                      {(() => {
-                        const owned = immobili.filter(imm =>
-                          (viewingContatto.immobili_posseduti && viewingContatto.immobili_posseduti.includes(imm.id)) ||
-                          imm.proprietario_id === viewingContatto.id
-                        );
-                        if (owned.length === 0) return <p className="text-xs text-gray-400 italic pl-1">Nessun immobile posseduto collegato.</p>;
-                        return owned.map(imm => (
-                          <div
-                            key={imm.id}
-                            onClick={() => {
-                              setIsContactDetailModalOpen(false);
-                              handleViewImmobile(imm, { type: 'contatto', item: viewingContatto });
-                            }}
-                            className="bg-white p-3.5 rounded-xl border border-[#E5E5EA] flex justify-between items-center hover:border-[#0071E3] cursor-pointer transition-all group shadow-sm"
-                          >
+                          <div className="flex items-center justify-between text-sm">
                             <div>
-                              <span className="font-bold text-sm group-hover:text-[#0071E3] transition-all">{imm.nome_immobile}</span>
-                              <span className="block text-xs text-[#86868B]">{imm.comune} • {formatField(imm.prezzo_di_vendita || imm.prezzo_di_affitto, "", true)}</span>
+                              <span className="block text-xs text-[#86868B]">Telefono:</span>
+                              <span className="font-semibold">{viewingContatto.telefono}</span>
                             </div>
-                            <span className="text-xs text-[#86868B] group-hover:text-[#0071E3] transition-all">→</span>
+                            <a
+                              href={`tel:${viewingContatto.telefono}`}
+                              className="bg-[#34C759] hover:bg-[#30B651] text-white px-4 py-1.5 rounded-full text-xs font-semibold transition-all shadow-sm"
+                            >
+                              Chiama
+                            </a>
                           </div>
-                        ));
-                      })()}
-                    </div>
 
-                    {/* Immobili Gestiti */}
-                    <div className="space-y-2 pt-2">
-                      <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Immobili Gestiti (Agente)</span>
-                      {(() => {
-                        const managed = immobili.filter(imm =>
-                          (viewingContatto.immobili_gestiti && viewingContatto.immobili_gestiti.includes(imm.id)) ||
-                          imm.agente_id === viewingContatto.id
-                        );
-                        if (managed.length === 0) return <p className="text-xs text-gray-400 italic pl-1">Nessun immobile gestito collegato.</p>;
-                        return managed.map(imm => (
-                          <div
-                            key={imm.id}
-                            onClick={() => {
-                              setIsContactDetailModalOpen(false);
-                              handleViewImmobile(imm, { type: 'contatto', item: viewingContatto });
-                            }}
-                            className="bg-white p-3.5 rounded-xl border border-[#E5E5EA] flex justify-between items-center hover:border-[#0071E3] cursor-pointer transition-all group shadow-sm"
-                          >
+                          <div className="flex items-center justify-between text-sm border-t border-gray-200/60 pt-3">
                             <div>
-                              <span className="font-bold text-sm group-hover:text-[#0071E3] transition-all">{imm.nome_immobile}</span>
-                              <span className="block text-xs text-[#86868B]">{imm.comune} • {formatField(imm.prezzo_di_vendita || imm.prezzo_di_affitto, "", true)}</span>
+                              <span className="block text-xs text-[#86868B]">Indirizzo Email:</span>
+                              <span className="font-semibold break-all">{viewingContatto.mail}</span>
                             </div>
-                            <span className="text-xs text-[#86868B] group-hover:text-[#0071E3] transition-all">→</span>
+                            <a
+                              href={`mailto:${viewingContatto.mail}`}
+                              className="bg-[#0071E3] hover:bg-[#0077ED] text-white px-4 py-1.5 rounded-full text-xs font-semibold transition-all shadow-sm"
+                            >
+                              Scrivi
+                            </a>
                           </div>
-                        ));
-                      })()}
-                    </div>
-                  </div>
+                        </div>
 
-                  <div className="space-y-3">
-                    <h4 className="text-xs font-bold text-[#86868B] uppercase tracking-wider border-b pb-1">Attività e Visite Relazionate</h4>
-                    {(() => {
-                      const related = visite
-                        .filter(v => v.cliente_id === viewingContatto.id || (v.partecipanti || '').toLowerCase().includes((viewingContatto.cognome || '').toLowerCase()))
-                        .sort((a, b) => new Date(b.inizio_evento) - new Date(a.inizio_evento));
-                      if (related.length === 0) {
-                        return <p className="text-xs text-[#86868B]">Nessun appuntamento in calendario per questo contatto.</p>;
-                      }
-                      return (
+                        <div className="space-y-1">
+                          <h4 className="text-xs font-bold text-[#86868B] uppercase tracking-wider border-b pb-1">Note operative</h4>
+                          <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                            {viewingContatto.note_contatto || viewingContatto.note || "Nessuna nota aggiuntiva registrata per questo contatto."}
+                          </p>
+                        </div>
+                      </>
+                    )}
+
+                    {activeContactDetailTab === 'immobili' && (
+                      <div className="space-y-4">
+                        <h4 className="text-xs font-bold text-[#86868B] uppercase tracking-wider border-b pb-1">Immobili Collegati</h4>
+
+                        {/* Immobili Posseduti */}
                         <div className="space-y-2">
-                          {related.map(item => {
-                            const startObj = new Date(item.inizio_evento);
-                            const endObj = item.fine_evento ? new Date(item.fine_evento) : null;
-                            const fmtTime = (d) => d.toLocaleTimeString('it-CH', { hour: '2-digit', minute: '2-digit' });
-                            const clienteName = getContactName(item.cliente_id);
-                            const immobileName = getImmobileName(item.immobile_di_riferimento_id);
-                            const partecipantiList = item.partecipanti ? item.partecipanti.split(',').map(p => p.trim()).filter(Boolean) : [];
-                            return (
+                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Immobili Posseduti (Proprietà)</span>
+                          {(() => {
+                            const owned = immobili.filter(imm =>
+                              (viewingContatto.immobili_posseduti && viewingContatto.immobili_posseduti.includes(imm.id)) ||
+                              imm.proprietario_id === viewingContatto.id
+                            );
+                            if (owned.length === 0) return <p className="text-xs text-gray-400 italic pl-1">Nessun immobile posseduto collegato.</p>;
+                            return owned.map(imm => (
                               <div
-                                key={item.id}
+                                key={imm.id}
                                 onClick={() => {
                                   setIsContactDetailModalOpen(false);
-                                  handleViewVisita(item);
+                                  handleViewImmobile(imm, { type: 'contatto', item: viewingContatto });
                                 }}
-                                className="group bg-white border border-[#E5E5EA] rounded-2xl cursor-pointer hover:border-[#0071E3]/40 hover:shadow-lg transition-all duration-200 overflow-hidden"
+                                className="bg-white p-3.5 rounded-xl border border-[#E5E5EA] flex justify-between items-center hover:border-[#0071E3] cursor-pointer transition-all group shadow-sm"
                               >
-                                <div className="flex">
-                                  {/* Date column */}
-                                  <div className="w-[68px] shrink-0 flex flex-col items-center justify-center bg-[#F5F5F7] border-r border-[#E5E5EA] py-3 gap-0.5">
-                                    <span className="text-[9px] font-bold uppercase text-[#86868B] tracking-wider leading-none">
-                                      {startObj.toLocaleDateString('it-IT', { month: 'short' })}
-                                    </span>
-                                    <span className="text-[24px] font-black text-[#1D1D1F] leading-none">
-                                      {startObj.toLocaleDateString('it-IT', { day: 'numeric' })}
-                                    </span>
-                                    <span className="text-[9px] font-semibold text-[#86868B] capitalize leading-none">
-                                      {startObj.toLocaleDateString('it-IT', { weekday: 'short' })}
-                                    </span>
-                                  </div>
+                                <div>
+                                  <span className="font-bold text-sm group-hover:text-[#0071E3] transition-all">{imm.nome_immobile}</span>
+                                  <span className="block text-xs text-[#86868B]">{imm.comune} • {formatField(imm.prezzo_di_vendita || imm.prezzo_di_affitto, "", true)}</span>
+                                </div>
+                                <span className="text-xs text-[#86868B] group-hover:text-[#0071E3] transition-all">→</span>
+                              </div>
+                            ));
+                          })()}
+                        </div>
 
-                                  {/* Main content */}
-                                  <div className="flex-1 min-w-0 px-3.5 py-3 flex flex-col gap-2">
-                                    {/* Title + time */}
-                                    <div className="flex items-start justify-between gap-2">
-                                      <div className="min-w-0 flex-1">
-                                        <h5 className="text-[12px] font-extrabold text-[#1D1D1F] leading-snug group-hover:text-[#0071E3] transition-colors truncate">
-                                          {item.nome_evento || item.tipo_visita || '—'}
-                                        </h5>
+                        {/* Immobili Gestiti */}
+                        <div className="space-y-2 pt-2">
+                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Immobili Gestiti (Agente)</span>
+                          {(() => {
+                            const managed = immobili.filter(imm =>
+                              (viewingContatto.immobili_gestiti && viewingContatto.immobili_gestiti.includes(imm.id)) ||
+                              imm.agente_id === viewingContatto.id
+                            );
+                            if (managed.length === 0) return <p className="text-xs text-gray-400 italic pl-1">Nessun immobile gestito collegato.</p>;
+                            return managed.map(imm => (
+                              <div
+                                key={imm.id}
+                                onClick={() => {
+                                  setIsContactDetailModalOpen(false);
+                                  handleViewImmobile(imm, { type: 'contatto', item: viewingContatto });
+                                }}
+                                className="bg-white p-3.5 rounded-xl border border-[#E5E5EA] flex justify-between items-center hover:border-[#0071E3] cursor-pointer transition-all group shadow-sm"
+                              >
+                                <div>
+                                  <span className="font-bold text-sm group-hover:text-[#0071E3] transition-all">{imm.nome_immobile}</span>
+                                  <span className="block text-xs text-[#86868B]">{imm.comune} • {formatField(imm.prezzo_di_vendita || imm.prezzo_di_affitto, "", true)}</span>
+                                </div>
+                                <span className="text-xs text-[#86868B] group-hover:text-[#0071E3] transition-all">→</span>
+                              </div>
+                            ));
+                          })()}
+                        </div>
+                      </div>
+                    )}
+
+                    {activeContactDetailTab === 'attivita' && (
+                      <div className="space-y-3">
+                        <h4 className="text-xs font-bold text-[#86868B] uppercase tracking-wider border-b pb-1">Attività e Visite Relazionate</h4>
+                        {(() => {
+                          const related = visite
+                            .filter(v => v.cliente_id === viewingContatto.id || (v.partecipanti || '').toLowerCase().includes((viewingContatto.cognome || '').toLowerCase()))
+                            .sort((a, b) => new Date(b.inizio_evento) - new Date(a.inizio_evento));
+                          if (related.length === 0) {
+                            return <p className="text-xs text-[#86868B]">Nessun appuntamento in calendario per questo contatto.</p>;
+                          }
+                          return (
+                            <div className="space-y-2">
+                              {related.map(item => {
+                                const startObj = new Date(item.inizio_evento);
+                                const endObj = item.fine_evento ? new Date(item.fine_evento) : null;
+                                const fmtTime = (d) => d.toLocaleTimeString('it-CH', { hour: '2-digit', minute: '2-digit' });
+                                const clienteName = getContactName(item.cliente_id);
+                                const immobileName = getImmobileName(item.immobile_di_riferimento_id);
+                                const partecipantiList = item.partecipanti ? item.partecipanti.split(',').map(p => p.trim()).filter(Boolean) : [];
+                                return (
+                                  <div
+                                    key={item.id}
+                                    onClick={() => {
+                                      setIsContactDetailModalOpen(false);
+                                      handleViewVisita(item);
+                                    }}
+                                    className="group bg-white border border-[#E5E5EA] rounded-2xl cursor-pointer hover:border-[#0071E3]/40 hover:shadow-lg transition-all duration-200 overflow-hidden"
+                                  >
+                                    <div className="flex">
+                                      {/* Date column */}
+                                      <div className="w-[68px] shrink-0 flex flex-col items-center justify-center bg-[#F5F5F7] border-r border-[#E5E5EA] py-3 gap-0.5">
+                                        <span className="text-[9px] font-bold uppercase text-[#86868B] tracking-wider leading-none">
+                                          {startObj.toLocaleDateString('it-IT', { month: 'short' })}
+                                        </span>
+                                        <span className="text-[24px] font-black text-[#1D1D1F] leading-none">
+                                          {startObj.toLocaleDateString('it-IT', { day: 'numeric' })}
+                                        </span>
+                                        <span className="text-[9px] font-semibold text-[#86868B] capitalize leading-none">
+                                          {startObj.toLocaleDateString('it-IT', { weekday: 'short' })}
+                                        </span>
                                       </div>
-                                      <div className="flex items-center gap-1.5 shrink-0">
-                                        {item.tutto_giorno ? (
-                                          <span className="shrink-0 inline-flex items-center gap-0.5 bg-[#FFF3E0] text-[#E65100] text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-[#FFB74D]/30 whitespace-nowrap">
-                                            ☀️ Tutto
+
+                                      {/* Main content */}
+                                      <div className="flex-1 min-w-0 px-3.5 py-3 flex flex-col gap-2">
+                                        {/* Title + time */}
+                                        <div className="flex items-start justify-between gap-2">
+                                          <div className="min-w-0 flex-1">
+                                            <h5 className="text-[12px] font-extrabold text-[#1D1D1F] leading-snug group-hover:text-[#0071E3] transition-colors truncate">
+                                              {item.nome_evento || item.tipo_visita || '—'}
+                                            </h5>
+                                          </div>
+                                          <div className="flex items-center gap-1.5 shrink-0">
+                                            {item.tutto_giorno ? (
+                                              <span className="shrink-0 inline-flex items-center gap-0.5 bg-[#FFF3E0] text-[#E65100] text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-[#FFB74D]/30 whitespace-nowrap">
+                                                ☀️ Tutto
+                                              </span>
+                                            ) : (
+                                              <span className="shrink-0 inline-flex items-center gap-0.5 bg-[#E8F4FF] text-[#0071E3] text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-[#0071E3]/20 whitespace-nowrap">
+                                                🕐 {fmtTime(startObj)}
+                                              </span>
+                                            )}
+                                          </div>
+                                        </div>
+
+                                        {/* Pills: cliente + partecipanti + immobile */}
+                                        <div className="flex flex-wrap gap-1">
+                                          {/* Cliente */}
+                                          <span className="inline-flex items-center gap-0.5 bg-[#F5F5F7] border border-[#E5E5EA] rounded-full px-2 py-0.5 text-[9px] font-semibold text-[#374151]">
+                                            👤 {clienteName || '—'}
                                           </span>
-                                        ) : (
-                                          <span className="shrink-0 inline-flex items-center gap-0.5 bg-[#E8F4FF] text-[#0071E3] text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-[#0071E3]/20 whitespace-nowrap">
-                                            🕐 {fmtTime(startObj)}
-                                          </span>
+                                          {/* Partecipanti */}
+                                          {partecipantiList.length > 0 ? (
+                                            partecipantiList.map((p, i) => (
+                                              <span key={i} className="inline-flex items-center gap-0.5 bg-[#EFF6FF] border border-[#BFDBFE] rounded-full px-2 py-0.5 text-[9px] font-semibold text-[#1D4ED8]">
+                                                👥 {p}
+                                              </span>
+                                            ))
+                                          ) : null}
+                                          {/* Immobile */}
+                                          {immobileName && (
+                                            <span className="inline-flex items-center gap-0.5 bg-[#F0FDF4] border border-[#BBF7D0] rounded-full px-2 py-0.5 text-[9px] font-semibold text-[#15803D]">
+                                              🏠 {immobileName}
+                                            </span>
+                                          )}
+                                        </div>
+
+                                        {/* Note */}
+                                        {item.esito_e_note && (
+                                          <p className="text-[10px] text-[#86868B] leading-relaxed line-clamp-1 border-t border-[#F5F5F7] pt-1.5">
+                                            <span className="font-semibold text-[#6B7280]">Note: </span>
+                                            {item.esito_e_note}
+                                          </p>
                                         )}
                                       </div>
                                     </div>
-
-                                    {/* Pills: cliente + partecipanti + immobile */}
-                                    <div className="flex flex-wrap gap-1">
-                                      {/* Cliente */}
-                                      <span className="inline-flex items-center gap-0.5 bg-[#F5F5F7] border border-[#E5E5EA] rounded-full px-2 py-0.5 text-[9px] font-semibold text-[#374151]">
-                                        👤 {clienteName || '—'}
-                                      </span>
-                                      {/* Partecipanti */}
-                                      {partecipantiList.length > 0 ? (
-                                        partecipantiList.map((p, i) => (
-                                          <span key={i} className="inline-flex items-center gap-0.5 bg-[#EFF6FF] border border-[#BFDBFE] rounded-full px-2 py-0.5 text-[9px] font-semibold text-[#1D4ED8]">
-                                            👥 {p}
-                                          </span>
-                                        ))
-                                      ) : null}
-                                      {/* Immobile */}
-                                      {immobileName && (
-                                        <span className="inline-flex items-center gap-0.5 bg-[#F0FDF4] border border-[#BBF7D0] rounded-full px-2 py-0.5 text-[9px] font-semibold text-[#15803D]">
-                                          🏠 {immobileName}
-                                        </span>
-                                      )}
-                                    </div>
-
-                                    {/* Note */}
-                                    {item.esito_e_note && (
-                                      <p className="text-[10px] text-[#86868B] leading-relaxed line-clamp-1 border-t border-[#F5F5F7] pt-1.5">
-                                        <span className="font-semibold text-[#6B7280]">Note: </span>
-                                        {item.esito_e_note}
-                                      </p>
-                                    )}
                                   </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      );
-                    })()}
-                  </div>
-
-                  {/* Contact logs timeline for Admin */}
-                  {profile?.ruolo && profile.ruolo.toLowerCase().includes('admin') && (
-                    <div className="space-y-3 pt-3 border-t border-black/5">
-                      <span className="block font-bold text-[#86868B] uppercase tracking-wide text-[9px]">Cronologia Modifiche Contatto</span>
-                      {contattoLogs.length === 0 ? (
-                        <div className="glass-panel p-4 rounded-xl text-center text-xs text-gray-400 italic">
-                          Nessuna modifica registrata
-                        </div>
-                      ) : (
-                        <div className="space-y-2.5 max-h-[220px] overflow-y-auto pr-1">
-                          {contattoLogs.map((log) => (
-                            <div key={log.id} className="glass-panel p-3 rounded-xl space-y-1 relative shadow-sm hover:shadow transition-all bg-[#F5F5F7]/40 border border-black/5">
-                              <div className="flex justify-between items-center text-[9px] border-b border-black/5 pb-1">
-                                <span className="font-bold text-[#0071E3]">{log.utente}</span>
-                                <span className="text-gray-400 font-medium">
-                                  {log.data_ora ? new Date(log.data_ora).toLocaleString('it-CH', {
-                                    year: 'numeric',
-                                    month: '2-digit',
-                                    day: '2-digit',
-                                    hour: '2-digit',
-                                    minute: '2-digit'
-                                  }) : '-'}
-                                </span>
-                              </div>
-                              <p className="text-[10px] text-gray-600 leading-normal whitespace-pre-wrap pt-1">
-                                {log.descrizione}
-                              </p>
+                                );
+                              })}
                             </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
+                          );
+                        })()}
+                      </div>
+                    )}
 
-                </div>
+                    {activeContactDetailTab === 'log' && profile?.ruolo && profile.ruolo.toLowerCase().includes('admin') && (
+                      <div className="space-y-3">
+                        <span className="block font-bold text-[#86868B] uppercase tracking-wide text-[9px]">Cronologia Modifiche Contatto</span>
+                        {contattoLogs.length === 0 ? (
+                          <div className="glass-panel p-4 rounded-xl text-center text-xs text-gray-400 italic">
+                            Nessuna modifica registrata
+                          </div>
+                        ) : (
+                          <div className="space-y-2.5 max-h-[400px] overflow-y-auto pr-1">
+                            {contattoLogs.map((log) => (
+                              <div key={log.id} className="glass-panel p-3 rounded-xl space-y-1 relative shadow-sm hover:shadow transition-all bg-[#F5F5F7]/40 border border-black/5">
+                                <div className="flex justify-between items-center text-[9px] border-b border-black/5 pb-1">
+                                  <span className="font-bold text-[#0071E3]">{log.utente}</span>
+                                  <span className="text-gray-400 font-medium">
+                                    {log.data_ora ? new Date(log.data_ora).toLocaleString('it-CH', {
+                                      year: 'numeric',
+                                      month: '2-digit',
+                                      day: '2-digit',
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    }) : '-'}
+                                  </span>
+                                </div>
+                                <p className="text-[10px] text-gray-600 leading-normal whitespace-pre-wrap pt-1">
+                                  {log.descrizione}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
 
                 <div className="p-6 border-t border-[#E5E5EA] bg-[#F5F5F7] flex space-x-2">
                   {!isViewer() && (
@@ -5119,29 +5163,24 @@ export default function App() {
                   </button>
                 </div>
 
-                {/* Tab selector raffinato */}
-                <div className="px-6 py-2.5 border-b border-white/20 overflow-x-auto flex space-x-1 scrollbar-none" style={{ background: 'rgba(245,245,247,0.7)', backdropFilter: 'blur(20px)' }}>
+                {/* Tab selector flat a linea (come i contatti) */}
+                <div className="flex border-b border-black/5 bg-[#F5F5F7] px-6 shrink-0 overflow-x-auto scrollbar-none">
                   {[
-                    { id: 'generale', label: '🏗️ Dettagli & Prezzi' },
-                    { id: 'caratteristiche', label: '✨ Caratteristiche' },
-                    { id: 'contatti', label: '👤 Contatti' },
-                    { id: 'amministrazione', label: '📁 Amministrazione' },
-                    { id: 'documenti', label: '📄 Documenti' },
-                    { id: 'note_interne', label: '🔒 Note' },
-                    { id: 'log', label: '📊 Log', hidden: !currentImmobile },
+                    { id: 'generale', label: 'Dettagli & Prezzi' },
+                    { id: 'caratteristiche', label: 'Caratteristiche' },
+                    { id: 'contatti', label: 'Contatti' },
+                    { id: 'amministrazione', label: 'Amministrazione' },
+                    { id: 'documenti', label: 'Documenti' },
+                    { id: 'note_interne', label: 'Note' },
+                    { id: 'log', label: 'Log', hidden: !currentImmobile },
                   ].filter(t => !t.hidden).map(tab => (
                     <button
                       key={tab.id}
                       type="button"
                       onClick={() => setActiveFormTab(tab.id)}
-                      className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold tracking-tight whitespace-nowrap transition-all duration-300 ${activeFormTab === tab.id
-                          ? 'text-white shadow-md'
-                          : 'text-[#86868B] hover:text-[#1D1D1F] hover:bg-white/50'
-                        }`}
-                      style={activeFormTab === tab.id ? {
-                        background: 'linear-gradient(135deg, #0071E3 0%, #0088FF 100%)',
-                        boxShadow: '0 4px 12px rgba(0,113,227,0.25), inset 0 1px 0 rgba(255,255,255,0.2)'
-                      } : {}}
+                      className={`py-3 text-xs font-bold border-b-2 tracking-wide uppercase mr-5 transition-all whitespace-nowrap ${
+                        activeFormTab === tab.id ? 'border-[#0071E3] text-[#0071E3]' : 'border-transparent text-gray-400 hover:text-[#1D1D1F]'
+                      }`}
                     >
                       {tab.label}
                     </button>
@@ -6403,425 +6442,455 @@ export default function App() {
                   </button>
                 </div>
 
-                <form onSubmit={handleSaveContatto} className="flex-1 flex flex-col overflow-hidden">
-                  <div className="flex-1 overflow-y-auto p-6 space-y-5">
-                    {currentContatto && <input type="hidden" name="id" value={currentContatto.id} />}
+                 <form onSubmit={handleSaveContatto} className="flex-1 flex flex-col overflow-hidden">
+                   {/* Form Tabs */}
+                   <div className="flex border-b border-black/5 bg-[#F5F5F7] px-6 shrink-0">
+                     <button
+                       type="button"
+                       onClick={() => setActiveContactFormTab('generale')}
+                       className={`py-3 text-xs font-bold border-b-2 tracking-wide uppercase mr-6 transition-all ${
+                         activeContactFormTab === 'generale' ? 'border-[#0071E3] text-[#0071E3]' : 'border-transparent text-gray-400 hover:text-gray-600'
+                       }`}
+                     >
+                       Generale
+                     </button>
+                     <button
+                       type="button"
+                       onClick={() => setActiveContactFormTab('immobili')}
+                       className={`py-3 text-xs font-bold border-b-2 tracking-wide uppercase transition-all ${
+                         activeContactFormTab === 'immobili' ? 'border-[#0071E3] text-[#0071E3]' : 'border-transparent text-gray-400 hover:text-gray-600'
+                       }`}
+                     >
+                       Immobili Collegati
+                     </button>
+                   </div>
 
-                    {/* Informazioni Personali */}
-                    <div className="glass-panel p-5 rounded-2xl space-y-4">
-                      <div className="flex items-center gap-2 pb-1 border-b border-black/5">
-                        <span className="text-sm">📋</span>
-                        <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Informazioni Personali</span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-xs font-semibold text-[#86868B] mb-1">Cognome</label>
-                          <input
-                            type="text"
-                            name="cognome"
-                            placeholder="es. Boldi"
-                            defaultValue={currentContatto ? currentContatto.cognome : ''}
-                            className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-semibold text-[#86868B] mb-1">Nome</label>
-                          <input
-                            type="text"
-                            name="nome"
-                            placeholder="es. Massimiliano"
-                            defaultValue={currentContatto ? currentContatto.nome : ''}
-                            className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none"
-                          />
-                        </div>
-                      </div>
+                   <div className="flex-1 overflow-y-auto p-6 space-y-5">
+                     {currentContatto && <input type="hidden" name="id" value={currentContatto.id} />}
 
-                      <div>
-                        <label className="block text-xs font-semibold text-[#86868B] mb-1">Società / Ente</label>
-                        <input
-                          type="text"
-                          name="societa"
-                          placeholder="es. HOME LAB Real Estate Sagl"
-                          defaultValue={currentContatto ? currentContatto.societa : ''}
-                          className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none"
-                        />
-                      </div>
-                    </div>
+                     {activeContactFormTab === 'generale' && (
+                       <>
+                         {/* Informazioni Personali */}
+                         <div className="glass-panel p-5 rounded-2xl space-y-4">
+                           <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                             <span className="text-sm">📋</span>
+                             <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Informazioni Personali</span>
+                           </div>
+                           <div className="grid grid-cols-2 gap-4">
+                             <div>
+                               <label className="block text-xs font-semibold text-[#86868B] mb-1">Cognome</label>
+                               <input
+                                 type="text"
+                                 name="cognome"
+                                 placeholder="es. Boldi"
+                                 defaultValue={currentContatto ? currentContatto.cognome : ''}
+                                 className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none"
+                               />
+                             </div>
+                             <div>
+                               <label className="block text-xs font-semibold text-[#86868B] mb-1">Nome</label>
+                               <input
+                                 type="text"
+                                 name="nome"
+                                 placeholder="es. Massimiliano"
+                                 defaultValue={currentContatto ? currentContatto.nome : ''}
+                                 className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none"
+                               />
+                             </div>
+                           </div>
 
-                    {/* Ruoli del Contatto */}
-                    <div className="glass-panel p-5 rounded-2xl space-y-3">
-                      <div className="flex items-center gap-2 pb-1 border-b border-black/5">
-                        <span className="text-sm">🏷️</span>
-                        <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Ruoli del Contatto</span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2 bg-white/30 p-3 rounded-2xl border border-black/5">
-                        {["Proprietario", "Locatore", "Acquirente", "Affittuario", "Agente Immobiliare", "Intermediario", "Fotografo"].map(r => {
-                          const currentRoles = currentContatto ? (Array.isArray(currentContatto.ruolo) ? currentContatto.ruolo : String(currentContatto.ruolo || '').split(',').map(x => x.trim())) : [];
-                          const isChecked = currentRoles.includes(r);
-                          return (
-                            <label key={r} className="flex items-center space-x-2 text-xs font-semibold text-[#1D1D1F] cursor-pointer">
-                              <input
-                                type="checkbox"
-                                name={`ruolo_${r}`}
-                                defaultChecked={isChecked}
-                                className="rounded text-[#0071E3] focus:ring-[#0071E3] w-4 h-4"
-                              />
-                              <span>{r}</span>
-                            </label>
-                          );
-                        })}
-                      </div>
-                    </div>
+                           <div>
+                             <label className="block text-xs font-semibold text-[#86868B] mb-1">Società / Ente</label>
+                             <input
+                               type="text"
+                               name="societa"
+                               placeholder="es. HOME LAB Real Estate Sagl"
+                               defaultValue={currentContatto ? currentContatto.societa : ''}
+                               className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none"
+                             />
+                           </div>
+                         </div>
 
-                    {/* Contatti e Recapiti */}
-                    <div className="glass-panel p-5 rounded-2xl space-y-4">
-                      <div className="flex items-center gap-2 pb-1 border-b border-black/5">
-                        <span className="text-sm">📞</span>
-                        <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Recapiti</span>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-xs font-semibold text-[#86868B] mb-1">Telefono</label>
-                          <input
-                            type="tel"
-                            name="telefono"
-                            placeholder="+41 79 000 00 00"
-                            defaultValue={currentContatto ? currentContatto.telefono : ''}
-                            className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-semibold text-[#86868B] mb-1">E-mail</label>
-                          <input
-                            type="email"
-                            name="mail"
-                            placeholder="nome@dominio.ch"
-                            defaultValue={currentContatto ? currentContatto.mail : ''}
-                            className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none"
-                          />
-                        </div>
-                      </div>
-                    </div>
+                         {/* Ruoli del Contatto */}
+                         <div className="glass-panel p-5 rounded-2xl space-y-3">
+                           <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                             <span className="text-sm">🏷️</span>
+                             <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Ruoli del Contatto</span>
+                           </div>
+                           <div className="grid grid-cols-2 gap-2 bg-white/30 p-3 rounded-2xl border border-black/5">
+                             {["Proprietario", "Locatore", "Acquirente", "Affittuario", "Agente Immobiliare", "Intermediario", "Fotografo"].map(r => {
+                               const currentRoles = currentContatto ? (Array.isArray(currentContatto.ruolo) ? currentContatto.ruolo : String(currentContatto.ruolo || '').split(',').map(x => x.trim())) : [];
+                               const isChecked = currentRoles.includes(r);
+                               return (
+                                 <label key={r} className="flex items-center space-x-2 text-xs font-semibold text-[#1D1D1F] cursor-pointer">
+                                   <input
+                                     type="checkbox"
+                                     name={`ruolo_${r}`}
+                                     defaultChecked={isChecked}
+                                     className="rounded text-[#0071E3] focus:ring-[#0071E3] w-4 h-4"
+                                   />
+                                   <span>{r}</span>
+                                 </label>
+                               );
+                             })}
+                           </div>
+                         </div>
 
-                    {/* Note */}
-                    <div className="glass-panel p-5 rounded-2xl space-y-3">
-                      <div className="flex items-center gap-2 pb-1 border-b border-black/5">
-                        <span className="text-sm">📝</span>
-                        <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Note Libere Contatto</span>
-                      </div>
-                      <textarea
-                        name="note_contatto"
-                        rows="3"
-                        placeholder="Note operative, referenze e preferenze immobili..."
-                        defaultValue={currentContatto ? (currentContatto.note_contatto || currentContatto.note) : ''}
-                        className="w-full p-3.5 glass-input rounded-xl text-sm focus:outline-none resize-none"
-                      />
-                    </div>
+                         {/* Contatti e Recapiti */}
+                         <div className="glass-panel p-5 rounded-2xl space-y-4">
+                           <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                             <span className="text-sm">📞</span>
+                             <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Recapiti</span>
+                           </div>
+                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                             <div>
+                               <label className="block text-xs font-semibold text-[#86868B] mb-1">Telefono</label>
+                               <input
+                                 type="tel"
+                                 name="telefono"
+                                 placeholder="+41 79 000 00 00"
+                                 defaultValue={currentContatto ? currentContatto.telefono : ''}
+                                 className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none"
+                               />
+                             </div>
+                             <div>
+                               <label className="block text-xs font-semibold text-[#86868B] mb-1">E-mail</label>
+                               <input
+                                 type="email"
+                                 name="mail"
+                                 placeholder="nome@dominio.ch"
+                                 defaultValue={currentContatto ? currentContatto.mail : ''}
+                                 className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none"
+                               />
+                             </div>
+                           </div>
+                         </div>
 
-                    {/* Immobili Posseduti */}
-                    <div className="glass-panel p-5 rounded-2xl space-y-4">
-                      <div className="flex justify-between items-center pb-1 border-b border-black/5">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm">🔑</span>
-                          <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Immobili Posseduti (Proprietario)</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setAddingPropertyForContact({ contactId: currentContatto?.id || 'new', type: 'posseduti' });
-                            setIsImmobileModalOpen(true);
-                            setCurrentImmobile(null);
-                            setSelectedImmobileProprietarioId(currentContatto ? currentContatto.id : null);
-                          }}
-                          className="text-[10px] text-[#0071E3] hover:underline font-semibold"
-                        >
-                          + Aggiungi Immobile
-                        </button>
-                      </div>
+                         {/* Note */}
+                         <div className="glass-panel p-5 rounded-2xl space-y-3">
+                           <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                             <span className="text-sm">📝</span>
+                             <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Note Libere Contatto</span>
+                           </div>
+                           <textarea
+                             name="note_contatto"
+                             rows="3"
+                             placeholder="Note operative, referenze e preferenze immobili..."
+                             defaultValue={currentContatto ? (currentContatto.note_contatto || currentContatto.note) : ''}
+                             className="w-full p-3.5 glass-input rounded-xl text-sm focus:outline-none resize-none"
+                           />
+                         </div>
+                       </>
+                     )}
 
-                      <input
-                        type="text"
-                        placeholder="🔍 Cerca per nome, codice o comune..."
-                        value={searchPossedutiQuery}
-                        onChange={(e) => setSearchPossedutiQuery(e.target.value)}
-                        className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none"
-                      />
+                     {activeContactFormTab === 'immobili' && (
+                       <>
+                         {/* Immobili Posseduti */}
+                         <div className="glass-panel p-5 rounded-2xl space-y-4">
+                           <div className="flex justify-between items-center pb-1 border-b border-black/5">
+                             <div className="flex items-center gap-2">
+                               <span className="text-sm">🔑</span>
+                               <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Immobili Posseduti (Proprietario)</span>
+                             </div>
+                             <button
+                               type="button"
+                               onClick={() => {
+                                 setAddingPropertyForContact({ contactId: currentContatto?.id || 'new', type: 'posseduti' });
+                                 setIsImmobileModalOpen(true);
+                                 setCurrentImmobile(null);
+                                 setSelectedImmobileProprietarioId(currentContatto ? currentContatto.id : null);
+                               }}
+                               className="text-[10px] text-[#0071E3] hover:underline font-semibold"
+                             >
+                               + Aggiungi Immobile
+                             </button>
+                           </div>
 
-                      <div className="max-h-72 overflow-y-auto border border-black/5 rounded-2xl p-2.5 bg-white/20 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                        {immobili.length === 0 ? (
-                          <p className="text-xs text-gray-400 italic col-span-2 text-center py-4">Nessun immobile a catalogo</p>
-                        ) : (
-                          (() => {
-                            const filtered = immobili.filter(imm =>
-                              (imm.nome_immobile || '').toLowerCase().includes(searchPossedutiQuery.toLowerCase()) ||
-                              (imm.comune || '').toLowerCase().includes(searchPossedutiQuery.toLowerCase()) ||
-                              (imm.codice_immobile || '').toLowerCase().includes(searchPossedutiQuery.toLowerCase())
-                            );
-                            if (filtered.length === 0) return <p className="text-[10px] text-gray-400 italic col-span-2 text-center py-4">Nessun risultato</p>;
-                            return filtered.map(imm => {
-                              const isSelected = selectedPosseduti.includes(imm.id);
-                              return (
-                                <label key={imm.id} className={`relative border rounded-2xl overflow-hidden bg-white flex flex-col cursor-pointer transition-all hover:shadow-md ${isSelected ? 'border-[#0071E3] ring-1 ring-[#0071E3]/25 shadow-sm' : 'border-gray-200 hover:border-gray-300'}`}>
-                                  {/* Floating checkbox */}
-                                  <div className="absolute top-2 right-2 z-20">
-                                    <input
-                                      type="checkbox"
-                                      checked={isSelected}
-                                      onChange={(e) => {
-                                        if (e.target.checked) {
-                                          setSelectedPosseduti([...selectedPosseduti, imm.id]);
-                                        } else {
-                                          setSelectedPosseduti(selectedPosseduti.filter(id => id !== imm.id));
-                                        }
-                                      }}
-                                      className="rounded-full text-[#0071E3] focus:ring-[#0071E3] w-4.5 h-4.5 cursor-pointer shadow-sm bg-white border-gray-300"
-                                    />
-                                  </div>
+                           <input
+                             type="text"
+                             placeholder="🔍 Cerca per nome, codice o comune..."
+                             value={searchPossedutiQuery}
+                             onChange={(e) => setSearchPossedutiQuery(e.target.value)}
+                             className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none"
+                           />
 
-                                  {/* Thumbnail header */}
-                                  <SecureImageBackground
-                                    url={imm.immagine_di_riferimento}
-                                    className="h-32 bg-cover bg-center relative flex items-end"
-                                  >
-                                    <div className="absolute inset-0 bg-black/10"></div>
+                           <div className="max-h-72 overflow-y-auto border border-black/5 rounded-2xl p-2.5 bg-white/20 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                             {immobili.length === 0 ? (
+                               <p className="text-xs text-gray-400 italic col-span-2 text-center py-4">Nessun immobile a catalogo</p>
+                             ) : (
+                               (() => {
+                                 const filtered = immobili.filter(imm =>
+                                   (imm.nome_immobile || '').toLowerCase().includes(searchPossedutiQuery.toLowerCase()) ||
+                                   (imm.comune || '').toLowerCase().includes(searchPossedutiQuery.toLowerCase()) ||
+                                   (imm.codice_immobile || '').toLowerCase().includes(searchPossedutiQuery.toLowerCase())
+                                 );
+                                 if (filtered.length === 0) return <p className="text-[10px] text-gray-400 italic col-span-2 text-center py-4">Nessun risultato</p>;
+                                 return filtered.map(imm => {
+                                   const isSelected = selectedPosseduti.includes(imm.id);
+                                   return (
+                                     <label key={imm.id} className={`relative border rounded-2xl overflow-hidden bg-white flex flex-col cursor-pointer transition-all hover:shadow-md ${isSelected ? 'border-[#0071E3] ring-1 ring-[#0071E3]/25 shadow-sm' : 'border-gray-200 hover:border-gray-300'}`}>
+                                       {/* Floating checkbox */}
+                                       <div className="absolute top-2 right-2 z-20">
+                                         <input
+                                           type="checkbox"
+                                           checked={isSelected}
+                                           onChange={(e) => {
+                                             if (e.target.checked) {
+                                               setSelectedPosseduti([...selectedPosseduti, imm.id]);
+                                             } else {
+                                               setSelectedPosseduti(selectedPosseduti.filter(id => id !== imm.id));
+                                             }
+                                           }}
+                                           className="rounded-full text-[#0071E3] focus:ring-[#0071E3] w-4.5 h-4.5 cursor-pointer shadow-sm bg-white border-gray-300"
+                                         />
+                                       </div>
 
-                                    <div className="absolute top-2 left-2 flex gap-1 z-10 flex-wrap">
-                                      <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold tracking-wide uppercase shadow-sm ${imm.stato === 'Disponibile' ? 'bg-[#34C759] text-white' :
-                                        imm.stato === 'In Trattativa' ? 'bg-[#FF9500] text-white' :
-                                          imm.stato === 'Venduto' ? 'bg-[#8E8E93] text-white' :
-                                            imm.stato === 'Lead' ? 'bg-[#AF52DE] text-white' : 'bg-[#0071E3] text-white'
-                                        }`}>
-                                        {imm.stato}
-                                      </span>
-                                      <span className="bg-black/40 backdrop-blur-md text-white px-1.5 py-0.5 rounded text-[8px] font-semibold tracking-wide shadow-sm">
-                                        {imm.categoria}
-                                      </span>
-                                    </div>
+                                       {/* Thumbnail header */}
+                                       <SecureImageBackground
+                                         url={imm.immagine_di_riferimento}
+                                         className="h-32 bg-cover bg-center relative flex items-end"
+                                       >
+                                         <div className="absolute inset-0 bg-black/10"></div>
 
-                                    {!imm.immagine_di_riferimento && (
-                                      <div className="absolute inset-0 flex flex-col items-center justify-center text-[#86868B]/60 select-none z-10 p-2">
-                                        <svg className="w-8 h-8 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1">
-                                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                                        </svg>
-                                      </div>
-                                    )}
+                                         <div className="absolute top-2 left-2 flex gap-1 z-10 flex-wrap">
+                                           <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold tracking-wide uppercase shadow-sm ${imm.stato === 'Disponibile' ? 'bg-[#34C759] text-white' :
+                                             imm.stato === 'In Trattativa' ? 'bg-[#FF9500] text-white' :
+                                               imm.stato === 'Venduto' ? 'bg-[#8E8E93] text-white' :
+                                                 imm.stato === 'Lead' ? 'bg-[#AF52DE] text-white' : 'bg-[#0071E3] text-white'
+                                             }`}>
+                                             {imm.stato}
+                                           </span>
+                                           <span className="bg-black/40 backdrop-blur-md text-white px-1.5 py-0.5 rounded text-[8px] font-semibold tracking-wide shadow-sm">
+                                             {imm.categoria}
+                                           </span>
+                                         </div>
 
-                                    <div className="absolute bottom-2 left-2 text-white text-[9px] font-bold drop-shadow-md z-10">
-                                      {imm.comune}{imm.nazione ? `, ${imm.nazione}` : ''}
-                                    </div>
+                                         {!imm.immagine_di_riferimento && (
+                                           <div className="absolute inset-0 flex flex-col items-center justify-center text-[#86868B]/60 select-none z-10 p-2">
+                                             <svg className="w-8 h-8 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1">
+                                               <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                             </svg>
+                                           </div>
+                                         )}
 
-                                    <span className="absolute bottom-2 right-2 bg-[#0071E3] text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full shadow-sm z-10">
-                                      {imm.immobile_in ? imm.immobile_in.join(' / ') : ''}
-                                    </span>
-                                  </SecureImageBackground>
+                                         <div className="absolute bottom-2 left-2 text-white text-[9px] font-bold drop-shadow-md z-10">
+                                           {imm.comune}{imm.nazione ? `, ${imm.nazione}` : ''}
+                                         </div>
 
-                                  {/* Details */}
-                                  <div className="p-3 flex-1 flex flex-col justify-between space-y-2">
-                                    <div>
-                                      <h4 className="font-bold text-xs text-[#1D1D1F] line-clamp-1 leading-tight group-hover:text-[#0071E3] transition-colors">
-                                        {imm.nome_immobile}
-                                      </h4>
-                                      <p className="text-[10px] text-[#86868B] leading-snug line-clamp-2 mt-0.5">
-                                        {imm.descrizione_immobile}
-                                      </p>
-                                    </div>
+                                         <span className="absolute bottom-2 right-2 bg-[#0071E3] text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full shadow-sm z-10">
+                                           {imm.immobile_in ? imm.immobile_in.join(' / ') : ''}
+                                         </span>
+                                       </SecureImageBackground>
 
-                                    {/* Tech Metrics Grid */}
-                                    <div className="grid grid-cols-3 gap-1 border-t border-b border-[#F5F5F7] py-1.5 text-center">
-                                      <div>
-                                        <span className="block text-[8px] font-medium text-[#86868B] uppercase tracking-wider">Codice</span>
-                                        <span className="text-[9px] font-semibold text-[#1D1D1F]">{imm.codice_immobile || 'N/D'}</span>
-                                      </div>
-                                      <div>
-                                        <span className="block text-[8px] font-medium text-[#86868B] uppercase tracking-wider">Locali</span>
-                                        <span className="text-[9px] font-semibold text-[#1D1D1F]">{imm.numero_di_locali}</span>
-                                      </div>
-                                      <div>
-                                        <span className="block text-[8px] font-medium text-[#86868B] uppercase tracking-wider">Superficie</span>
-                                        <span className="text-[9px] font-semibold text-[#1D1D1F]">
-                                          {imm.superficie_abitabile ? `${imm.superficie_abitabile} m²` : '—'}
-                                        </span>
-                                      </div>
-                                    </div>
+                                       {/* Details */}
+                                       <div className="p-3 flex-1 flex flex-col justify-between space-y-2">
+                                         <div>
+                                           <h4 className="font-bold text-xs text-[#1D1D1F] line-clamp-1 leading-tight group-hover:text-[#0071E3] transition-colors">
+                                             {imm.nome_immobile}
+                                           </h4>
+                                           <p className="text-[10px] text-[#86868B] leading-snug line-clamp-2 mt-0.5">
+                                             {imm.descrizione_immobile}
+                                           </p>
+                                         </div>
 
-                                    <div className="space-y-0.5 pt-0.5">
-                                      {Number(imm.prezzo_di_vendita) > 0 && (
-                                        <div className="text-[10px] font-extrabold text-[#1D1D1F]">
-                                          <span className="text-[8px] text-[#86868B] font-semibold uppercase mr-1">Vendita:</span>
-                                          CHF {Number(imm.prezzo_di_vendita).toLocaleString('it-CH')}
-                                        </div>
-                                      )}
-                                      {Number(imm.prezzo_di_affitto) > 0 && (
-                                        <div className="text-[10px] font-extrabold text-[#1D1D1F]">
-                                          <span className="text-[8px] text-[#86868B] font-semibold uppercase mr-1">Affitto:</span>
-                                          CHF {Number(imm.prezzo_di_affitto).toLocaleString('it-CH')}/mese
-                                        </div>
-                                      )}
-                                      {!(Number(imm.prezzo_di_vendita) > 0) && !(Number(imm.prezzo_di_affitto) > 0) && (
-                                        <span className="text-[9px] font-semibold text-gray-400 italic">Trattativa Riservata</span>
-                                      )}
-                                    </div>
-                                  </div>
-                                </label>
-                              );
-                            });
-                          })()
-                        )}
-                      </div>
-                    </div>
+                                         {/* Tech Metrics Grid */}
+                                         <div className="grid grid-cols-3 gap-1 border-t border-b border-[#F5F5F7] py-1.5 text-center">
+                                           <div>
+                                             <span className="block text-[8px] font-medium text-[#86868B] uppercase tracking-wider">Codice</span>
+                                             <span className="text-[9px] font-semibold text-[#1D1D1F]">{imm.codice_immobile || 'N/D'}</span>
+                                           </div>
+                                           <div>
+                                             <span className="block text-[8px] font-medium text-[#86868B] uppercase tracking-wider">Locali</span>
+                                             <span className="text-[9px] font-semibold text-[#1D1D1F]">{imm.numero_di_locali}</span>
+                                           </div>
+                                           <div>
+                                             <span className="block text-[8px] font-medium text-[#86868B] uppercase tracking-wider">Superficie</span>
+                                             <span className="text-[9px] font-semibold text-[#1D1D1F]">
+                                               {imm.superficie_abitabile ? `${imm.superficie_abitabile} m²` : '—'}
+                                             </span>
+                                           </div>
+                                         </div>
 
-                    {/* Immobili Gestiti */}
-                    <div className="glass-panel p-5 rounded-2xl space-y-4">
-                      <div className="flex justify-between items-center pb-1 border-b border-black/5">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm">💼</span>
-                          <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Immobili Gestiti (Agente)</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setAddingPropertyForContact({ contactId: currentContatto?.id || 'new', type: 'gestiti' });
-                            setIsImmobileModalOpen(true);
-                            setCurrentImmobile(null);
-                            setSelectedImmobileProprietarioId(null);
-                          }}
-                          className="text-[10px] text-[#0071E3] hover:underline font-semibold"
-                        >
-                          + Aggiungi Immobile
-                        </button>
-                      </div>
+                                         <div className="space-y-0.5 pt-0.5">
+                                           {Number(imm.prezzo_di_vendita) > 0 && (
+                                             <div className="text-[10px] font-extrabold text-[#1D1D1F]">
+                                               <span className="text-[8px] text-[#86868B] font-semibold uppercase mr-1">Vendita:</span>
+                                               CHF {Number(imm.prezzo_di_vendita).toLocaleString('it-CH')}
+                                             </div>
+                                           )}
+                                           {Number(imm.prezzo_di_affitto) > 0 && (
+                                             <div className="text-[10px] font-extrabold text-[#1D1D1F]">
+                                               <span className="text-[8px] text-[#86868B] font-semibold uppercase mr-1">Affitto:</span>
+                                               CHF {Number(imm.prezzo_di_affitto).toLocaleString('it-CH')}/mese
+                                             </div>
+                                           )}
+                                           {!(Number(imm.prezzo_di_vendita) > 0) && !(Number(imm.prezzo_di_affitto) > 0) && (
+                                             <span className="text-[9px] font-semibold text-gray-400 italic">Trattativa Riservata</span>
+                                           )}
+                                         </div>
+                                       </div>
+                                     </label>
+                                   );
+                                 });
+                               })()
+                             )}
+                           </div>
+                         </div>
 
-                      <input
-                        type="text"
-                        placeholder="🔍 Cerca per nome, codice o comune..."
-                        value={searchGestitiQuery}
-                        onChange={(e) => setSearchGestitiQuery(e.target.value)}
-                        className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none"
-                      />
+                         {/* Immobili Gestiti */}
+                         <div className="glass-panel p-5 rounded-2xl space-y-4">
+                           <div className="flex justify-between items-center pb-1 border-b border-black/5">
+                             <div className="flex items-center gap-2">
+                               <span className="text-sm">💼</span>
+                               <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Immobili Gestiti (Agente)</span>
+                             </div>
+                             <button
+                               type="button"
+                               onClick={() => {
+                                 setAddingPropertyForContact({ contactId: currentContatto?.id || 'new', type: 'gestiti' });
+                                 setIsImmobileModalOpen(true);
+                                 setCurrentImmobile(null);
+                                 setSelectedImmobileProprietarioId(null);
+                               }}
+                               className="text-[10px] text-[#0071E3] hover:underline font-semibold"
+                             >
+                               + Aggiungi Immobile
+                             </button>
+                           </div>
 
-                      <div className="max-h-72 overflow-y-auto border border-black/5 rounded-2xl p-2.5 bg-white/20 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                        {immobili.length === 0 ? (
-                          <p className="text-xs text-gray-400 italic col-span-2 text-center py-4">Nessun immobile a catalogo</p>
-                        ) : (
-                          (() => {
-                            const filtered = immobili.filter(imm =>
-                              (imm.nome_immobile || '').toLowerCase().includes(searchGestitiQuery.toLowerCase()) ||
-                              (imm.comune || '').toLowerCase().includes(searchGestitiQuery.toLowerCase()) ||
-                              (imm.codice_immobile || '').toLowerCase().includes(searchGestitiQuery.toLowerCase())
-                            );
-                            if (filtered.length === 0) return <p className="text-[10px] text-gray-400 italic col-span-2 text-center py-4">Nessun risultato</p>;
-                            return filtered.map(imm => {
-                              const isSelected = selectedGestiti.includes(imm.id);
-                              return (
-                                <label key={imm.id} className={`relative border rounded-2xl overflow-hidden bg-white flex flex-col cursor-pointer transition-all hover:shadow-md ${isSelected ? 'border-[#0071E3] ring-1 ring-[#0071E3]/25 shadow-sm' : 'border-gray-200 hover:border-gray-300'}`}>
-                                  {/* Floating checkbox */}
-                                  <div className="absolute top-2 right-2 z-20">
-                                    <input
-                                      type="checkbox"
-                                      checked={isSelected}
-                                      onChange={(e) => {
-                                        if (e.target.checked) {
-                                          setSelectedGestiti([...selectedGestiti, imm.id]);
-                                        } else {
-                                          setSelectedGestiti(selectedGestiti.filter(id => id !== imm.id));
-                                        }
-                                      }}
-                                      className="rounded-full text-[#0071E3] focus:ring-[#0071E3] w-4.5 h-4.5 cursor-pointer shadow-sm bg-white border-gray-300"
-                                    />
-                                  </div>
+                           <input
+                             type="text"
+                             placeholder="🔍 Cerca per nome, codice o comune..."
+                             value={searchGestitiQuery}
+                             onChange={(e) => setSearchGestitiQuery(e.target.value)}
+                             className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none"
+                           />
 
-                                  {/* Thumbnail header */}
-                                  <SecureImageBackground
-                                    url={imm.immagine_di_riferimento}
-                                    className="h-32 bg-cover bg-center relative flex items-end"
-                                  >
-                                    <div className="absolute inset-0 bg-black/10"></div>
+                           <div className="max-h-72 overflow-y-auto border border-black/5 rounded-2xl p-2.5 bg-white/20 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                             {immobili.length === 0 ? (
+                               <p className="text-xs text-gray-400 italic col-span-2 text-center py-4">Nessun immobile a catalogo</p>
+                             ) : (
+                               (() => {
+                                 const filtered = immobili.filter(imm =>
+                                   (imm.nome_immobile || '').toLowerCase().includes(searchGestitiQuery.toLowerCase()) ||
+                                   (imm.comune || '').toLowerCase().includes(searchGestitiQuery.toLowerCase()) ||
+                                   (imm.codice_immobile || '').toLowerCase().includes(searchGestitiQuery.toLowerCase())
+                                 );
+                                 if (filtered.length === 0) return <p className="text-[10px] text-gray-400 italic col-span-2 text-center py-4">Nessun risultato</p>;
+                                 return filtered.map(imm => {
+                                   const isSelected = selectedGestiti.includes(imm.id);
+                                   return (
+                                     <label key={imm.id} className={`relative border rounded-2xl overflow-hidden bg-white flex flex-col cursor-pointer transition-all hover:shadow-md ${isSelected ? 'border-[#0071E3] ring-1 ring-[#0071E3]/25 shadow-sm' : 'border-gray-200 hover:border-gray-300'}`}>
+                                       {/* Floating checkbox */}
+                                       <div className="absolute top-2 right-2 z-20">
+                                         <input
+                                           type="checkbox"
+                                           checked={isSelected}
+                                           onChange={(e) => {
+                                             if (e.target.checked) {
+                                               setSelectedGestiti([...selectedGestiti, imm.id]);
+                                             } else {
+                                               setSelectedGestiti(selectedGestiti.filter(id => id !== imm.id));
+                                             }
+                                           }}
+                                           className="rounded-full text-[#0071E3] focus:ring-[#0071E3] w-4.5 h-4.5 cursor-pointer shadow-sm bg-white border-gray-300"
+                                         />
+                                       </div>
 
-                                    <div className="absolute top-2 left-2 flex gap-1 z-10 flex-wrap">
-                                      <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold tracking-wide uppercase shadow-sm ${imm.stato === 'Disponibile' ? 'bg-[#34C759] text-white' :
-                                        imm.stato === 'In Trattativa' ? 'bg-[#FF9500] text-white' :
-                                          imm.stato === 'Venduto' ? 'bg-[#8E8E93] text-white' :
-                                            imm.stato === 'Lead' ? 'bg-[#AF52DE] text-white' : 'bg-[#0071E3] text-white'
-                                        }`}>
-                                        {imm.stato}
-                                      </span>
-                                      <span className="bg-black/40 backdrop-blur-md text-white px-1.5 py-0.5 rounded text-[8px] font-semibold tracking-wide shadow-sm">
-                                        {imm.categoria}
-                                      </span>
-                                    </div>
+                                       {/* Thumbnail header */}
+                                       <SecureImageBackground
+                                         url={imm.immagine_di_riferimento}
+                                         className="h-32 bg-cover bg-center relative flex items-end"
+                                       >
+                                         <div className="absolute inset-0 bg-black/10"></div>
 
-                                    {!imm.immagine_di_riferimento && (
-                                      <div className="absolute inset-0 flex flex-col items-center justify-center text-[#86868B]/60 select-none z-10 p-2">
-                                        <svg className="w-8 h-8 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1">
-                                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                                        </svg>
-                                      </div>
-                                    )}
+                                         <div className="absolute top-2 left-2 flex gap-1 z-10 flex-wrap">
+                                           <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold tracking-wide uppercase shadow-sm ${imm.stato === 'Disponibile' ? 'bg-[#34C759] text-white' :
+                                             imm.stato === 'In Trattativa' ? 'bg-[#FF9500] text-white' :
+                                               imm.stato === 'Venduto' ? 'bg-[#8E8E93] text-white' :
+                                                 imm.stato === 'Lead' ? 'bg-[#AF52DE] text-white' : 'bg-[#0071E3] text-white'
+                                             }`}>
+                                             {imm.stato}
+                                           </span>
+                                           <span className="bg-black/40 backdrop-blur-md text-white px-1.5 py-0.5 rounded text-[8px] font-semibold tracking-wide shadow-sm">
+                                             {imm.categoria}
+                                           </span>
+                                         </div>
 
-                                    <div className="absolute bottom-2 left-2 text-white text-[9px] font-bold drop-shadow-md z-10">
-                                      {imm.comune}{imm.nazione ? `, ${imm.nazione}` : ''}
-                                    </div>
+                                         {!imm.immagine_di_riferimento && (
+                                           <div className="absolute inset-0 flex flex-col items-center justify-center text-[#86868B]/60 select-none z-10 p-2">
+                                             <svg className="w-8 h-8 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1">
+                                               <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                             </svg>
+                                           </div>
+                                         )}
 
-                                    <span className="absolute bottom-2 right-2 bg-[#0071E3] text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full shadow-sm z-10">
-                                      {imm.immobile_in ? imm.immobile_in.join(' / ') : ''}
-                                    </span>
-                                  </SecureImageBackground>
+                                         <div className="absolute bottom-2 left-2 text-white text-[9px] font-bold drop-shadow-md z-10">
+                                           {imm.comune}{imm.nazione ? `, ${imm.nazione}` : ''}
+                                         </div>
 
-                                  {/* Details */}
-                                  <div className="p-3 flex-1 flex flex-col justify-between space-y-2">
-                                    <div>
-                                      <h4 className="font-bold text-xs text-[#1D1D1F] line-clamp-1 leading-tight group-hover:text-[#0071E3] transition-colors">
-                                        {imm.nome_immobile}
-                                      </h4>
-                                      <p className="text-[10px] text-[#86868B] leading-snug line-clamp-2 mt-0.5">
-                                        {imm.descrizione_immobile}
-                                      </p>
-                                    </div>
+                                         <span className="absolute bottom-2 right-2 bg-[#0071E3] text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full shadow-sm z-10">
+                                           {imm.immobile_in ? imm.immobile_in.join(' / ') : ''}
+                                         </span>
+                                       </SecureImageBackground>
 
-                                    {/* Tech Metrics Grid */}
-                                    <div className="grid grid-cols-3 gap-1 border-t border-b border-[#F5F5F7] py-1.5 text-center">
-                                      <div>
-                                        <span className="block text-[8px] font-medium text-[#86868B] uppercase tracking-wider">Codice</span>
-                                        <span className="text-[9px] font-semibold text-[#1D1D1F]">{imm.codice_immobile || 'N/D'}</span>
-                                      </div>
-                                      <div>
-                                        <span className="block text-[8px] font-medium text-[#86868B] uppercase tracking-wider">Locali</span>
-                                        <span className="text-[9px] font-semibold text-[#1D1D1F]">{imm.numero_di_locali}</span>
-                                      </div>
-                                      <div>
-                                        <span className="block text-[8px] font-medium text-[#86868B] uppercase tracking-wider">Superficie</span>
-                                        <span className="text-[9px] font-semibold text-[#1D1D1F]">
-                                          {imm.superficie_abitabile ? `${imm.superficie_abitabile} m²` : '—'}
-                                        </span>
-                                      </div>
-                                    </div>
+                                       {/* Details */}
+                                       <div className="p-3 flex-1 flex flex-col justify-between space-y-2">
+                                         <div>
+                                           <h4 className="font-bold text-xs text-[#1D1D1F] line-clamp-1 leading-tight group-hover:text-[#0071E3] transition-colors">
+                                             {imm.nome_immobile}
+                                           </h4>
+                                           <p className="text-[10px] text-[#86868B] leading-snug line-clamp-2 mt-0.5">
+                                             {imm.descrizione_immobile}
+                                           </p>
+                                         </div>
 
-                                    <div className="space-y-0.5 pt-0.5">
-                                      {Number(imm.prezzo_di_vendita) > 0 && (
-                                        <div className="text-[10px] font-extrabold text-[#1D1D1F]">
-                                          <span className="text-[8px] text-[#86868B] font-semibold uppercase mr-1">Vendita:</span>
-                                          CHF {Number(imm.prezzo_di_vendita).toLocaleString('it-CH')}
-                                        </div>
-                                      )}
-                                      {Number(imm.prezzo_di_affitto) > 0 && (
-                                        <div className="text-[10px] font-extrabold text-[#1D1D1F]">
-                                          <span className="text-[8px] text-[#86868B] font-semibold uppercase mr-1">Affitto:</span>
-                                          CHF {Number(imm.prezzo_di_affitto).toLocaleString('it-CH')}/mese
-                                        </div>
-                                      )}
-                                      {!(Number(imm.prezzo_di_vendita) > 0) && !(Number(imm.prezzo_di_affitto) > 0) && (
-                                        <span className="text-[9px] font-semibold text-gray-400 italic">Trattativa Riservata</span>
-                                      )}
-                                    </div>
-                                  </div>
-                                </label>
-                              );
-                            });
-                          })()
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                                         {/* Tech Metrics Grid */}
+                                         <div className="grid grid-cols-3 gap-1 border-t border-b border-[#F5F5F7] py-1.5 text-center">
+                                           <div>
+                                             <span className="block text-[8px] font-medium text-[#86868B] uppercase tracking-wider">Codice</span>
+                                             <span className="text-[9px] font-semibold text-[#1D1D1F]">{imm.codice_immobile || 'N/D'}</span>
+                                           </div>
+                                           <div>
+                                             <span className="block text-[8px] font-medium text-[#86868B] uppercase tracking-wider">Locali</span>
+                                             <span className="text-[9px] font-semibold text-[#1D1D1F]">{imm.numero_di_locali}</span>
+                                           </div>
+                                           <div>
+                                             <span className="block text-[8px] font-medium text-[#86868B] uppercase tracking-wider">Superficie</span>
+                                             <span className="text-[9px] font-semibold text-[#1D1D1F]">
+                                               {imm.superficie_abitabile ? `${imm.superficie_abitabile} m²` : '—'}
+                                             </span>
+                                           </div>
+                                         </div>
+
+                                         <div className="space-y-0.5 pt-0.5">
+                                           {Number(imm.prezzo_di_vendita) > 0 && (
+                                             <div className="text-[10px] font-extrabold text-[#1D1D1F]">
+                                               <span className="text-[8px] text-[#86868B] font-semibold uppercase mr-1">Vendita:</span>
+                                               CHF {Number(imm.prezzo_di_vendita).toLocaleString('it-CH')}
+                                             </div>
+                                           )}
+                                           {Number(imm.prezzo_di_affitto) > 0 && (
+                                             <div className="text-[10px] font-extrabold text-[#1D1D1F]">
+                                               <span className="text-[8px] text-[#86868B] font-semibold uppercase mr-1">Affitto:</span>
+                                               CHF {Number(imm.prezzo_di_affitto).toLocaleString('it-CH')}/mese
+                                             </div>
+                                           )}
+                                           {!(Number(imm.prezzo_di_vendita) > 0) && !(Number(imm.prezzo_di_affitto) > 0) && (
+                                             <span className="text-[9px] font-semibold text-gray-400 italic">Trattativa Riservata</span>
+                                           )}
+                                         </div>
+                                       </div>
+                                     </label>
+                                   );
+                                 });
+                               })()
+                             )}
+                           </div>
+                         </div>
+                       </>
+                     )}
+                   </div>
 
                   <div className="p-4 sm:p-6 border-t border-white/20 bg-[#F5F5F7]/80 backdrop-blur-md flex flex-col sm:flex-row gap-3 sm:justify-between items-stretch sm:items-center">
                     {currentContatto ? (

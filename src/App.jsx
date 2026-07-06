@@ -15,6 +15,7 @@ import { DashboardTab } from './components/DashboardTab';
 import { ContattiTab } from './components/ContattiTab';
 import { ImmobiliTab } from './components/ImmobiliTab';
 import { VisiteTab } from './components/VisiteTab';
+import { SecureImage, SecureImageBackground } from './components/SecureImage';
 
 
 export const CATEGORY_TIPO_MAP = {
@@ -3646,7 +3647,7 @@ export default function App() {
                       {/* Banner Immagine (se presente) */}
                       {viewingImmobile.immagine_di_riferimento && (
                         <div className="relative rounded-2xl overflow-hidden shadow-md border border-white/20">
-                          <img
+                          <SecureImage
                             src={viewingImmobile.immagine_di_riferimento}
                             alt={viewingImmobile.nome_immobile}
                             className="w-full h-44 object-cover"
@@ -4859,7 +4860,7 @@ export default function App() {
                         const previewSrc = isDeleted ? null : (tempImmobileImageUrl || (currentImmobile && currentImmobile.immagine_di_riferimento));
                         return previewSrc ? (
                           <div className="relative rounded-xl overflow-hidden group" style={{border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 2px 12px rgba(0,0,0,0.06)'}}>
-                            <img
+                            <SecureImage
                               src={previewSrc}
                               alt={currentImmobile?.nome_immobile || 'Anteprima immobile'}
                               className="w-full h-44 object-cover transition-transform duration-500 group-hover:scale-[1.02]"
@@ -4885,7 +4886,13 @@ export default function App() {
                                 </span>
                               </div>
                               {!tempImmobileImageUrl && currentImmobile?.immagine_di_riferimento && (
-                                <a href={currentImmobile.immagine_di_riferimento} target="_blank" rel="noreferrer" className="text-[10px] text-white/70 hover:text-white underline font-medium transition-colors">Apri originale ↗</a>
+                                <button
+                                  type="button"
+                                  onClick={() => handleViewDocument(currentImmobile.immagine_di_riferimento)}
+                                  className="text-[10px] text-white/70 hover:text-white underline font-medium transition-colors cursor-pointer bg-transparent border-0 p-0 text-left"
+                                >
+                                  Apri originale ↗
+                                </button>
                               )}
                             </div>
                           </div>
@@ -5386,7 +5393,7 @@ export default function App() {
                               
                               return isImage ? (
                                 <div className="mb-3 relative rounded-xl overflow-hidden group" style={{border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 2px 12px rgba(0,0,0,0.06)'}}>
-                                  <img
+                                  <SecureImage
                                     src={url}
                                     alt="Planimetria"
                                     className="w-full h-40 object-contain bg-white rounded-xl transition-transform duration-500 group-hover:scale-[1.02]"
@@ -7212,13 +7219,9 @@ export default function App() {
                               return (
                                 <div className="bg-white rounded-2xl border border-black/5 overflow-hidden hover:border-[#0071E3] transition-all group shadow-sm flex flex-col">
                                   {/* Header Image */}
-                                  <div 
+                                  <SecureImageBackground 
+                                    url={selectedImm.immagine_di_riferimento}
                                     className="h-32 bg-cover bg-center relative flex items-end"
-                                    style={{
-                                      backgroundImage: selectedImm.immagine_di_riferimento 
-                                        ? `url(${selectedImm.immagine_di_riferimento})` 
-                                        : 'linear-gradient(to bottom right, #E5E5EA, #D2D2D7)'
-                                    }}
                                   >
                                     <div className="absolute inset-0 bg-black/15"></div>
                                     
@@ -7255,7 +7258,7 @@ export default function App() {
                                     <span className="absolute bottom-2 right-2 bg-[#0071E3] text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full shadow-sm z-10">
                                       {selectedImm.immobile_in ? selectedImm.immobile_in.join(' / ') : ''}
                                     </span>
-                                  </div>
+                                  </SecureImageBackground>
 
                                   {/* Details */}
                                   <div className="p-3.5 space-y-3">

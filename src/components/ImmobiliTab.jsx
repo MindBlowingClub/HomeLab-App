@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { IconSearch } from './Icons';
+import { SecureImageBackground } from './SecureImage';
 
 export const ImmobiliTab = React.memo(({
   activeTab,
@@ -644,13 +645,9 @@ export const ImmobiliTab = React.memo(({
               className="glass-panel rounded-3xl transition-all overflow-hidden flex flex-col justify-between cursor-pointer group hover:scale-[1.02] hover:-translate-y-0.5 hover:shadow-xl duration-300"
             >
               {/* Header Photo / Placeholder */}
-              <div
+              <SecureImageBackground
+                url={item.immagine_di_riferimento}
                 className="h-44 relative overflow-hidden flex items-center justify-center bg-cover bg-center"
-                style={{
-                  backgroundImage: item.immagine_di_riferimento
-                    ? `url(${item.immagine_di_riferimento})`
-                    : 'linear-gradient(to bottom right, #E5E5EA, #D2D2D7)'
-                }}
               >
                 <div className="absolute inset-0 bg-black/10"></div>
                 <div className="absolute top-3 left-3 flex space-x-2 z-10">
@@ -686,7 +683,7 @@ export const ImmobiliTab = React.memo(({
                     In {item.immobile_in.filter(v => v === 'Vendita' || v === 'Affitto').join(' / ')}
                   </span>
                 )}
-              </div>
+              </SecureImageBackground>
 
               {/* Details */}
               <div className="p-5 flex-1 flex flex-col justify-between space-y-4">

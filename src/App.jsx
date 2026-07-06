@@ -420,7 +420,7 @@ const formatDashboardWeekRange = (d = new Date()) => {
   const day = date.getDay();
   const diff = date.getDate() - day + (day === 0 ? -6 : 1);
   const start = new Date(date.setDate(diff));
-  
+
   const end = new Date(start);
   end.setDate(start.getDate() + 6);
 
@@ -473,7 +473,7 @@ const DocumentFileField = ({ dbField, currentImmobile, setCurrentImmobile, isFil
           onChange={(e) => setSelectedFile(e.target.files[0])}
         />
       </div>
-      
+
       {hasFile && (
         <div className="flex items-center gap-1.5 px-2 h-[42px] bg-[#F5F5F7] border border-[#D2D2D7] rounded-lg shadow-sm w-full box-border">
           <div className="w-1.5 h-1.5 rounded-full bg-[#34C759] shrink-0" />
@@ -481,7 +481,7 @@ const DocumentFileField = ({ dbField, currentImmobile, setCurrentImmobile, isFil
           <span className="text-[9px] font-semibold text-[#1D1D1F] truncate flex-1" title={fileName}>
             {fileName}
           </span>
-          <button 
+          <button
             type="button"
             onClick={handleRemove}
             className="w-4 h-4 rounded-full bg-[#FF3B30]/10 text-[#FF3B30] hover:bg-[#FF3B30] hover:text-white flex items-center justify-center text-[9px] font-bold transition-colors shrink-0"
@@ -602,7 +602,7 @@ export default function App() {
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [sortProperty, setSortProperty] = useState('creazione-desc');
 
-  const hasActiveFilters = 
+  const hasActiveFilters =
     searchProperty !== '' ||
     filterPropertyType !== 'Tutti' ||
     filterTipo !== 'Tutti' ||
@@ -852,7 +852,7 @@ export default function App() {
             triggerToast("Nuovo immobile registrato da un collega", "success");
           } else if (payload.eventType === 'UPDATE') {
             setImmobili(prev => prev.map(item => item.id === payload.new.id ? payload.new : item));
-            
+
             setViewingImmobile(current => {
               if (current && current.id === payload.new.id) {
                 triggerToast("Scheda immobile aggiornata in tempo reale da un altro utente", "info");
@@ -860,7 +860,7 @@ export default function App() {
               }
               return current;
             });
-            
+
             setCurrentImmobile(current => {
               if (current && current.id === payload.new.id) {
                 triggerToast("Attenzione: questo immobile è stato appena modificato e salvato da un altro utente!", "warning");
@@ -887,7 +887,7 @@ export default function App() {
             triggerToast("Nuovo contatto registrato in tempo reale", "success");
           } else if (payload.eventType === 'UPDATE') {
             setContatti(prev => prev.map(item => item.id === payload.new.id ? payload.new : item));
-            
+
             setViewingContatto(current => {
               if (current && current.id === payload.new.id) {
                 triggerToast("Anagrafica contatto aggiornata in tempo reale", "info");
@@ -895,7 +895,7 @@ export default function App() {
               }
               return current;
             });
-            
+
             setCurrentContatto(current => {
               if (current && current.id === payload.new.id) {
                 triggerToast("Attenzione: questa anagrafica contatto è stata modificata da un altro utente!", "warning");
@@ -1026,11 +1026,11 @@ export default function App() {
         const mimeType = match ? match[1] : 'application/octet-stream';
         const ext = mimeType.split('/')[1] || 'bin';
         const uniqueName = `offline-${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${ext}`;
-        
+
         const response = await fetch(val);
         const blob = await response.blob();
         const fileObj = new File([blob], uniqueName, { type: mimeType });
-        
+
         const uploadedUrl = await uploadToSupabase(fileObj, bucketName);
         if (uploadedUrl) {
           return uploadedUrl;
@@ -1044,7 +1044,7 @@ export default function App() {
 
   const syncOfflineQueue = async (queueToSync = null) => {
     if (!isRealSupabase || !supabase || !navigator.onLine) return;
-    
+
     const queue = queueToSync || JSON.parse(localStorage.getItem('homelab_offline_queue') || '[]');
     if (queue.length === 0) return;
 
@@ -1093,7 +1093,7 @@ export default function App() {
           const { data, error } = await supabase.from(item.table).insert([insertFields]).select();
           if (error) throw error;
           const realRecord = data[0];
-          
+
           tempIdMap[item.id] = realRecord.id;
 
           if (item.type === 'immobile') {
@@ -1570,7 +1570,7 @@ export default function App() {
         fotoUrl = '';
       } else if (fotoFile && fotoFile.size > 0) {
         if (isRealSupabase) {
-          const uploadedUrl = await uploadToSupabase(fotoFile, 'immobili-media');
+          const uploadedUrl = await uploadToSupabase(fotoFile, 'profili-avatar');
           if (uploadedUrl) {
             fotoUrl = uploadedUrl;
           }
@@ -1596,7 +1596,7 @@ export default function App() {
         // prova ad aggiornare anche la colonna foto nel DB
         try {
           await supabase.from('profiles').update({ foto: fotoUrl }).eq('id', userId);
-        } catch (_) {}
+        } catch (_) { }
 
         // Se il nome completo è cambiato, aggiorna tutte le attività del calendario collegate
         if (oldFullName !== newFullName && oldFullName !== '') {
@@ -1664,11 +1664,11 @@ export default function App() {
     if (!isRealSupabase || !supabase) return null;
     const fileExt = file.name.split('.').pop().toLowerCase();
     const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif'].includes(fileExt);
-    
+
     // Auto-detect bucket based on file type if override is not provided
     const bucketName = bucketNameOverride || (isImage ? 'immobili-media' : 'immobili-documenti');
     const folder = isImage ? 'images' : 'docs';
-    
+
     const uniqueName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
     const filePath = `${folder}/${uniqueName}`;
 
@@ -1693,12 +1693,14 @@ export default function App() {
     try {
       if (publicUrl.startsWith('data:')) return; // Ignore base64
       const urlObj = new URL(publicUrl);
-      
+
       let bucketName = 'immobili-media';
       if (urlObj.pathname.includes('/immobili-documenti/')) {
         bucketName = 'immobili-documenti';
+      } else if (urlObj.pathname.includes('/profili-avatar/')) {
+        bucketName = 'profili-avatar';
       }
-      
+
       const pathParts = urlObj.pathname.split(`/${bucketName}/`);
       if (pathParts.length > 1) {
         const filePath = pathParts[1];
@@ -1728,12 +1730,12 @@ export default function App() {
         newUrl = await readAsBase64(fileField);
       }
     }
-    
+
     if (oldFileUrlToDelete && newUrl !== oldFileUrlToDelete) {
       // Esegui in background senza bloccare il salvataggio
       deleteFromSupabase(oldFileUrlToDelete).catch(err => console.error("Errore cancellazione file:", err));
     }
-    
+
     return newUrl;
   };
 
@@ -1763,7 +1765,7 @@ export default function App() {
           const { data, error } = await supabase.storage
             .from('immobili-documenti')
             .createSignedUrl(filePath, 60); // 1 min
-          
+
           if (error) throw error;
           window.open(data.signedUrl, '_blank');
         }
@@ -1815,85 +1817,85 @@ export default function App() {
 
     try {
       immagine_di_riferimento = await handleUploadOrBase64(
-        formData.get('immagine_di_riferimento_file'), 
+        formData.get('immagine_di_riferimento_file'),
         tempImmobileImageUrl === '' ? '' : (existing ? existing.immagine_di_riferimento : ""),
         existing ? existing.immagine_di_riferimento : null
       );
-      
+
       mandato = await handleUploadOrBase64(
-        formData.get('mandato_file'), 
+        formData.get('mandato_file'),
         formData.get('mandato_deleted') === 'true' ? '' : (existing ? existing.mandato : ""),
         existing ? existing.mandato : null
       );
-      
+
       planimetria = await handleUploadOrBase64(
-        formData.get('planimetria_file'), 
+        formData.get('planimetria_file'),
         tempPlanimetriaUrl === '' || formData.get('planimetria_deleted') === 'true' ? '' : (existing ? existing.planimetria : ""),
         existing ? existing.planimetria : null
       );
-      
+
       estratto_registro_fondiario_doc = await handleUploadOrBase64(
-        formData.get('estratto_registro_fondiario_doc_file'), 
+        formData.get('estratto_registro_fondiario_doc_file'),
         formData.get('estratto_registro_fondiario_doc_deleted') === 'true' ? '' : (existing ? existing.estratto_registro_fondiario_doc : ""),
         existing ? existing.estratto_registro_fondiario_doc : null
       );
-      
+
       descrittivo_tecnico_doc = await handleUploadOrBase64(
-        formData.get('descrittivo_tecnico_doc_file'), 
+        formData.get('descrittivo_tecnico_doc_file'),
         formData.get('descrittivo_tecnico_doc_deleted') === 'true' ? '' : (existing ? existing.descrittivo_tecnico_doc : ""),
         existing ? existing.descrittivo_tecnico_doc : null
       );
-      
+
       regolamento_condominiale_doc = await handleUploadOrBase64(
-        formData.get('regolamento_condominiale_doc_file'), 
+        formData.get('regolamento_condominiale_doc_file'),
         formData.get('regolamento_condominiale_doc_deleted') === 'true' ? '' : (existing ? existing.regolamento_condominiale_doc : ""),
         existing ? existing.regolamento_condominiale_doc : null
       );
-      
+
       spese_condominiali_doc = await handleUploadOrBase64(
-        formData.get('spese_condominiali_doc_file'), 
+        formData.get('spese_condominiali_doc_file'),
         formData.get('spese_condominiali_doc_deleted') === 'true' ? '' : (existing ? existing.spese_condominiali_doc : ""),
         existing ? existing.spese_condominiali_doc : null
       );
-      
+
       assicurazione_stabile_doc = await handleUploadOrBase64(
-        formData.get('assicurazione_stabile_doc_file'), 
+        formData.get('assicurazione_stabile_doc_file'),
         formData.get('assicurazione_stabile_doc_deleted') === 'true' ? '' : (existing ? existing.assicurazione_stabile_doc : ""),
         existing ? existing.assicurazione_stabile_doc : null
       );
-      
+
       verbale_ultima_assemblea_doc = await handleUploadOrBase64(
-        formData.get('verbale_ultima_assemblea_doc_file'), 
+        formData.get('verbale_ultima_assemblea_doc_file'),
         formData.get('verbale_ultima_assemblea_doc_deleted') === 'true' ? '' : (existing ? existing.verbale_ultima_assemblea_doc : ""),
         existing ? existing.verbale_ultima_assemblea_doc : null
       );
-      
+
       fondo_rinnovamento_doc = await handleUploadOrBase64(
-        formData.get('fondo_rinnovamento_doc_file'), 
+        formData.get('fondo_rinnovamento_doc_file'),
         formData.get('fondo_rinnovamento_doc_deleted') === 'true' ? '' : (existing ? existing.fondo_rinnovamento_doc : ""),
         existing ? existing.fondo_rinnovamento_doc : null
       );
-      
+
       valore_di_stima_doc = await handleUploadOrBase64(
-        formData.get('valore_di_stima_doc_file'), 
+        formData.get('valore_di_stima_doc_file'),
         formData.get('valore_di_stima_doc_deleted') === 'true' ? '' : (existing ? existing.valore_di_stima_doc : ""),
         existing ? existing.valore_di_stima_doc : null
       );
-      
+
       piano_assegnazioni_parti_comuni_doc = await handleUploadOrBase64(
-        formData.get('piano_assegnazioni_parti_comuni_doc_file'), 
+        formData.get('piano_assegnazioni_parti_comuni_doc_file'),
         formData.get('piano_assegnazioni_parti_comuni_doc_deleted') === 'true' ? '' : (existing ? existing.piano_assegnazioni_parti_comuni_doc : ""),
         existing ? existing.piano_assegnazioni_parti_comuni_doc : null
       );
-      
+
       rasi_doc = await handleUploadOrBase64(
-        formData.get('rasi_doc_file'), 
+        formData.get('rasi_doc_file'),
         formData.get('rasi_doc_deleted') === 'true' ? '' : (existing ? existing.rasi_doc : ""),
         existing ? existing.rasi_doc : null
       );
-      
+
       certificato_radon_doc = await handleUploadOrBase64(
-        formData.get('certificato_radon_doc_file'), 
+        formData.get('certificato_radon_doc_file'),
         formData.get('certificato_radon_doc_deleted') === 'true' ? '' : (existing ? existing.certificato_radon_doc : ""),
         existing ? existing.certificato_radon_doc : null
       );
@@ -2019,7 +2021,7 @@ export default function App() {
     // Compare existing fields to find changes
     const changes = [];
     const userEmail = currentSession?.user?.email ? currentSession.user.email.toUpperCase() : "UTENTE CRM";
-    
+
     const compareFields = [
       { key: 'nome_immobile', label: 'Nome' },
       { key: 'immobile_in', label: 'Contratto (Affitto/Vendita)' },
@@ -2129,7 +2131,7 @@ export default function App() {
       changes.push(`Creazione immobile: ${fields.nome_immobile || ''} (${fields.codice_immobile || 'N/D'}). Dati inseriti: ${initialFields.join(', ')}`);
     }
 
-    const logDesc = id 
+    const logDesc = id
       ? `Modifica immobile ${existing.nome_immobile || ''} (${existing.codice_immobile || 'N/D'}): ${changes.join(', ')}`
       : changes.join(', ');
 
@@ -2147,7 +2149,7 @@ export default function App() {
           const record = data[0] || { id, ...fields };
           setImmobili(immobili.map(item => item.id === id ? record : item));
           triggerToast("Immobile aggiornato nel database");
-          
+
           if (changes.length > 0 && supabase) {
             const { error: logErr } = await supabase.from('immobili_logs').insert([{
               immobile_id: id,
@@ -2159,7 +2161,7 @@ export default function App() {
               console.error("Errore salvataggio log:", logErr);
               triggerToast("Errore salvataggio log: " + logErr.message, "error");
             }
-            
+
             // Force reload logs for viewingImmobile
             if (viewingImmobile && viewingImmobile.id === id) {
               const { data: logData } = await supabase
@@ -2212,18 +2214,18 @@ export default function App() {
         }
       } catch (err) {
         console.error("Errore salvataggio Supabase:", err);
-        
+
         // Verifica se l'errore è una violazione di chiave/indice unico (es. codice_immobile duplicato)
-        const isUniqueViolation = err.code === '23505' || 
-                                  (err.message && err.message.toLowerCase().includes('unique constraint')) ||
-                                  (err.message && err.message.toLowerCase().includes('duplicate key'));
-        
+        const isUniqueViolation = err.code === '23505' ||
+          (err.message && err.message.toLowerCase().includes('unique constraint')) ||
+          (err.message && err.message.toLowerCase().includes('duplicate key'));
+
         if (isUniqueViolation) {
           triggerToast("Codice Immobile già in uso! Inserisci un codice univoco.", "error");
           setIsSavingImmobile(false);
           return; // Blocca l'esecuzione mantenendo il modale aperto ed evitando il salvataggio offline non valido
         }
-        
+
         triggerToast("Errore salvataggio Supabase. Salvataggio offline...", "warning");
         saveImmobileOffline(id, fields, changes, logDesc, userEmail);
       }
@@ -2354,7 +2356,7 @@ export default function App() {
       const userEmail = currentSession?.user?.email ? currentSession.user.email.toUpperCase() : "UTENTE CRM";
       const isActuallyOffline = isOffline || !navigator.onLine;
       const immobile = immobili.find(item => item.id === id);
-      
+
       // Costruisci una descrizione super dettagliata con tutti i campi dell'immobile prima di eliminarlo
       let logDescrizione = "";
       if (immobile) {
@@ -2383,7 +2385,7 @@ export default function App() {
           { key: 'numero_di_mappale', label: 'Mappale' },
           { key: 'note_interne', label: 'Note' }
         ];
-        
+
         const dettagliList = campiLabels
           .map(f => {
             const val = immobile[f.key];
@@ -2418,7 +2420,7 @@ export default function App() {
         fileFields.forEach(field => {
           const fileUrl = immobile[field];
           if (fileUrl && typeof fileUrl === 'string' && fileUrl.startsWith('http')) {
-            deleteFromSupabase(fileUrl).catch(err => 
+            deleteFromSupabase(fileUrl).catch(err =>
               console.error(`Errore durante l'eliminazione del file ${field} dallo Storage:`, err)
             );
           }
@@ -2479,7 +2481,7 @@ export default function App() {
           console.error(err);
           triggerToast("Errore eliminazione Supabase. Eliminazione offline...", "warning");
           saveDeleteOffline('immobile', 'immobili', id);
-          
+
           const newLog = {
             id: Date.now(),
             immobile_id: null,
@@ -2562,7 +2564,7 @@ export default function App() {
             .update({ proprietario_id: null })
             .eq('proprietario_id', id)
             .not('id', 'in', `(${selectedPosseduti.join(',') || 0})`);
-          
+
           await supabase
             .from('immobili')
             .update({ agente_id: null })
@@ -2911,7 +2913,7 @@ export default function App() {
     setSelectedVisitaImmobileId(item.immobile_di_riferimento_id || '');
     setSelectedCalendarClientId(item.cliente_id || '');
     setIsCalendarAllDay(!!item.tutto_giorno);
-    
+
     const participantNames = (item.partecipanti || '').split(',').map(n => n.trim().toLowerCase());
     const matchedIds = contatti.filter(c => {
       const name = `${c.nome} ${c.cognome}`.toLowerCase();
@@ -2983,7 +2985,7 @@ export default function App() {
     const monthStr = String(month + 1).padStart(2, '0');
     const dayStr = String(day).padStart(2, '0');
     const hourStr = String(hour).padStart(2, '0');
-    
+
     // Maintain old minutes if any
     const minutesStr = String(start.getMinutes()).padStart(2, '0');
 
@@ -3043,7 +3045,7 @@ export default function App() {
       const deltaY = moveEvent.clientY - startY;
       const deltaMinutes = deltaY; // 1px = 1 min
       const roundedDeltaMinutes = Math.round(deltaMinutes / 15) * 15;
-      
+
       const newEndTime = originalEndTime + roundedDeltaMinutes * 60 * 1000;
       const newEndDate = new Date(newEndTime);
 
@@ -3052,9 +3054,9 @@ export default function App() {
         return;
       }
 
-      setVisite(prev => prev.map(item => 
-        item.id === event.id 
-          ? { ...item, fine_evento: newEndDate.toISOString() } 
+      setVisite(prev => prev.map(item =>
+        item.id === event.id
+          ? { ...item, fine_evento: newEndDate.toISOString() }
           : item
       ));
     };
@@ -3067,11 +3069,11 @@ export default function App() {
       const roundedDeltaMinutes = Math.round(deltaY / 15) * 15;
       let newEndTime = originalEndTime + roundedDeltaMinutes * 60 * 1000;
       const startTime = new Date(event.inizio_evento).getTime();
-      
+
       if (newEndTime < startTime + 30 * 60 * 1000) {
         newEndTime = startTime + 30 * 60 * 1000;
       }
-      
+
       const finalEndDate = new Date(newEndTime);
       const updatedFields = {
         fine_evento: finalEndDate.toISOString()
@@ -3159,7 +3161,7 @@ export default function App() {
         <div className="min-h-screen flex flex-col justify-center items-center relative z-20">
           <div className="absolute top-[20%] left-[20%] w-[50%] h-[50%] rounded-full bg-[#0071E3]/5 blur-[120px] pointer-events-none" />
           <div className="absolute bottom-[20%] right-[20%] w-[50%] h-[50%] rounded-full bg-[#5AC8FA]/5 blur-[120px] pointer-events-none" />
-          
+
           <div className="flex flex-col items-center space-y-6">
             <div className="h-16 w-16 flex items-center justify-center animate-pulse">
               <IconLogo />
@@ -3168,7 +3170,7 @@ export default function App() {
               <h1 className="text-2xl font-bold tracking-tight text-[#1D1D1F]">HomeLab CRM</h1>
               <p className="text-xs text-[#86868B] font-medium tracking-wide">Inizializzazione sessione sicura...</p>
             </div>
-            
+
             <div className="pt-4 flex items-center justify-center">
               <svg className="animate-spin h-6 w-6 text-[#0071E3]" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -3341,8 +3343,8 @@ export default function App() {
               </div>
               <h1 className="text-sm font-bold tracking-tight text-[#1D1D1F]">HomeLab CRM</h1>
             </div>
-            
-            <div 
+
+            <div
               onClick={() => { setIsUserSettingsModalOpen(true); setTempProfileFotoUrl(null); setIsProfileEditing(false); }}
               className="w-7 h-7 rounded-full bg-gradient-to-tr from-indigo-500 to-pink-500 text-white flex items-center justify-center font-bold text-[10px] cursor-pointer hover:scale-105 transition-transform"
             >
@@ -3412,8 +3414,8 @@ export default function App() {
                 <button
                   onClick={() => setActiveTab('dashboard')}
                   className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${activeTab === 'dashboard'
-                      ? 'bg-white text-[#0071E3] shadow-sm font-semibold'
-                      : 'text-[#86868B] hover:bg-black/5 hover:text-[#1D1D1F]'
+                    ? 'bg-white text-[#0071E3] shadow-sm font-semibold'
+                    : 'text-[#86868B] hover:bg-black/5 hover:text-[#1D1D1F]'
                     }`}
                 >
                   <IconDashboard />
@@ -3423,8 +3425,8 @@ export default function App() {
                 <button
                   onClick={() => setActiveTab('immobili')}
                   className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${activeTab === 'immobili'
-                      ? 'bg-white text-[#0071E3] shadow-sm font-semibold'
-                      : 'text-[#86868B] hover:bg-black/5 hover:text-[#1D1D1F]'
+                    ? 'bg-white text-[#0071E3] shadow-sm font-semibold'
+                    : 'text-[#86868B] hover:bg-black/5 hover:text-[#1D1D1F]'
                     }`}
                 >
                   <IconImmobili />
@@ -3444,8 +3446,8 @@ export default function App() {
                 <button
                   onClick={() => setActiveTab('contatti')}
                   className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${activeTab === 'contatti'
-                      ? 'bg-white text-[#0071E3] shadow-sm font-semibold'
-                      : 'text-[#86868B] hover:bg-black/5 hover:text-[#1D1D1F]'
+                    ? 'bg-white text-[#0071E3] shadow-sm font-semibold'
+                    : 'text-[#86868B] hover:bg-black/5 hover:text-[#1D1D1F]'
                     }`}
                 >
                   <IconContatti />
@@ -3465,8 +3467,8 @@ export default function App() {
                 <button
                   onClick={() => { setActiveTab('visite'); }}
                   className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${activeTab === 'visite'
-                      ? 'bg-white text-[#0071E3] shadow-sm font-semibold'
-                      : 'text-[#86868B] hover:bg-black/5 hover:text-[#1D1D1F]'
+                    ? 'bg-white text-[#0071E3] shadow-sm font-semibold'
+                    : 'text-[#86868B] hover:bg-black/5 hover:text-[#1D1D1F]'
                     }`}
                 >
                   <IconCalendario />
@@ -3485,37 +3487,37 @@ export default function App() {
               </nav>
             </div>
 
-             {/* Bottom Panel (Profile Settings Trigger) */}
-             <div className="space-y-3">
+            {/* Bottom Panel (Profile Settings Trigger) */}
+            <div className="space-y-3">
 
-               {/* Profile card */}
-               <div
-                 onClick={() => { setIsUserSettingsModalOpen(true); setTempProfileFotoUrl(null); setIsProfileEditing(false); }}
-                 className="bg-white/80 hover:bg-white p-3 rounded-2xl border border-[#E5E5EA] shadow-sm flex items-center space-x-3 cursor-pointer hover:scale-[1.01] transition-all"
-                 title="Impostazioni Profilo"
-               >
-                 {profile?.foto && profile.foto.trim() !== '' ? (
-                    <SecureImage
-                      src={profile.foto}
-                      alt="Profile"
-                      className="w-8 h-8 rounded-full object-cover shrink-0"
-                    />
-                  ) : (
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-pink-500 text-white flex items-center justify-center font-bold text-xs shrink-0">
-                      {profile?.nome?.[0] || 'U'}{profile?.cognome?.[0] || ''}
-                    </div>
-                  )}
-                 <div className="overflow-hidden">
-                   <span className="font-bold text-xs text-[#1D1D1F] block truncate">
-                     {profile?.nome || 'Utente'} {profile?.cognome || ''}
-                   </span>
-                   <span className="text-[10px] text-[#86868B] block truncate uppercase tracking-wider font-semibold">
-                     {profile?.ruolo || 'User'}
-                   </span>
-                 </div>
-               </div>
+              {/* Profile card */}
+              <div
+                onClick={() => { setIsUserSettingsModalOpen(true); setTempProfileFotoUrl(null); setIsProfileEditing(false); }}
+                className="bg-white/80 hover:bg-white p-3 rounded-2xl border border-[#E5E5EA] shadow-sm flex items-center space-x-3 cursor-pointer hover:scale-[1.01] transition-all"
+                title="Impostazioni Profilo"
+              >
+                {profile?.foto && profile.foto.trim() !== '' ? (
+                  <SecureImage
+                    src={profile.foto}
+                    alt="Profile"
+                    className="w-8 h-8 rounded-full object-cover shrink-0"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-pink-500 text-white flex items-center justify-center font-bold text-xs shrink-0">
+                    {profile?.nome?.[0] || 'U'}{profile?.cognome?.[0] || ''}
+                  </div>
+                )}
+                <div className="overflow-hidden">
+                  <span className="font-bold text-xs text-[#1D1D1F] block truncate">
+                    {profile?.nome || 'Utente'} {profile?.cognome || ''}
+                  </span>
+                  <span className="text-[10px] text-[#86868B] block truncate uppercase tracking-wider font-semibold">
+                    {profile?.ruolo || 'User'}
+                  </span>
+                </div>
+              </div>
 
-             </div>
+            </div>
           </aside>
 
           {/* MAIN WORKSPACE AREA */}
@@ -3656,7 +3658,7 @@ export default function App() {
               <div className="fixed bottom-24 right-6 md:bottom-8 md:right-8 z-50 flex items-center justify-center group">
                 {/* Liquid glow aura */}
                 <div className="absolute inset-0 bg-gradient-to-tr from-[#0071E3] to-[#00C7FF] rounded-full blur-xl opacity-40 scale-95 group-hover:scale-125 transition-all duration-700 pointer-events-none animate-pulse" />
-                
+
                 <button
                   onClick={() => {
                     if (activeTab === 'immobili') {
@@ -3675,8 +3677,8 @@ export default function App() {
                     activeTab === 'immobili'
                       ? "Registra Nuovo Immobile"
                       : activeTab === 'contatti'
-                      ? "Nuovo Contatto"
-                      : "Nuovo Appuntamento"
+                        ? "Nuovo Contatto"
+                        : "Nuovo Appuntamento"
                   }
                 >
                   <svg className="w-6 h-6 transition-transform group-hover:rotate-90 duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -3700,11 +3702,11 @@ export default function App() {
               <div className="glass-modal w-full md:max-w-2xl h-full shadow-2xl border-l border-white/20 flex flex-col animate-slide-left overflow-hidden text-[#1D1D1F]">
 
                 {/* Header con gradiente sottile */}
-                <div className="relative px-6 py-5 border-b border-white/20 flex justify-between items-center" style={{background: 'linear-gradient(135deg, rgba(255,255,255,0.85) 0%, rgba(245,245,247,0.9) 100%)'}}>
-                  <div className="absolute bottom-0 left-0 right-0 h-[2px]" style={{background: 'linear-gradient(90deg, #0071E3 0%, #00C7FF 50%, #7B61FF 100%)', opacity: 0.6}} />
+                <div className="relative px-6 py-5 border-b border-white/20 flex justify-between items-center" style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.85) 0%, rgba(245,245,247,0.9) 100%)' }}>
+                  <div className="absolute bottom-0 left-0 right-0 h-[2px]" style={{ background: 'linear-gradient(90deg, #0071E3 0%, #00C7FF 50%, #7B61FF 100%)', opacity: 0.6 }} />
                   <div className="space-y-0.5">
                     <h3 className="text-lg font-bold tracking-tight text-[#1D1D1F] flex items-center gap-2.5">
-                      <span className="w-8 h-8 rounded-xl flex items-center justify-center text-base" style={{background: 'linear-gradient(135deg, #0071E3 0%, #00C7FF 100%)', color: 'white', boxShadow: '0 4px 12px rgba(0,113,227,0.25)'}}>
+                      <span className="w-8 h-8 rounded-xl flex items-center justify-center text-base" style={{ background: 'linear-gradient(135deg, #0071E3 0%, #00C7FF 100%)', color: 'white', boxShadow: '0 4px 12px rgba(0,113,227,0.25)' }}>
                         🏠
                       </span>
                       Dettaglio Immobile
@@ -3714,14 +3716,14 @@ export default function App() {
                   <button
                     onClick={handleCloseImmobileDetail}
                     className="w-8 h-8 rounded-full flex items-center justify-center text-sm text-[#86868B] hover:text-[#1D1D1F] hover:bg-black/5 transition-all duration-200"
-                    style={{backdropFilter: 'blur(10px)', background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(0,0,0,0.06)'}}
+                    style={{ backdropFilter: 'blur(10px)', background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(0,0,0,0.06)' }}
                   >
                     ✕
                   </button>
                 </div>
 
                 {/* Tab Bar inner Inspector (con lo stesso stile della modale di modifica) */}
-                <div className="px-6 py-2.5 border-b border-white/20 overflow-x-auto flex space-x-1 scrollbar-none" style={{background: 'rgba(245,245,247,0.7)', backdropFilter: 'blur(20px)'}}>
+                <div className="px-6 py-2.5 border-b border-white/20 overflow-x-auto flex space-x-1 scrollbar-none" style={{ background: 'rgba(245,245,247,0.7)', backdropFilter: 'blur(20px)' }}>
                   {[
                     { id: 'generale', label: '🏗️ Dettagli & Prezzi' },
                     { id: 'caratteristiche', label: '✨ Caratteristiche' },
@@ -3736,11 +3738,10 @@ export default function App() {
                       key={tab.id}
                       type="button"
                       onClick={() => setActiveDetailTab(tab.id)}
-                      className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold tracking-tight whitespace-nowrap transition-all duration-300 ${
-                        activeDetailTab === tab.id
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold tracking-tight whitespace-nowrap transition-all duration-300 ${activeDetailTab === tab.id
                           ? 'text-white shadow-md'
                           : 'text-[#86868B] hover:text-[#1D1D1F] hover:bg-white/50'
-                      }`}
+                        }`}
                       style={activeDetailTab === tab.id ? {
                         background: 'linear-gradient(135deg, #0071E3 0%, #0088FF 100%)',
                         boxShadow: '0 4px 12px rgba(0,113,227,0.25), inset 0 1px 0 rgba(255,255,255,0.2)'
@@ -3765,7 +3766,7 @@ export default function App() {
                             alt={viewingImmobile.nome_immobile}
                             className="w-full h-44 object-cover"
                           />
-                          <div className="absolute inset-0" style={{background: 'linear-gradient(180deg, transparent 50%, rgba(0,0,0,0.4) 100%)'}} />
+                          <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, transparent 50%, rgba(0,0,0,0.4) 100%)' }} />
                           <div className="absolute bottom-4 left-4 text-white">
                             <p className="text-[10px] uppercase font-bold tracking-widest text-white/80">Indirizzo immobile</p>
                             <p className="text-xs font-semibold mt-0.5">
@@ -3781,9 +3782,9 @@ export default function App() {
                         <div className="glass-panel p-4 rounded-2xl flex flex-col justify-between">
                           <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">stato</span>
                           <span className={`inline-flex self-start px-3 py-1 rounded-full text-xs font-bold uppercase shadow-sm ${viewingImmobile.stato === 'Disponibile' ? 'bg-[#34C759] text-white' :
-                              viewingImmobile.stato === 'In Trattativa' ? 'bg-[#FF9500] text-white' :
-                                viewingImmobile.stato === 'Venduto' ? 'bg-[#8E8E93] text-white' :
-                                  viewingImmobile.stato === 'Lead' ? 'bg-[#AF52DE] text-white' : 'bg-[#FF3B30] text-white'
+                            viewingImmobile.stato === 'In Trattativa' ? 'bg-[#FF9500] text-white' :
+                              viewingImmobile.stato === 'Venduto' ? 'bg-[#8E8E93] text-white' :
+                                viewingImmobile.stato === 'Lead' ? 'bg-[#AF52DE] text-white' : 'bg-[#FF3B30] text-white'
                             }`}>
                             {formatField(viewingImmobile.stato)}
                           </span>
@@ -3989,11 +3990,10 @@ export default function App() {
                               }
                             }
                           }}
-                          className={`group glass-panel p-4 rounded-2xl transition-all duration-200 ${
-                            viewingImmobile.proprietario_id 
-                              ? 'cursor-pointer hover:border-[#0071E3]/40 hover:shadow-lg' 
+                          className={`group glass-panel p-4 rounded-2xl transition-all duration-200 ${viewingImmobile.proprietario_id
+                              ? 'cursor-pointer hover:border-[#0071E3]/40 hover:shadow-lg'
                               : ''
-                          }`}
+                            }`}
                         >
                           <span className="block text-[9px] uppercase font-bold text-[#86868B]">proprietario o referente</span>
                           <span className={`font-bold text-sm block mt-0.5 transition-colors ${viewingImmobile.proprietario_id ? 'group-hover:text-[#0071E3]' : ''}`}>
@@ -4055,7 +4055,7 @@ export default function App() {
                         <div>
                           <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">mandato firmato</span>
                           <span className={`inline-flex px-3 py-1 rounded-full text-xs font-bold uppercase shadow-sm ${viewingImmobile.mandato_firmato === 'Si' ? 'bg-[#34C759] text-white' :
-                              viewingImmobile.mandato_firmato === 'Stand By' ? 'bg-[#FF9500] text-white' : 'bg-[#FF3B30] text-white'
+                            viewingImmobile.mandato_firmato === 'Stand By' ? 'bg-[#FF9500] text-white' : 'bg-[#FF3B30] text-white'
                             }`}>
                             {formatField(viewingImmobile.mandato_firmato)}
                           </span>
@@ -4123,9 +4123,8 @@ export default function App() {
                                     <span className="block text-xs font-bold text-[#1D1D1F]">{doc.label}</span>
                                     <span className="text-[10px] text-[#86868B] block mt-0.5">{doc.desc}</span>
                                   </div>
-                                  <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase shadow-sm ${
-                                    isPresent ? 'bg-[#34C759] text-white' : 'bg-[#8E8E93] text-white'
-                                  }`}>
+                                  <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase shadow-sm ${isPresent ? 'bg-[#34C759] text-white' : 'bg-[#8E8E93] text-white'
+                                    }`}>
                                     {isPresent ? 'Sì' : 'No'}
                                   </span>
                                 </div>
@@ -4214,11 +4213,10 @@ export default function App() {
                                               </h5>
                                             </div>
                                             <div className="flex items-center gap-1.5 shrink-0">
-                                              <div className={`w-6 h-6 rounded-full flex items-center justify-center font-black text-[9px] uppercase shadow-sm ${
-                                                isMyEvent(item) 
-                                                  ? 'bg-gradient-to-tr from-[#0071E3] to-[#5AC8FA] text-white border border-[#0071E3]/20' 
+                                              <div className={`w-6 h-6 rounded-full flex items-center justify-center font-black text-[9px] uppercase shadow-sm ${isMyEvent(item)
+                                                  ? 'bg-gradient-to-tr from-[#0071E3] to-[#5AC8FA] text-white border border-[#0071E3]/20'
                                                   : 'bg-gradient-to-tr from-[#8E8E93] to-[#D2D2D7] text-white border border-[#8E8E93]/20'
-                                              }`} title={item.creato_da || 'MASSIMILIANO BOLDI'}>
+                                                }`} title={item.creato_da || 'MASSIMILIANO BOLDI'}>
                                                 {isMyEvent(item) ? 'TU' : getCreatorTag(item)}
                                               </div>
                                               {item.tutto_giorno ? (
@@ -4450,12 +4448,12 @@ export default function App() {
 
                   <div className="space-y-4">
                     <h4 className="text-xs font-bold text-[#86868B] uppercase tracking-wider border-b pb-1">Immobili Collegati</h4>
-                    
+
                     {/* Immobili Posseduti */}
                     <div className="space-y-2">
                       <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Immobili Posseduti (Proprietà)</span>
                       {(() => {
-                        const owned = immobili.filter(imm => 
+                        const owned = immobili.filter(imm =>
                           (viewingContatto.immobili_posseduti && viewingContatto.immobili_posseduti.includes(imm.id)) ||
                           imm.proprietario_id === viewingContatto.id
                         );
@@ -4483,7 +4481,7 @@ export default function App() {
                     <div className="space-y-2 pt-2">
                       <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Immobili Gestiti (Agente)</span>
                       {(() => {
-                        const managed = immobili.filter(imm => 
+                        const managed = immobili.filter(imm =>
                           (viewingContatto.immobili_gestiti && viewingContatto.immobili_gestiti.includes(imm.id)) ||
                           imm.agente_id === viewingContatto.id
                         );
@@ -4639,7 +4637,7 @@ export default function App() {
           {isUserSettingsModalOpen && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-0 lg:p-4">
               <div className="glass-modal w-full lg:max-w-md rounded-none lg:rounded-3xl shadow-2xl overflow-hidden h-full lg:h-auto lg:max-h-[90vh] flex flex-col text-[#1D1D1F]">
-                
+
                 {/* Header */}
                 <div className="px-6 py-4 border-b border-[#E5E5EA] flex justify-between items-center bg-[#F5F5F7]">
                   <div>
@@ -4731,9 +4729,8 @@ export default function App() {
                           required
                           defaultValue={profile?.nome || ''}
                           disabled={!isProfileEditing}
-                          className={`w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none focus:bg-white text-[#1D1D1F] ${
-                            !isProfileEditing ? 'bg-gray-100/50 cursor-not-allowed border-transparent shadow-none text-gray-500' : ''
-                          }`}
+                          className={`w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none focus:bg-white text-[#1D1D1F] ${!isProfileEditing ? 'bg-gray-100/50 cursor-not-allowed border-transparent shadow-none text-gray-500' : ''
+                            }`}
                         />
                       </div>
                       <div>
@@ -4744,9 +4741,8 @@ export default function App() {
                           required
                           defaultValue={profile?.cognome || ''}
                           disabled={!isProfileEditing}
-                          className={`w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none focus:bg-white text-[#1D1D1F] ${
-                            !isProfileEditing ? 'bg-gray-100/50 cursor-not-allowed border-transparent shadow-none text-gray-500' : ''
-                          }`}
+                          className={`w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none focus:bg-white text-[#1D1D1F] ${!isProfileEditing ? 'bg-gray-100/50 cursor-not-allowed border-transparent shadow-none text-gray-500' : ''
+                            }`}
                         />
                       </div>
                       <div>
@@ -4894,11 +4890,11 @@ export default function App() {
               <div className="glass-modal w-full max-w-3xl rounded-none md:rounded-3xl shadow-2xl overflow-hidden my-0 md:my-8 h-full md:h-[680px] flex flex-col text-[#1D1D1F]">
 
                 {/* Header con gradiente sottile */}
-                <div className="relative px-6 py-5 border-b border-white/20 flex justify-between items-center" style={{background: 'linear-gradient(135deg, rgba(255,255,255,0.85) 0%, rgba(245,245,247,0.9) 100%)'}}>
-                  <div className="absolute bottom-0 left-0 right-0 h-[2px]" style={{background: 'linear-gradient(90deg, #0071E3 0%, #00C7FF 50%, #7B61FF 100%)', opacity: 0.6}} />
+                <div className="relative px-6 py-5 border-b border-white/20 flex justify-between items-center" style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.85) 0%, rgba(245,245,247,0.9) 100%)' }}>
+                  <div className="absolute bottom-0 left-0 right-0 h-[2px]" style={{ background: 'linear-gradient(90deg, #0071E3 0%, #00C7FF 50%, #7B61FF 100%)', opacity: 0.6 }} />
                   <div className="space-y-0.5">
                     <h3 className="text-lg font-bold tracking-tight text-[#1D1D1F] flex items-center gap-2.5">
-                      <span className="w-8 h-8 rounded-xl flex items-center justify-center text-base" style={{background: 'linear-gradient(135deg, #0071E3 0%, #00C7FF 100%)', color: 'white', boxShadow: '0 4px 12px rgba(0,113,227,0.25)'}}>
+                      <span className="w-8 h-8 rounded-xl flex items-center justify-center text-base" style={{ background: 'linear-gradient(135deg, #0071E3 0%, #00C7FF 100%)', color: 'white', boxShadow: '0 4px 12px rgba(0,113,227,0.25)' }}>
                         {currentImmobile ? '✏️' : '🏠'}
                       </span>
                       {currentImmobile ? 'Modifica Scheda Immobile' : 'Registra Nuovo Immobile'}
@@ -4918,14 +4914,14 @@ export default function App() {
                       setIsAgenteSearchFocused(false);
                     }}
                     className="w-8 h-8 rounded-full flex items-center justify-center text-sm text-[#86868B] hover:text-[#1D1D1F] hover:bg-black/5 transition-all duration-200"
-                    style={{backdropFilter: 'blur(10px)', background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(0,0,0,0.06)'}}
+                    style={{ backdropFilter: 'blur(10px)', background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(0,0,0,0.06)' }}
                   >
                     ✕
                   </button>
                 </div>
 
                 {/* Tab selector raffinato */}
-                <div className="px-6 py-2.5 border-b border-white/20 overflow-x-auto flex space-x-1 scrollbar-none" style={{background: 'rgba(245,245,247,0.7)', backdropFilter: 'blur(20px)'}}>
+                <div className="px-6 py-2.5 border-b border-white/20 overflow-x-auto flex space-x-1 scrollbar-none" style={{ background: 'rgba(245,245,247,0.7)', backdropFilter: 'blur(20px)' }}>
                   {[
                     { id: 'generale', label: '🏗️ Dettagli & Prezzi' },
                     { id: 'caratteristiche', label: '✨ Caratteristiche' },
@@ -4939,11 +4935,10 @@ export default function App() {
                       key={tab.id}
                       type="button"
                       onClick={() => setActiveFormTab(tab.id)}
-                      className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold tracking-tight whitespace-nowrap transition-all duration-300 ${
-                        activeFormTab === tab.id
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold tracking-tight whitespace-nowrap transition-all duration-300 ${activeFormTab === tab.id
                           ? 'text-white shadow-md'
                           : 'text-[#86868B] hover:text-[#1D1D1F] hover:bg-white/50'
-                      }`}
+                        }`}
                       style={activeFormTab === tab.id ? {
                         background: 'linear-gradient(135deg, #0071E3 0%, #0088FF 100%)',
                         boxShadow: '0 4px 12px rgba(0,113,227,0.25), inset 0 1px 0 rgba(255,255,255,0.2)'
@@ -4959,1223 +4954,1223 @@ export default function App() {
                     <div className="flex-1 overflow-y-auto p-6 space-y-5">
                       {currentImmobile && <input type="hidden" name="id" value={currentImmobile.id} />}
 
-                    {/* ========= SEZIONE 2: DETTAGLI & PREZZI (accorpata) ========= */}
-                  <div className={activeFormTab === 'generale' ? 'space-y-5 animate-fade-in' : 'hidden'}>
-                    <div className="glass-panel p-5 rounded-2xl space-y-4">
-                      <div className="flex items-center gap-2 pb-1 border-b border-black/5">
-                        <span className="text-sm">🖼️</span>
-                        <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Immagine di Riferimento</span>
-                      </div>
-                      
-                      {/* Anteprima Immagine */}
-                      {(() => {
-                        const isDeleted = tempImmobileImageUrl === '';
-                        const previewSrc = isDeleted ? null : (tempImmobileImageUrl || (currentImmobile && currentImmobile.immagine_di_riferimento));
-                        return previewSrc ? (
-                          <div className="relative rounded-xl overflow-hidden group" style={{border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 2px 12px rgba(0,0,0,0.06)'}}>
-                            <SecureImage
-                              src={previewSrc}
-                              alt={currentImmobile?.nome_immobile || 'Anteprima immobile'}
-                              className="w-full h-44 object-cover transition-transform duration-500 group-hover:scale-[1.02]"
-                            />
-                            <div className="absolute inset-0" style={{background: 'linear-gradient(180deg, transparent 50%, rgba(0,0,0,0.4) 100%)'}} />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setTempImmobileImageUrl('');
-                                triggerToast("Immagine rimossa. Salva per confermare.", "info");
-                              }}
-                              className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white/80 hover:text-white transition-all duration-200 opacity-0 group-hover:opacity-100 z-10"
-                              style={{background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.15)'}}
-                              title="Rimuovi immagine"
-                            >
-                              ✕
-                            </button>
-                            <div className="absolute bottom-0 left-0 right-0 p-3 flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{background: tempImmobileImageUrl ? '#FF9500' : '#34C759'}} />
-                                <span className="text-[10px] text-white/90 font-medium">
-                                  {tempImmobileImageUrl ? 'Nuova immagine (Anteprima)' : 'Immagine attuale'}
-                                </span>
-                              </div>
-                              {!tempImmobileImageUrl && currentImmobile?.immagine_di_riferimento && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleViewDocument(currentImmobile.immagine_di_riferimento)}
-                                  className="text-[10px] text-white/70 hover:text-white underline font-medium transition-colors cursor-pointer bg-transparent border-0 p-0 text-left"
-                                >
-                                  Apri originale ↗
-                                </button>
-                              )}
-                            </div>
+                      {/* ========= SEZIONE 2: DETTAGLI & PREZZI (accorpata) ========= */}
+                      <div className={activeFormTab === 'generale' ? 'space-y-5 animate-fade-in' : 'hidden'}>
+                        <div className="glass-panel p-5 rounded-2xl space-y-4">
+                          <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                            <span className="text-sm">🖼️</span>
+                            <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Immagine di Riferimento</span>
                           </div>
-                        ) : null;
-                      })()}
 
-                      <div>
-                        <div className="glass-input rounded-xl px-3 py-2">
-                          <input
-                            type="file"
-                            name="immagine_di_riferimento_file"
-                            accept="image/*"
-                            className="w-full text-xs text-[#86868B] file:mr-3 file:py-1.5 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-bold file:uppercase file:tracking-wide file:bg-[#0071E3]/10 file:text-[#0071E3] hover:file:bg-[#0071E3]/20 cursor-pointer transition-all"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                const reader = new FileReader();
-                                reader.onload = (ev) => setTempImmobileImageUrl(ev.target.result);
-                                reader.readAsDataURL(file);
-                              } else {
-                                setTempImmobileImageUrl(null);
-                              }
-                            }}
-                          />
-                        </div>
-                        {((tempImmobileImageUrl !== '' && tempImmobileImageUrl !== null) || (tempImmobileImageUrl === null && currentImmobile?.immagine_di_riferimento)) && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setTempImmobileImageUrl('');
-                              triggerToast("Immagine rimossa. Salva per confermare.", "info");
-                            }}
-                            className="mt-2 text-xs text-[#FF3B30] hover:underline font-semibold block"
-                          >
-                            Rimuovi immagine
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="glass-panel p-5 rounded-2xl space-y-4">
-                      <div className="flex items-center gap-2 pb-1 border-b border-black/5">
-                        <span className="text-sm">🏠</span>
-                        <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Identificazione</span>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="md:col-span-2">
-                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Nome Immobile <span className="text-[#FF3B30]">*</span></label>
-                          <input
-                            type="text"
-                            name="nome_immobile"
-                            required
-                            placeholder="es. Esclusiva Proprietà Vista Lago"
-                            defaultValue={currentImmobile ? currentImmobile.nome_immobile : ''}
-                            className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Codice Immobile <span className="text-[#FF3B30]">*</span></label>
-                          <input
-                            type="text"
-                            name="codice_immobile"
-                            required
-                            placeholder="es. #0001"
-                            defaultValue={currentImmobile ? currentImmobile.codice_immobile : ''}
-                            className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC] font-mono"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="glass-panel p-5 rounded-2xl space-y-4">
-                      <div className="flex items-center gap-2 pb-1 border-b border-black/5">
-                        <span className="text-sm">📍</span>
-                        <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Posizione</span>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div className="md:col-span-2">
-                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Indirizzo</label>
-                          <input
-                            type="text"
-                            name="indirizzo"
-                            placeholder="Via Cantonale 1"
-                            defaultValue={currentImmobile ? currentImmobile.indirizzo : ''}
-                            className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">NPA <span className="text-[#FF3B30]">*</span></label>
-                          <input
-                            type="number"
-                            name="npa"
-                            required
-                            placeholder="6900"
-                            defaultValue={currentImmobile ? currentImmobile.npa : ''}
-                            className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Comune <span className="text-[#FF3B30]">*</span></label>
-                          <input
-                            type="text"
-                            name="comune"
-                            required
-                            placeholder="Lugano"
-                            defaultValue={currentImmobile ? currentImmobile.comune : ''}
-                            className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
-                          />
-                        </div>
-                        <div className="md:col-span-4">
-                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Nazione</label>
-                          <input
-                            type="text"
-                            name="nazione"
-                            defaultValue={currentImmobile ? currentImmobile.nazione : 'Svizzera'}
-                            className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="glass-panel p-5 rounded-2xl space-y-4">
-                      <div className="flex items-center gap-2 pb-1 border-b border-black/5">
-                        <span className="text-sm">🏗️</span>
-                        <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Stato e Contratto</span>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Stato <span className="text-[#FF3B30]">*</span></label>
-                          <select
-                            name="stato"
-                            defaultValue={currentImmobile ? currentImmobile.stato : 'Disponibile'}
-                            className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F]"
-                          >
-                            <option value="Disponibile">Disponibile</option>
-                            <option value="Lead">Lead</option>
-                            <option value="In Trattativa">In Trattativa</option>
-                            <option value="Venduto">Venduto</option>
-                            <option value="Affittato">Affittato</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Immobile in</label>
-                          <div className="flex gap-2">
-                            {['Affitto', 'Vendita'].map(val => (
-                              <label key={val} className="relative flex-1 cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  name={`immobile_in_${val}`}
-                                  defaultChecked={currentImmobile && currentImmobile.immobile_in ? currentImmobile.immobile_in.includes(val) : false}
-                                  className="peer sr-only"
-                                />
-                                <div className="px-4 py-2.5 rounded-full border border-[#D2D2D7] bg-white/50 text-[#86868B] font-semibold text-sm transition-all duration-300 peer-checked:border-[#0071E3] peer-checked:bg-[#0071E3]/10 peer-checked:text-[#0071E3] peer-checked:shadow-sm hover:border-[#0071E3]/40 flex items-center justify-center gap-1.5 active:scale-[0.98]">
-                                  <span className="text-sm leading-none">
-                                    {val === 'Affitto' ? '🔑' : '🏷️'}
-                                  </span>
-                                  <span>{val}</span>
-                                </div>
-                              </label>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="glass-panel p-5 rounded-2xl space-y-4">
-                      <div className="flex items-center gap-2 pb-1 border-b border-black/5">
-                        <span className="text-sm">💰</span>
-                        <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Prezzi & Costi</span>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Prezzo di Vendita</label>
-                          <div className="relative">
-                            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-[#86868B] font-semibold">CHF</span>
-                            <input
-                              type="number"
-                              name="prezzo_di_vendita"
-                              placeholder="3'450'000"
-                              defaultValue={currentImmobile ? currentImmobile.prezzo_di_vendita : ''}
-                              className="glass-input w-full pl-12 pr-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Prezzo di Vendita Parcheggi</label>
-                          <div className="relative">
-                            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-[#86868B] font-semibold">CHF</span>
-                            <input
-                              type="number"
-                              name="prezzo_di_vendita_parcheggi"
-                              placeholder="150"
-                              defaultValue={currentImmobile ? currentImmobile.prezzo_di_vendita_parcheggi : ''}
-                              className="glass-input w-full pl-12 pr-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Prezzo di Affitto</label>
-                          <div className="relative">
-                            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-[#86868B] font-semibold">CHF</span>
-                            <input
-                              type="number"
-                              name="prezzo_di_affitto"
-                              placeholder="3'100"
-                              defaultValue={currentImmobile ? currentImmobile.prezzo_di_affitto : ''}
-                              className="glass-input w-full pl-12 pr-20 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
-                            />
-                            <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-[#86868B] font-medium">/ al mese</span>
-                          </div>
-                        </div>
-                        <div>
-                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Prezzo di Affitto Parcheggi</label>
-                          <div className="relative">
-                            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-[#86868B] font-semibold">CHF</span>
-                            <input
-                              type="number"
-                              name="prezzo_di_affitto_parcheggi"
-                              placeholder="es. 150"
-                              defaultValue={currentImmobile ? currentImmobile.prezzo_di_affitto_parcheggi : ''}
-                              className="glass-input w-full pl-12 pr-20 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
-                            />
-                            <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-[#86868B] font-medium">/ al mese</span>
-                          </div>
-                        </div>
-                        <div>
-                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Spese Condominiali</label>
-                          <div className="relative">
-                            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-[#86868B] font-semibold">CHF</span>
-                            <input
-                              type="number"
-                              name="spese_condominiali"
-                              placeholder="250"
-                              defaultValue={currentImmobile ? currentImmobile.spese_condominiali : ''}
-                              className="glass-input w-full pl-12 pr-20 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
-                            />
-                            <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-[#86868B] font-medium">/ al mese</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="glass-panel p-5 rounded-2xl space-y-4">
-                      <div className="flex items-center gap-2 pb-1 border-b border-black/5">
-                        <span className="text-sm">📐</span>
-                        <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Spazi & Dimensioni</span>
-                      </div>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                         <div>
-                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Categoria <span className="text-[#FF3B30]">*</span></label>
-                          <select
-                            name="categoria"
-                            required
-                            value={immobileCategoria}
-                            onChange={(e) => {
-                              setImmobileCategoria(e.target.value);
-                              setImmobileTipo('');
-                            }}
-                            className={`glass-input w-full px-4 py-2.5 rounded-xl text-sm transition-all duration-200 ${!immobileCategoria ? 'text-[#1D1D1F]/40' : 'text-[#1D1D1F]'}`}
-                          >
-                            <option value="" disabled>Selezionare</option>
-                            <option value="Appartamento" className="text-[#1D1D1F]">Appartamento</option>
-                            <option value="Casa" className="text-[#1D1D1F]">Casa</option>
-                            <option value="Locali di servizio" className="text-[#1D1D1F]">Locali di servizio</option>
-                            <option value="Terreno" className="text-[#1D1D1F]">Terreno</option>
-                            <option value="Agricoltura" className="text-[#1D1D1F]">Agricoltura</option>
-                            <option value="Gastronomia" className="text-[#1D1D1F]">Gastronomia</option>
-                            <option value="Industria / Commercio" className="text-[#1D1D1F]">Industria / Commercio</option>
-                            <option value="Parcheggi" className="text-[#1D1D1F]">Parcheggi</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Tipo <span className="text-[#FF3B30]">*</span></label>
-                          <select
-                            name="tipo"
-                            required
-                            value={immobileTipo}
-                            onChange={(e) => setImmobileTipo(e.target.value)}
-                            className={`glass-input w-full px-4 py-2.5 rounded-xl text-sm transition-all duration-200 ${!immobileTipo ? 'text-[#1D1D1F]/40' : 'text-[#1D1D1F]'}`}
-                          >
-                            <option value="" disabled>Selezionare</option>
-                            {(CATEGORY_TIPO_MAP[immobileCategoria] || []).map(t => (
-                              <option key={t} value={t} className="text-[#1D1D1F]">{t}</option>
-                            ))}
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Superficie Abitabile</label>
-                          <div className="relative">
-                            <input
-                              type="number"
-                              name="superficie_abitabile"
-                              defaultValue={currentImmobile ? currentImmobile.superficie_abitabile : ''}
-                              className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
-                              placeholder="m²"
-                            />
-                            <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-[#86868B]">m²</span>
-                          </div>
-                        </div>
-                        <div>
-                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Superficie Utile</label>
-                          <div className="relative">
-                            <input
-                              type="number"
-                              name="superficie_utile"
-                              defaultValue={currentImmobile ? currentImmobile.superficie_utile : ''}
-                              className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
-                              placeholder="m²"
-                            />
-                            <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-[#86868B]">m²</span>
-                          </div>
-                        </div>
-                        <div>
-                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Piano</label>
-                          <input
-                            type="text"
-                            name="piano"
-                            placeholder="es. 1, T, Attico..."
-                            defaultValue={currentImmobile ? currentImmobile.piano : ''}
-                            className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Numero Piani</label>
-                          <input
-                            type="number"
-                            name="numero_piani"
-                            placeholder="es. 3"
-                            defaultValue={currentImmobile ? currentImmobile.numero_piani : ''}
-                            className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Superficie Terreno</label>
-                          <div className="relative">
-                            <input
-                              type="number"
-                              name="superficie_terreno"
-                              placeholder="m²"
-                              defaultValue={currentImmobile ? currentImmobile.superficie_terreno : ''}
-                              className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
-                            />
-                            <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-[#86868B]">m²</span>
-                          </div>
-                        </div>
-                        <div>
-                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Locali</label>
-                          <input
-                            type="number"
-                            step="0.1"
-                            name="numero_di_locali"
-                            placeholder="es. 3.5"
-                            defaultValue={currentImmobile ? currentImmobile.numero_di_locali : ''}
-                            className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Bagni</label>
-                          <input
-                            type="number"
-                            name="numero_bagni"
-                            placeholder="es. 2"
-                            defaultValue={currentImmobile ? currentImmobile.numero_bagni : ''}
-                            className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Garage</label>
-                          <input
-                            type="number"
-                            name="garage"
-                            placeholder="es. 1"
-                            defaultValue={currentImmobile ? currentImmobile.garage : ''}
-                            className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Parcheggi</label>
-                          <input
-                            type="number"
-                            name="parcheggio"
-                            placeholder="es. 1"
-                            defaultValue={currentImmobile ? currentImmobile.parcheggio : ''}
-                            className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Costruzione (Anno)</label>
-                          <input
-                            type="number"
-                            name="anno_di_costruzione"
-                            placeholder="es. 2018"
-                            defaultValue={currentImmobile ? currentImmobile.anno_di_costruzione : ''}
-                            className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Rinnovo (Anno)</label>
-                          <input
-                            type="number"
-                            name="ultimo_rinnovo"
-                            placeholder="es. 2020"
-                            defaultValue={currentImmobile ? (() => {
-                              const val = currentImmobile.ultimo_rinnovo;
-                              if (!val) return "";
-                              if (val > 100000) {
-                                return Math.floor(val / 100);
-                              }
-                              return val;
-                            })() : ''}
-                            className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="glass-panel p-5 rounded-2xl space-y-4">
-                      <div className="flex items-center gap-2 pb-1 border-b border-black/5">
-                        <span className="text-sm">⚙️</span>
-                        <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Parametri & Vincoli</span>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div>
-                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Vendibile a Stranieri</label>
-                          <select
-                            name="vendibile_a_stranieri"
-                            defaultValue={currentImmobile ? currentImmobile.vendibile_a_stranieri : 'No'}
-                            className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F]"
-                          >
-                            <option value="No">No</option>
-                            <option value="Si">Si</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Numero Mappale</label>
-                          <input
-                            type="text"
-                            name="numero_di_mappale"
-                            placeholder="es. 1234"
-                            defaultValue={currentImmobile ? currentImmobile.numero_di_mappale : ''}
-                            className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
-                          />
-                        </div>
-                        <div className="md:col-span-2">
-                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Residenza</label>
-                          <div className="flex gap-2">
-                            {['Primaria', 'Secondaria'].map(res => (
-                              <label key={res} className="relative flex-1 cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  name={`tipo_di_residenza_${res}`}
-                                  defaultChecked={currentImmobile && currentImmobile.tipo_di_residenza ? currentImmobile.tipo_di_residenza.includes(res) : false}
-                                  className="peer sr-only"
-                                />
-                                <div className="px-4 py-2.5 rounded-full border border-[#D2D2D7] bg-white/50 text-[#86868B] font-semibold text-sm transition-all duration-300 peer-checked:border-[#0071E3] peer-checked:bg-[#0071E3]/10 peer-checked:text-[#0071E3] peer-checked:shadow-sm hover:border-[#0071E3]/40 flex items-center justify-center gap-1.5 active:scale-[0.98]">
-                                  <span className="text-sm leading-none">
-                                    {res === 'Primaria' ? '🏠' : '🏖️'}
-                                  </span>
-                                  <span>{res}</span>
-                                </div>
-                              </label>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-
-
-                    <div className="glass-panel p-5 rounded-2xl space-y-4">
-                      <div className="flex items-center gap-2 pb-1 border-b border-black/5">
-                        <span className="text-sm">📝</span>
-                        <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Descrizione & Planimetria</span>
-                      </div>
-                      
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Descrizione Esterna</label>
-                          <textarea
-                            name="descrizione_immobile"
-                            rows="4"
-                            defaultValue={currentImmobile ? currentImmobile.descrizione_immobile : ''}
-                            className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC] leading-relaxed"
-                            placeholder="Inserisci la descrizione pubblica dell'immobile..."
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">File Planimetria</label>
+                          {/* Anteprima Immagine */}
                           {(() => {
-                            const isDeleted = tempPlanimetriaUrl === '';
-                            const previewSrc = isDeleted ? null : (tempPlanimetriaUrl || (currentImmobile && currentImmobile.planimetria));
-                            
-                            if (previewSrc) {
-                              const isNew = !!tempPlanimetriaUrl;
-                              const url = previewSrc;
-                              const isImage = url.startsWith('data:image/') || (!url.startsWith('data:') && (['jpg','jpeg','png','gif','webp','heic','heif','bmp','svg'].includes(url.split('.').pop().split('?')[0].toLowerCase())));
-                              
-                              return isImage ? (
-                                <div className="mb-3 relative rounded-xl overflow-hidden group" style={{border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 2px 12px rgba(0,0,0,0.06)'}}>
-                                  <SecureImage
-                                    src={url}
-                                    alt="Planimetria"
-                                    className="w-full h-40 object-contain bg-white rounded-xl transition-transform duration-500 group-hover:scale-[1.02]"
-                                  />
-                                  <div className="absolute inset-0" style={{background: 'linear-gradient(180deg, transparent 60%, rgba(0,0,0,0.3) 100%)'}} />
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setTempPlanimetriaUrl('');
-                                      triggerToast("Planimetria rimossa. Salva per confermare.", "info");
-                                    }}
-                                    className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white/80 hover:text-white transition-all duration-200 opacity-0 group-hover:opacity-100 z-10"
-                                    style={{background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.15)'}}
-                                    title="Rimuovi planimetria"
-                                  >
-                                    ✕
-                                  </button>
-                                  <div className="absolute bottom-0 left-0 right-0 p-3 flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                      <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{background: isNew ? '#FF9500' : '#34C759'}} />
-                                      <span className="text-[10px] text-white/90 font-medium">
-                                        {isNew ? 'Nuova planimetria (Anteprima)' : 'Planimetria attuale'}
-                                      </span>
-                                    </div>
-                                    {!isNew && (
-                                      <button
-                                        type="button"
-                                        onClick={() => handleViewDocument(url)}
-                                        className="text-[10px] text-white/70 hover:text-white underline font-medium transition-colors cursor-pointer bg-transparent border-0 p-0"
-                                      >
-                                        Apri originale ↗
-                                      </button>
-                                    )}
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="mb-3 flex items-center gap-3 rounded-xl p-3 relative group" style={{background: 'rgba(255,255,255,0.5)', border: '1px solid rgba(0,0,0,0.06)'}}>
-                                  <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center flex-shrink-0">
-                                    <span className="text-lg">📄</span>
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <span className="block text-xs font-semibold text-[#1D1D1F] truncate">
-                                      {url.startsWith('data:') ? 'Nuova planimetria' : url.split('/').pop()}
-                                    </span>
-                                    <span className="block text-[10px] text-[#86868B]">
-                                      {isNew ? 'Nuova planimetria (Anteprima PDF)' : 'File attuale caricato'}
-                                    </span>
-                                  </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setTempPlanimetriaUrl('');
-                                      triggerToast("Planimetria rimossa. Salva per confermare.", "info");
-                                    }}
-                                    className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-[#86868B] hover:text-[#FF3B30] hover:bg-black/5 transition-all duration-200"
-                                    title="Rimuovi planimetria"
-                                  >
-                                    ✕
-                                  </button>
-                                  {!isNew && (
-                                    <button
-                                      type="button"
-                                      onClick={() => handleViewDocument(url)}
-                                      className="text-[10px] text-[#0071E3] hover:underline font-semibold flex-shrink-0 ml-1 cursor-pointer bg-transparent border-0 p-0"
-                                    >
-                                      Apri ↗
-                                    </button>
-                                  )}
-                                </div>
-                              );
-                            }
-                            return null;
-                          })()}
-                          <div className="glass-input rounded-xl px-3 py-2">
-                            <div className="text-[10px] text-[#86868B] mb-1 font-medium">Carica file planimetria (immagine o PDF):</div>
-                            <input
-                              type="file"
-                              name="planimetria_file"
-                              accept="image/*,application/pdf"
-                              className="w-full text-xs text-[#86868B] file:mr-3 file:py-1.5 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-bold file:uppercase file:tracking-wide file:bg-[#0071E3]/10 file:text-[#0071E3] hover:file:bg-[#0071E3]/20 cursor-pointer transition-all"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                  const reader = new FileReader();
-                                  reader.onload = (ev) => setTempPlanimetriaUrl(ev.target.result);
-                                  reader.readAsDataURL(file);
-                                } else {
-                                  setTempPlanimetriaUrl(null);
-                                }
-                              }}
-                            />
-                          </div>
-                          {((tempPlanimetriaUrl !== '' && tempPlanimetriaUrl !== null) || (tempPlanimetriaUrl === null && currentImmobile?.planimetria)) && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setTempPlanimetriaUrl('');
-                                triggerToast("Planimetria rimossa. Salva per confermare.", "info");
-                              }}
-                              className="mt-2 text-xs text-[#FF3B30] hover:underline font-semibold block"
-                            >
-                              Rimuovi planimetria
-                            </button>
-                          )}
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Link Cartella Condivisa</label>
-                          <input
-                            type="url"
-                            name="link_a_cartella_condivisa"
-                            placeholder="es. https://drive.google.com/drive/folders/..."
-                            defaultValue={currentImmobile ? currentImmobile.link_a_cartella_condivisa : ''}
-                            className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* ========= SEZIONE: CARATTERISTICHE ========= */}
-                  <div className={activeFormTab === 'caratteristiche' ? 'space-y-5 animate-fade-in' : 'hidden'}>
-                    <div className="glass-panel p-5 rounded-2xl space-y-4">
-                      <div className="flex items-center gap-2 pb-1 border-b border-black/5">
-                        <span className="text-sm">✨</span>
-                        <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Caratteristiche dell'immobile</span>
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                        {[
-                          "Accessibile con sedia a rotelle", "Adatto ai bambini", "Animali domestici ammessi", "Permesso fumare",
-                          "Balcone / Terrazza", "Piano rialzato", "Garage", "Parcheggio", "Piscina", "Camino",
-                          "Lavatrice privata", "Lavastoviglie", "Vista", "Quartiere tranquillo", "Costruzione Minergie",
-                          "Certificazione Minergie", "Vecchia costruzione", "Parte di un'abitazione in condivisione",
-                          "TV via cavo", "Nuova costruzione"
-                        ].map(feature => (
-                          <label key={feature} className="flex items-center space-x-2.5 text-xs text-[#1D1D1F] cursor-pointer group py-1.5 px-2 hover:bg-black/5 rounded-xl transition-all">
-                            <input
-                              type="checkbox"
-                              name={`caratteristica_${feature}`}
-                              defaultChecked={currentImmobile && currentImmobile.caratteristiche ? currentImmobile.caratteristiche.includes(feature) : false}
-                              className="w-4 h-4 rounded text-[#0071E3] focus:ring-[#0071E3] focus:ring-offset-0 border-[#D2D2D7] transition-all"
-                            />
-                            <span className="group-hover:text-[#0071E3] transition-colors font-medium">{feature}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* ========= SEZIONE 3: CONTATTI ========= */}
-                  <div className={activeFormTab === 'contatti' ? 'space-y-5 animate-fade-in' : 'hidden'}>
-                    <div className="glass-panel p-5 rounded-2xl space-y-4 relative z-20">
-                      <div className="flex items-center gap-2 pb-1 border-b border-black/5">
-                        <span className="text-sm">👤</span>
-                        <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Proprietario</span>
-                      </div>
-                      
-                      <div>
-                        <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">
-                          Proprietario / Referente <span className="text-[#FF3B30]">*</span>
-                        </label>
-                        <input type="hidden" name="proprietario_id" value={selectedImmobileProprietarioId || ''} />
-
-                        {/* Pill list of active owner */}
-                        <div className="flex flex-wrap gap-1.5 mb-2 max-h-20 overflow-y-auto">
-                          {!selectedImmobileProprietarioId ? (
-                            <span className="text-[10px] text-gray-400 italic">Nessun proprietario/referente selezionato</span>
-                          ) : (() => {
-                            const match = contatti.find(c => String(c.id) === String(selectedImmobileProprietarioId));
-                            if (!match) return <span className="text-[10px] text-gray-400 italic">Nessun proprietario/referente selezionato</span>;
-                            return (
-                              <span className="inline-flex items-center gap-1 bg-[#0071E3]/10 text-[#0071E3] text-[10px] px-2 py-0.5 rounded-full font-medium">
-                                {match.nome || ''} {match.cognome || ''}
+                            const isDeleted = tempImmobileImageUrl === '';
+                            const previewSrc = isDeleted ? null : (tempImmobileImageUrl || (currentImmobile && currentImmobile.immagine_di_riferimento));
+                            return previewSrc ? (
+                              <div className="relative rounded-xl overflow-hidden group" style={{ border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+                                <SecureImage
+                                  src={previewSrc}
+                                  alt={currentImmobile?.nome_immobile || 'Anteprima immobile'}
+                                  className="w-full h-44 object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+                                />
+                                <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, transparent 50%, rgba(0,0,0,0.4) 100%)' }} />
                                 <button
                                   type="button"
-                                  onClick={() => setSelectedImmobileProprietarioId(null)}
-                                  className="hover:text-red-500 font-bold ml-0.5"
+                                  onClick={() => {
+                                    setTempImmobileImageUrl('');
+                                    triggerToast("Immagine rimossa. Salva per confermare.", "info");
+                                  }}
+                                  className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white/80 hover:text-white transition-all duration-200 opacity-0 group-hover:opacity-100 z-10"
+                                  style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.15)' }}
+                                  title="Rimuovi immagine"
                                 >
                                   ✕
                                 </button>
-                              </span>
-                            );
+                                <div className="absolute bottom-0 left-0 right-0 p-3 flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: tempImmobileImageUrl ? '#FF9500' : '#34C759' }} />
+                                    <span className="text-[10px] text-white/90 font-medium">
+                                      {tempImmobileImageUrl ? 'Nuova immagine (Anteprima)' : 'Immagine attuale'}
+                                    </span>
+                                  </div>
+                                  {!tempImmobileImageUrl && currentImmobile?.immagine_di_riferimento && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleViewDocument(currentImmobile.immagine_di_riferimento)}
+                                      className="text-[10px] text-white/70 hover:text-white underline font-medium transition-colors cursor-pointer bg-transparent border-0 p-0 text-left"
+                                    >
+                                      Apri originale ↗
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            ) : null;
                           })()}
-                        </div>
 
-                        <div className="relative">
-                          <input
-                            type="text"
-                            placeholder="🔍 Cerca proprietario da aggiungere..."
-                            value={searchImmobileProprietarioQuery}
-                            onChange={(e) => setSearchImmobileProprietarioQuery(e.target.value)}
-                            onFocus={() => setIsProprietarioSearchFocused(true)}
-                            onBlur={() => setTimeout(() => setIsProprietarioSearchFocused(false), 200)}
-                            className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none text-[#1D1D1F] hover:bg-[#E5E5EA]/50 focus:bg-white focus:border-[#0071E3] transition-all"
-                          />
-
-                          {isProprietarioSearchFocused && (
-                            <div className="absolute left-0 right-0 mt-1 bg-white border border-[#E5E5EA] rounded-2xl shadow-xl max-h-60 overflow-y-auto z-[60] p-1.5 space-y-1">
-                              {(() => {
-                                const filtered = contatti
-                                  .filter(c => String(c.id) !== String(selectedImmobileProprietarioId))
-                                  .filter(c => {
-                                    const qParts = searchImmobileProprietarioQuery.toLowerCase().trim().split(/\s+/).filter(Boolean);
-                                    if (qParts.length === 0) return true;
-                                    const nome = (c.nome || '').toLowerCase();
-                                    const cognome = (c.cognome || '').toLowerCase();
-                                    const societa = (c.societa || '').toLowerCase();
-                                    const rolesStr = (Array.isArray(c.ruolo) ? c.ruolo.join(' ') : (c.ruolo || '')).toLowerCase();
-                                    return qParts.every(part =>
-                                      nome.includes(part) ||
-                                      cognome.includes(part) ||
-                                      societa.includes(part) ||
-                                      rolesStr.includes(part)
-                                    );
-                                  });
-
-                                if (filtered.length === 0) {
-                                  return (
-                                    <div className="p-3 text-center text-xs text-[#86868B]">
-                                      Nessun contatto trovato
-                                      <button
-                                        type="button"
-                                        onMouseDown={() => {
-                                          setAddingContactForVisit('proprietario');
-                                          handleCreateContatto();
-                                        }}
-                                        className="block mx-auto mt-2 text-xs font-bold text-[#0071E3] hover:underline"
-                                      >
-                                        + Crea come nuovo contatto
-                                      </button>
-                                    </div>
-                                  );
-                                }
-
-                                return (
-                                  <>
-                                    {filtered.map(c => {
-                                      const rolesStr = Array.isArray(c.ruolo) ? c.ruolo.join(', ') : (c.ruolo || '');
-                                      return (
-                                        <button
-                                          key={c.id}
-                                          type="button"
-                                          onMouseDown={() => {
-                                            const parsedVal = isNaN(Number(c.id)) ? c.id : Number(c.id);
-                                            setSelectedImmobileProprietarioId(parsedVal);
-                                            setSearchImmobileProprietarioQuery('');
-                                          }}
-                                          className="w-full text-left px-3 py-2 rounded-xl text-xs hover:bg-[#F5F5F7] transition-all flex flex-col gap-0.5"
-                                        >
-                                          <span className="font-bold text-[#1D1D1F]">{c.cognome} {c.nome}</span>
-                                          {(c.societa || rolesStr) && (
-                                            <span className="text-[10px] text-[#86868B]">
-                                              {c.societa}{c.societa && rolesStr ? ' - ' : ''}{rolesStr}
-                                            </span>
-                                          )}
-                                        </button>
-                                      );
-                                    })}
-                                    <div className="border-t border-gray-100 pt-1 mt-1">
-                                      <button
-                                        type="button"
-                                        onMouseDown={() => {
-                                          setAddingContactForVisit('proprietario');
-                                          handleCreateContatto();
-                                        }}
-                                        className="w-full text-left px-3 py-2 rounded-xl text-xs font-semibold text-[#0071E3] hover:bg-[#0071E3]/5 transition-all"
-                                      >
-                                        + Aggiungi Nuovo Contatto...
-                                      </button>
-                                    </div>
-                                  </>
-                                );
-                              })()}
+                          <div>
+                            <div className="glass-input rounded-xl px-3 py-2">
+                              <input
+                                type="file"
+                                name="immagine_di_riferimento_file"
+                                accept="image/*"
+                                className="w-full text-xs text-[#86868B] file:mr-3 file:py-1.5 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-bold file:uppercase file:tracking-wide file:bg-[#0071E3]/10 file:text-[#0071E3] hover:file:bg-[#0071E3]/20 cursor-pointer transition-all"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    const reader = new FileReader();
+                                    reader.onload = (ev) => setTempImmobileImageUrl(ev.target.result);
+                                    reader.readAsDataURL(file);
+                                  } else {
+                                    setTempImmobileImageUrl(null);
+                                  }
+                                }}
+                              />
                             </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="glass-panel p-5 rounded-2xl space-y-4 relative z-10">
-                      <div className="flex items-center gap-2 pb-1 border-b border-black/5">
-                        <span className="text-sm">👥</span>
-                        <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Agenti Assegnati</span>
-                      </div>
-
-                      <div>
-                        <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">
-                          Agenti Assegnati
-                        </label>
-                        <input type="hidden" name="agente_id" value={selectedImmobileAgenteIds.join(',')} />
-
-                        {/* Pill list of active agents */}
-                        <div className="flex flex-wrap gap-1.5 mb-2 max-h-20 overflow-y-auto">
-                          {selectedImmobileAgenteIds.length === 0 ? (
-                            <span className="text-[10px] text-gray-400 italic">Nessun agente assegnato</span>
-                          ) : (
-                            selectedImmobileAgenteIds.map(aid => {
-                              const match = contatti.find(c => String(c.id) === String(aid));
-                              if (!match) return null;
-                              return (
-                                <span key={aid} className="inline-flex items-center gap-1 bg-[#0071E3]/10 text-[#0071E3] text-[10px] px-2 py-0.5 rounded-full font-medium">
-                                  {match.nome || ''} {match.cognome || ''}
-                                  <button
-                                    type="button"
-                                    onClick={() => setSelectedImmobileAgenteIds(prev => prev.filter(id => String(id) !== String(aid)))}
-                                    className="hover:text-red-500 font-bold ml-0.5"
-                                  >
-                                    ✕
-                                  </button>
-                                </span>
-                              );
-                            })
-                          )}
-                        </div>
-
-                        <div className="relative">
-                          <input
-                            type="text"
-                            placeholder="🔍 Cerca agente da aggiungere..."
-                            value={searchImmobileAgenteQuery}
-                            onChange={(e) => setSearchImmobileAgenteQuery(e.target.value)}
-                            onFocus={() => setIsAgenteSearchFocused(true)}
-                            onBlur={() => setTimeout(() => setIsAgenteSearchFocused(false), 200)}
-                            className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none text-[#1D1D1F] hover:bg-[#E5E5EA]/50 focus:bg-white focus:border-[#0071E3] transition-all"
-                          />
-
-                          {isAgenteSearchFocused && (
-                            <div className="absolute left-0 right-0 mt-1 bg-white border border-[#E5E5EA] rounded-2xl shadow-xl max-h-60 overflow-y-auto z-[60] p-1.5 space-y-1">
-                              {(() => {
-                                const filtered = contatti
-                                  .filter(c => {
-                                    const roles = c.ruolo;
-                                    if (Array.isArray(roles)) {
-                                      return roles.some(r => r.toLowerCase().includes('agente'));
-                                    }
-                                    return String(roles || '').toLowerCase().includes('agente');
-                                  })
-                                  .filter(c => !selectedImmobileAgenteIds.map(String).includes(String(c.id)))
-                                  .filter(c => {
-                                    const qParts = searchImmobileAgenteQuery.toLowerCase().trim().split(/\s+/).filter(Boolean);
-                                    if (qParts.length === 0) return true;
-                                    const nome = (c.nome || '').toLowerCase();
-                                    const cognome = (c.cognome || '').toLowerCase();
-                                    const societa = (c.societa || '').toLowerCase();
-                                    const rolesStr = (Array.isArray(c.ruolo) ? c.ruolo.join(' ') : (c.ruolo || '')).toLowerCase();
-                                    return qParts.every(part =>
-                                      nome.includes(part) ||
-                                      cognome.includes(part) ||
-                                      societa.includes(part) ||
-                                      rolesStr.includes(part)
-                                    );
-                                  });
-
-                                if (filtered.length === 0) {
-                                  return (
-                                    <div className="p-3 text-center text-xs text-[#86868B]">
-                                      Nessun agente trovato
-                                      <button
-                                        type="button"
-                                        onMouseDown={() => {
-                                          setAddingContactForVisit('agente');
-                                          handleCreateContatto();
-                                        }}
-                                        className="block mx-auto mt-2 text-xs font-bold text-[#0071E3] hover:underline"
-                                      >
-                                        + Crea come nuovo contatto
-                                      </button>
-                                    </div>
-                                  );
-                                }
-
-                                return (
-                                  <>
-                                    {filtered.map(c => {
-                                      const rolesStr = Array.isArray(c.ruolo) ? c.ruolo.join(', ') : (c.ruolo || '');
-                                      return (
-                                        <button
-                                          key={c.id}
-                                          type="button"
-                                          onMouseDown={() => {
-                                            const parsedVal = isNaN(Number(c.id)) ? c.id : Number(c.id);
-                                            if (!selectedImmobileAgenteIds.map(String).includes(String(parsedVal))) {
-                                              setSelectedImmobileAgenteIds(prev => [...prev, parsedVal]);
-                                            }
-                                            setSearchImmobileAgenteQuery('');
-                                          }}
-                                          className="w-full text-left px-3 py-2 rounded-xl text-xs hover:bg-[#F5F5F7] transition-all flex flex-col gap-0.5"
-                                        >
-                                          <span className="font-bold text-[#1D1D1F]">{c.cognome} {c.nome}</span>
-                                          {(c.societa || rolesStr) && (
-                                            <span className="text-[10px] text-[#86868B]">
-                                              {c.societa}{c.societa && rolesStr ? ' - ' : ''}{rolesStr}
-                                            </span>
-                                          )}
-                                        </button>
-                                      );
-                                    })}
-                                    <div className="border-t border-gray-100 pt-1 mt-1">
-                                      <button
-                                        type="button"
-                                        onMouseDown={() => {
-                                          setAddingContactForVisit('agente');
-                                          handleCreateContatto();
-                                        }}
-                                        className="w-full text-left px-3 py-2 rounded-xl text-xs font-semibold text-[#0071E3] hover:bg-[#0071E3]/5 transition-all"
-                                      >
-                                        + Aggiungi Nuovo Contatto...
-                                      </button>
-                                    </div>
-                                  </>
-                                );
-                              })()}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* ========= SEZIONE 4: AMMINISTRAZIONE ========= */}
-                  <div className={activeFormTab === 'amministrazione' ? 'space-y-5 animate-fade-in' : 'hidden'}>
-                    <div className="glass-panel p-5 rounded-2xl space-y-4">
-                      <div className="flex items-center gap-2 pb-1 border-b border-black/5">
-                        <span className="text-sm">💼</span>
-                        <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Mandato & Accordi</span>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Mandato Firmato <span className="text-[#FF3B30]">*</span></label>
-                          <select
-                            name="mandato_firmato"
-                            defaultValue={currentImmobile ? currentImmobile.mandato_firmato : 'No'}
-                            className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F]"
-                          >
-                            <option value="No">No</option>
-                            <option value="Stand By">Stand By</option>
-                            <option value="Si">Si</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Tipo di Mandato <span className="text-[#FF3B30]">*</span></label>
-                          <select
-                            name="tipo_di_mandato"
-                            defaultValue={currentImmobile ? currentImmobile.tipo_di_mandato : 'Non in Esclusiva'}
-                            className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F]"
-                          >
-                            <option value="Non in Esclusiva">Non in Esclusiva</option>
-                            <option value="In Esclusiva">In Esclusiva</option>
-                          </select>
-                        </div>
-                        <div className="md:col-span-2">
-                          <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">File Mandato (Immagine o PDF)</label>
-                          <div className="glass-input rounded-xl px-3 py-2">
-                            <input
-                              type="file"
-                              name="mandato_file"
-                              accept="image/*,application/pdf"
-                              className="w-full text-xs text-[#86868B] file:mr-3 file:py-1.5 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-bold file:uppercase file:tracking-wide file:bg-[#0071E3]/10 file:text-[#0071E3] hover:file:bg-[#0071E3]/20 cursor-pointer transition-all"
-                            />
-                          </div>
-                          {currentImmobile && currentImmobile.mandato && (
-                            <div className="flex items-center gap-2 mt-2 px-1">
-                              <div className="w-1.5 h-1.5 rounded-full bg-[#34C759]" />
+                            {((tempImmobileImageUrl !== '' && tempImmobileImageUrl !== null) || (tempImmobileImageUrl === null && currentImmobile?.immagine_di_riferimento)) && (
                               <button
                                 type="button"
-                                onClick={() => handleViewDocument(currentImmobile.mandato)}
-                                className="text-[10px] text-[#0071E3] hover:underline truncate max-w-[240px] font-medium cursor-pointer bg-transparent border-0 p-0 text-left"
+                                onClick={() => {
+                                  setTempImmobileImageUrl('');
+                                  triggerToast("Immagine rimossa. Salva per confermare.", "info");
+                                }}
+                                className="mt-2 text-xs text-[#FF3B30] hover:underline font-semibold block"
                               >
-                                {currentImmobile.mandato.split('/').pop()}
+                                Rimuovi immagine
                               </button>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="glass-panel p-5 rounded-2xl space-y-4">
+                          <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                            <span className="text-sm">🏠</span>
+                            <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Identificazione</span>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="md:col-span-2">
+                              <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Nome Immobile <span className="text-[#FF3B30]">*</span></label>
+                              <input
+                                type="text"
+                                name="nome_immobile"
+                                required
+                                placeholder="es. Esclusiva Proprietà Vista Lago"
+                                defaultValue={currentImmobile ? currentImmobile.nome_immobile : ''}
+                                className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
+                              />
                             </div>
-                          )}
+                            <div>
+                              <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Codice Immobile <span className="text-[#FF3B30]">*</span></label>
+                              <input
+                                type="text"
+                                name="codice_immobile"
+                                required
+                                placeholder="es. #0001"
+                                defaultValue={currentImmobile ? currentImmobile.codice_immobile : ''}
+                                className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC] font-mono"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="glass-panel p-5 rounded-2xl space-y-4">
+                          <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                            <span className="text-sm">📍</span>
+                            <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Posizione</span>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div className="md:col-span-2">
+                              <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Indirizzo</label>
+                              <input
+                                type="text"
+                                name="indirizzo"
+                                placeholder="Via Cantonale 1"
+                                defaultValue={currentImmobile ? currentImmobile.indirizzo : ''}
+                                className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">NPA <span className="text-[#FF3B30]">*</span></label>
+                              <input
+                                type="number"
+                                name="npa"
+                                required
+                                placeholder="6900"
+                                defaultValue={currentImmobile ? currentImmobile.npa : ''}
+                                className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Comune <span className="text-[#FF3B30]">*</span></label>
+                              <input
+                                type="text"
+                                name="comune"
+                                required
+                                placeholder="Lugano"
+                                defaultValue={currentImmobile ? currentImmobile.comune : ''}
+                                className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
+                              />
+                            </div>
+                            <div className="md:col-span-4">
+                              <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Nazione</label>
+                              <input
+                                type="text"
+                                name="nazione"
+                                defaultValue={currentImmobile ? currentImmobile.nazione : 'Svizzera'}
+                                className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="glass-panel p-5 rounded-2xl space-y-4">
+                          <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                            <span className="text-sm">🏗️</span>
+                            <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Stato e Contratto</span>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Stato <span className="text-[#FF3B30]">*</span></label>
+                              <select
+                                name="stato"
+                                defaultValue={currentImmobile ? currentImmobile.stato : 'Disponibile'}
+                                className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F]"
+                              >
+                                <option value="Disponibile">Disponibile</option>
+                                <option value="Lead">Lead</option>
+                                <option value="In Trattativa">In Trattativa</option>
+                                <option value="Venduto">Venduto</option>
+                                <option value="Affittato">Affittato</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Immobile in</label>
+                              <div className="flex gap-2">
+                                {['Affitto', 'Vendita'].map(val => (
+                                  <label key={val} className="relative flex-1 cursor-pointer">
+                                    <input
+                                      type="checkbox"
+                                      name={`immobile_in_${val}`}
+                                      defaultChecked={currentImmobile && currentImmobile.immobile_in ? currentImmobile.immobile_in.includes(val) : false}
+                                      className="peer sr-only"
+                                    />
+                                    <div className="px-4 py-2.5 rounded-full border border-[#D2D2D7] bg-white/50 text-[#86868B] font-semibold text-sm transition-all duration-300 peer-checked:border-[#0071E3] peer-checked:bg-[#0071E3]/10 peer-checked:text-[#0071E3] peer-checked:shadow-sm hover:border-[#0071E3]/40 flex items-center justify-center gap-1.5 active:scale-[0.98]">
+                                      <span className="text-sm leading-none">
+                                        {val === 'Affitto' ? '🔑' : '🏷️'}
+                                      </span>
+                                      <span>{val}</span>
+                                    </div>
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="glass-panel p-5 rounded-2xl space-y-4">
+                          <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                            <span className="text-sm">💰</span>
+                            <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Prezzi & Costi</span>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                              <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Prezzo di Vendita</label>
+                              <div className="relative">
+                                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-[#86868B] font-semibold">CHF</span>
+                                <input
+                                  type="number"
+                                  name="prezzo_di_vendita"
+                                  placeholder="3'450'000"
+                                  defaultValue={currentImmobile ? currentImmobile.prezzo_di_vendita : ''}
+                                  className="glass-input w-full pl-12 pr-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Prezzo di Vendita Parcheggi</label>
+                              <div className="relative">
+                                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-[#86868B] font-semibold">CHF</span>
+                                <input
+                                  type="number"
+                                  name="prezzo_di_vendita_parcheggi"
+                                  placeholder="150"
+                                  defaultValue={currentImmobile ? currentImmobile.prezzo_di_vendita_parcheggi : ''}
+                                  className="glass-input w-full pl-12 pr-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Prezzo di Affitto</label>
+                              <div className="relative">
+                                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-[#86868B] font-semibold">CHF</span>
+                                <input
+                                  type="number"
+                                  name="prezzo_di_affitto"
+                                  placeholder="3'100"
+                                  defaultValue={currentImmobile ? currentImmobile.prezzo_di_affitto : ''}
+                                  className="glass-input w-full pl-12 pr-20 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
+                                />
+                                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-[#86868B] font-medium">/ al mese</span>
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Prezzo di Affitto Parcheggi</label>
+                              <div className="relative">
+                                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-[#86868B] font-semibold">CHF</span>
+                                <input
+                                  type="number"
+                                  name="prezzo_di_affitto_parcheggi"
+                                  placeholder="es. 150"
+                                  defaultValue={currentImmobile ? currentImmobile.prezzo_di_affitto_parcheggi : ''}
+                                  className="glass-input w-full pl-12 pr-20 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
+                                />
+                                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-[#86868B] font-medium">/ al mese</span>
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Spese Condominiali</label>
+                              <div className="relative">
+                                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-[#86868B] font-semibold">CHF</span>
+                                <input
+                                  type="number"
+                                  name="spese_condominiali"
+                                  placeholder="250"
+                                  defaultValue={currentImmobile ? currentImmobile.spese_condominiali : ''}
+                                  className="glass-input w-full pl-12 pr-20 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
+                                />
+                                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-[#86868B] font-medium">/ al mese</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="glass-panel p-5 rounded-2xl space-y-4">
+                          <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                            <span className="text-sm">📐</span>
+                            <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Spazi & Dimensioni</span>
+                          </div>
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            <div>
+                              <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Categoria <span className="text-[#FF3B30]">*</span></label>
+                              <select
+                                name="categoria"
+                                required
+                                value={immobileCategoria}
+                                onChange={(e) => {
+                                  setImmobileCategoria(e.target.value);
+                                  setImmobileTipo('');
+                                }}
+                                className={`glass-input w-full px-4 py-2.5 rounded-xl text-sm transition-all duration-200 ${!immobileCategoria ? 'text-[#1D1D1F]/40' : 'text-[#1D1D1F]'}`}
+                              >
+                                <option value="" disabled>Selezionare</option>
+                                <option value="Appartamento" className="text-[#1D1D1F]">Appartamento</option>
+                                <option value="Casa" className="text-[#1D1D1F]">Casa</option>
+                                <option value="Locali di servizio" className="text-[#1D1D1F]">Locali di servizio</option>
+                                <option value="Terreno" className="text-[#1D1D1F]">Terreno</option>
+                                <option value="Agricoltura" className="text-[#1D1D1F]">Agricoltura</option>
+                                <option value="Gastronomia" className="text-[#1D1D1F]">Gastronomia</option>
+                                <option value="Industria / Commercio" className="text-[#1D1D1F]">Industria / Commercio</option>
+                                <option value="Parcheggi" className="text-[#1D1D1F]">Parcheggi</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Tipo <span className="text-[#FF3B30]">*</span></label>
+                              <select
+                                name="tipo"
+                                required
+                                value={immobileTipo}
+                                onChange={(e) => setImmobileTipo(e.target.value)}
+                                className={`glass-input w-full px-4 py-2.5 rounded-xl text-sm transition-all duration-200 ${!immobileTipo ? 'text-[#1D1D1F]/40' : 'text-[#1D1D1F]'}`}
+                              >
+                                <option value="" disabled>Selezionare</option>
+                                {(CATEGORY_TIPO_MAP[immobileCategoria] || []).map(t => (
+                                  <option key={t} value={t} className="text-[#1D1D1F]">{t}</option>
+                                ))}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Superficie Abitabile</label>
+                              <div className="relative">
+                                <input
+                                  type="number"
+                                  name="superficie_abitabile"
+                                  defaultValue={currentImmobile ? currentImmobile.superficie_abitabile : ''}
+                                  className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
+                                  placeholder="m²"
+                                />
+                                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-[#86868B]">m²</span>
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Superficie Utile</label>
+                              <div className="relative">
+                                <input
+                                  type="number"
+                                  name="superficie_utile"
+                                  defaultValue={currentImmobile ? currentImmobile.superficie_utile : ''}
+                                  className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
+                                  placeholder="m²"
+                                />
+                                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-[#86868B]">m²</span>
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Piano</label>
+                              <input
+                                type="text"
+                                name="piano"
+                                placeholder="es. 1, T, Attico..."
+                                defaultValue={currentImmobile ? currentImmobile.piano : ''}
+                                className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Numero Piani</label>
+                              <input
+                                type="number"
+                                name="numero_piani"
+                                placeholder="es. 3"
+                                defaultValue={currentImmobile ? currentImmobile.numero_piani : ''}
+                                className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Superficie Terreno</label>
+                              <div className="relative">
+                                <input
+                                  type="number"
+                                  name="superficie_terreno"
+                                  placeholder="m²"
+                                  defaultValue={currentImmobile ? currentImmobile.superficie_terreno : ''}
+                                  className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
+                                />
+                                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-[#86868B]">m²</span>
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Locali</label>
+                              <input
+                                type="number"
+                                step="0.1"
+                                name="numero_di_locali"
+                                placeholder="es. 3.5"
+                                defaultValue={currentImmobile ? currentImmobile.numero_di_locali : ''}
+                                className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Bagni</label>
+                              <input
+                                type="number"
+                                name="numero_bagni"
+                                placeholder="es. 2"
+                                defaultValue={currentImmobile ? currentImmobile.numero_bagni : ''}
+                                className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Garage</label>
+                              <input
+                                type="number"
+                                name="garage"
+                                placeholder="es. 1"
+                                defaultValue={currentImmobile ? currentImmobile.garage : ''}
+                                className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Parcheggi</label>
+                              <input
+                                type="number"
+                                name="parcheggio"
+                                placeholder="es. 1"
+                                defaultValue={currentImmobile ? currentImmobile.parcheggio : ''}
+                                className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Costruzione (Anno)</label>
+                              <input
+                                type="number"
+                                name="anno_di_costruzione"
+                                placeholder="es. 2018"
+                                defaultValue={currentImmobile ? currentImmobile.anno_di_costruzione : ''}
+                                className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Rinnovo (Anno)</label>
+                              <input
+                                type="number"
+                                name="ultimo_rinnovo"
+                                placeholder="es. 2020"
+                                defaultValue={currentImmobile ? (() => {
+                                  const val = currentImmobile.ultimo_rinnovo;
+                                  if (!val) return "";
+                                  if (val > 100000) {
+                                    return Math.floor(val / 100);
+                                  }
+                                  return val;
+                                })() : ''}
+                                className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="glass-panel p-5 rounded-2xl space-y-4">
+                          <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                            <span className="text-sm">⚙️</span>
+                            <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Parametri & Vincoli</span>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div>
+                              <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Vendibile a Stranieri</label>
+                              <select
+                                name="vendibile_a_stranieri"
+                                defaultValue={currentImmobile ? currentImmobile.vendibile_a_stranieri : 'No'}
+                                className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F]"
+                              >
+                                <option value="No">No</option>
+                                <option value="Si">Si</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Numero Mappale</label>
+                              <input
+                                type="text"
+                                name="numero_di_mappale"
+                                placeholder="es. 1234"
+                                defaultValue={currentImmobile ? currentImmobile.numero_di_mappale : ''}
+                                className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
+                              />
+                            </div>
+                            <div className="md:col-span-2">
+                              <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Residenza</label>
+                              <div className="flex gap-2">
+                                {['Primaria', 'Secondaria'].map(res => (
+                                  <label key={res} className="relative flex-1 cursor-pointer">
+                                    <input
+                                      type="checkbox"
+                                      name={`tipo_di_residenza_${res}`}
+                                      defaultChecked={currentImmobile && currentImmobile.tipo_di_residenza ? currentImmobile.tipo_di_residenza.includes(res) : false}
+                                      className="peer sr-only"
+                                    />
+                                    <div className="px-4 py-2.5 rounded-full border border-[#D2D2D7] bg-white/50 text-[#86868B] font-semibold text-sm transition-all duration-300 peer-checked:border-[#0071E3] peer-checked:bg-[#0071E3]/10 peer-checked:text-[#0071E3] peer-checked:shadow-sm hover:border-[#0071E3]/40 flex items-center justify-center gap-1.5 active:scale-[0.98]">
+                                      <span className="text-sm leading-none">
+                                        {res === 'Primaria' ? '🏠' : '🏖️'}
+                                      </span>
+                                      <span>{res}</span>
+                                    </div>
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+
+
+                        <div className="glass-panel p-5 rounded-2xl space-y-4">
+                          <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                            <span className="text-sm">📝</span>
+                            <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Descrizione & Planimetria</span>
+                          </div>
+
+                          <div className="space-y-4">
+                            <div>
+                              <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Descrizione Esterna</label>
+                              <textarea
+                                name="descrizione_immobile"
+                                rows="4"
+                                defaultValue={currentImmobile ? currentImmobile.descrizione_immobile : ''}
+                                className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC] leading-relaxed"
+                                placeholder="Inserisci la descrizione pubblica dell'immobile..."
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">File Planimetria</label>
+                              {(() => {
+                                const isDeleted = tempPlanimetriaUrl === '';
+                                const previewSrc = isDeleted ? null : (tempPlanimetriaUrl || (currentImmobile && currentImmobile.planimetria));
+
+                                if (previewSrc) {
+                                  const isNew = !!tempPlanimetriaUrl;
+                                  const url = previewSrc;
+                                  const isImage = url.startsWith('data:image/') || (!url.startsWith('data:') && (['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif', 'bmp', 'svg'].includes(url.split('.').pop().split('?')[0].toLowerCase())));
+
+                                  return isImage ? (
+                                    <div className="mb-3 relative rounded-xl overflow-hidden group" style={{ border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+                                      <SecureImage
+                                        src={url}
+                                        alt="Planimetria"
+                                        className="w-full h-40 object-contain bg-white rounded-xl transition-transform duration-500 group-hover:scale-[1.02]"
+                                      />
+                                      <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, transparent 60%, rgba(0,0,0,0.3) 100%)' }} />
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setTempPlanimetriaUrl('');
+                                          triggerToast("Planimetria rimossa. Salva per confermare.", "info");
+                                        }}
+                                        className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white/80 hover:text-white transition-all duration-200 opacity-0 group-hover:opacity-100 z-10"
+                                        style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.15)' }}
+                                        title="Rimuovi planimetria"
+                                      >
+                                        ✕
+                                      </button>
+                                      <div className="absolute bottom-0 left-0 right-0 p-3 flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                          <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: isNew ? '#FF9500' : '#34C759' }} />
+                                          <span className="text-[10px] text-white/90 font-medium">
+                                            {isNew ? 'Nuova planimetria (Anteprima)' : 'Planimetria attuale'}
+                                          </span>
+                                        </div>
+                                        {!isNew && (
+                                          <button
+                                            type="button"
+                                            onClick={() => handleViewDocument(url)}
+                                            className="text-[10px] text-white/70 hover:text-white underline font-medium transition-colors cursor-pointer bg-transparent border-0 p-0"
+                                          >
+                                            Apri originale ↗
+                                          </button>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="mb-3 flex items-center gap-3 rounded-xl p-3 relative group" style={{ background: 'rgba(255,255,255,0.5)', border: '1px solid rgba(0,0,0,0.06)' }}>
+                                      <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center flex-shrink-0">
+                                        <span className="text-lg">📄</span>
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <span className="block text-xs font-semibold text-[#1D1D1F] truncate">
+                                          {url.startsWith('data:') ? 'Nuova planimetria' : url.split('/').pop()}
+                                        </span>
+                                        <span className="block text-[10px] text-[#86868B]">
+                                          {isNew ? 'Nuova planimetria (Anteprima PDF)' : 'File attuale caricato'}
+                                        </span>
+                                      </div>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setTempPlanimetriaUrl('');
+                                          triggerToast("Planimetria rimossa. Salva per confermare.", "info");
+                                        }}
+                                        className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-[#86868B] hover:text-[#FF3B30] hover:bg-black/5 transition-all duration-200"
+                                        title="Rimuovi planimetria"
+                                      >
+                                        ✕
+                                      </button>
+                                      {!isNew && (
+                                        <button
+                                          type="button"
+                                          onClick={() => handleViewDocument(url)}
+                                          className="text-[10px] text-[#0071E3] hover:underline font-semibold flex-shrink-0 ml-1 cursor-pointer bg-transparent border-0 p-0"
+                                        >
+                                          Apri ↗
+                                        </button>
+                                      )}
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              })()}
+                              <div className="glass-input rounded-xl px-3 py-2">
+                                <div className="text-[10px] text-[#86868B] mb-1 font-medium">Carica file planimetria (immagine o PDF):</div>
+                                <input
+                                  type="file"
+                                  name="planimetria_file"
+                                  accept="image/*,application/pdf"
+                                  className="w-full text-xs text-[#86868B] file:mr-3 file:py-1.5 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-bold file:uppercase file:tracking-wide file:bg-[#0071E3]/10 file:text-[#0071E3] hover:file:bg-[#0071E3]/20 cursor-pointer transition-all"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      const reader = new FileReader();
+                                      reader.onload = (ev) => setTempPlanimetriaUrl(ev.target.result);
+                                      reader.readAsDataURL(file);
+                                    } else {
+                                      setTempPlanimetriaUrl(null);
+                                    }
+                                  }}
+                                />
+                              </div>
+                              {((tempPlanimetriaUrl !== '' && tempPlanimetriaUrl !== null) || (tempPlanimetriaUrl === null && currentImmobile?.planimetria)) && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setTempPlanimetriaUrl('');
+                                    triggerToast("Planimetria rimossa. Salva per confermare.", "info");
+                                  }}
+                                  className="mt-2 text-xs text-[#FF3B30] hover:underline font-semibold block"
+                                >
+                                  Rimuovi planimetria
+                                </button>
+                              )}
+                            </div>
+
+                            <div>
+                              <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Link Cartella Condivisa</label>
+                              <input
+                                type="url"
+                                name="link_a_cartella_condivisa"
+                                placeholder="es. https://drive.google.com/drive/folders/..."
+                                defaultValue={currentImmobile ? currentImmobile.link_a_cartella_condivisa : ''}
+                                className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
+                              />
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
 
-                  {/* ========= SEZIONE 5: DOCUMENTI ========= */}
-                  <div className={activeFormTab === 'documenti' ? 'space-y-5 animate-fade-in' : 'hidden'}>
-                    <div className="glass-panel p-5 rounded-2xl space-y-4">
-                      <div className="flex items-center gap-2 pb-1 border-b border-black/5">
-                        <span className="text-sm">📄</span>
-                        <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Documenti Immobile</span>
+                      {/* ========= SEZIONE: CARATTERISTICHE ========= */}
+                      <div className={activeFormTab === 'caratteristiche' ? 'space-y-5 animate-fade-in' : 'hidden'}>
+                        <div className="glass-panel p-5 rounded-2xl space-y-4">
+                          <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                            <span className="text-sm">✨</span>
+                            <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Caratteristiche dell'immobile</span>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                            {[
+                              "Accessibile con sedia a rotelle", "Adatto ai bambini", "Animali domestici ammessi", "Permesso fumare",
+                              "Balcone / Terrazza", "Piano rialzato", "Garage", "Parcheggio", "Piscina", "Camino",
+                              "Lavatrice privata", "Lavastoviglie", "Vista", "Quartiere tranquillo", "Costruzione Minergie",
+                              "Certificazione Minergie", "Vecchia costruzione", "Parte di un'abitazione in condivisione",
+                              "TV via cavo", "Nuova costruzione"
+                            ].map(feature => (
+                              <label key={feature} className="flex items-center space-x-2.5 text-xs text-[#1D1D1F] cursor-pointer group py-1.5 px-2 hover:bg-black/5 rounded-xl transition-all">
+                                <input
+                                  type="checkbox"
+                                  name={`caratteristica_${feature}`}
+                                  defaultChecked={currentImmobile && currentImmobile.caratteristiche ? currentImmobile.caratteristiche.includes(feature) : false}
+                                  className="w-4 h-4 rounded text-[#0071E3] focus:ring-[#0071E3] focus:ring-offset-0 border-[#D2D2D7] transition-all"
+                                />
+                                <span className="group-hover:text-[#0071E3] transition-colors font-medium">{feature}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
                       </div>
-                      <p className="text-[11px] text-[#86868B] -mt-2">
-                        Indica lo stato di presenza di ciascun documento cartaceo o digitale e carica il rispettivo file.
-                      </p>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                        {[
-                          { key: 'estratto_registro_fondiario', label: 'Estratto Registro Fondiario', desc: 'estratto_registro_fondiario_doc' },
-                          { key: 'descrittivo_tecnico', label: 'Descrittivo Tecnico', desc: 'descrittivo_tecnico_doc' },
-                          { key: 'regolamento_condominiale', label: 'Regolamento Condominiale', desc: 'regolamento_condominiale_doc' },
-                          { key: 'spese_condominiali_doc', label: 'Spese Condominiali', desc: 'spese_condominiali_doc', isFileOnly: true },
-                          { key: 'assicurazione_stabile', label: 'Assicurazione Stabile', desc: 'assicurazione_stabile_doc' },
-                          { key: 'verbale_ultima_assemblea', label: 'Verbale Ultima Assemblea', desc: 'verbale_ultima_assemblea_doc' },
-                          { key: 'fondo_rinnovamento', label: 'Fondo Rinnovamento', desc: 'fondo_rinnovamento_doc' },
-                          { key: 'valore_di_stima', label: 'Valore di Stima', desc: 'valore_di_stima_doc' },
-                          { key: 'piano_assegnazioni_parti_comuni', label: 'Piano Assegnazioni Parti Comuni', desc: 'piano_assegnazioni_parti_comuni_doc' },
-                          { key: 'rasi', label: 'RASI', desc: 'rasi_doc' },
-                          { key: 'certificato_radon', label: 'Certificato Radon', desc: 'certificato_radon_doc' }
-                        ].map(doc => {
-                          const dbField = doc.key;
-                          return (
-                            <div key={doc.key} className="rounded-xl p-3.5 space-y-2.5 transition-all bg-white/40 border border-black/5 hover:border-black/10">
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs">📎</span>
-                                <span className="text-[11px] font-bold text-[#1D1D1F]">{doc.label}</span>
-                              </div>
-                              {doc.isFileOnly ? (
-                                <div>
-                                  <DocumentFileField dbField={dbField} currentImmobile={currentImmobile} setCurrentImmobile={setCurrentImmobile} isFileOnly={true} />
-                                </div>
-                              ) : (
-                                <div className="grid grid-cols-2 gap-2 items-end">
-                                  <div>
-                                    <label className="block text-[9px] text-[#86868B] mb-0.5 font-semibold uppercase">Presente?</label>
-                                    <select
-                                      name={dbField}
-                                      defaultValue={currentImmobile ? currentImmobile[dbField] : 'No'}
-                                      className="glass-input w-full px-2 py-1 rounded-lg text-xs text-[#1D1D1F]"
+
+                      {/* ========= SEZIONE 3: CONTATTI ========= */}
+                      <div className={activeFormTab === 'contatti' ? 'space-y-5 animate-fade-in' : 'hidden'}>
+                        <div className="glass-panel p-5 rounded-2xl space-y-4 relative z-20">
+                          <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                            <span className="text-sm">👤</span>
+                            <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Proprietario</span>
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">
+                              Proprietario / Referente <span className="text-[#FF3B30]">*</span>
+                            </label>
+                            <input type="hidden" name="proprietario_id" value={selectedImmobileProprietarioId || ''} />
+
+                            {/* Pill list of active owner */}
+                            <div className="flex flex-wrap gap-1.5 mb-2 max-h-20 overflow-y-auto">
+                              {!selectedImmobileProprietarioId ? (
+                                <span className="text-[10px] text-gray-400 italic">Nessun proprietario/referente selezionato</span>
+                              ) : (() => {
+                                const match = contatti.find(c => String(c.id) === String(selectedImmobileProprietarioId));
+                                if (!match) return <span className="text-[10px] text-gray-400 italic">Nessun proprietario/referente selezionato</span>;
+                                return (
+                                  <span className="inline-flex items-center gap-1 bg-[#0071E3]/10 text-[#0071E3] text-[10px] px-2 py-0.5 rounded-full font-medium">
+                                    {match.nome || ''} {match.cognome || ''}
+                                    <button
+                                      type="button"
+                                      onClick={() => setSelectedImmobileProprietarioId(null)}
+                                      className="hover:text-red-500 font-bold ml-0.5"
                                     >
-                                      <option value="No">No</option>
-                                      <option value="Si">Si</option>
-                                    </select>
-                                  </div>
-                                  <div>
-                                    <label className="block text-[9px] text-[#86868B] mb-0.5 font-semibold uppercase">File</label>
-                                    <DocumentFileField dbField={dbField} currentImmobile={currentImmobile} setCurrentImmobile={setCurrentImmobile} isFileOnly={false} />
-                                  </div>
+                                      ✕
+                                    </button>
+                                  </span>
+                                );
+                              })()}
+                            </div>
+
+                            <div className="relative">
+                              <input
+                                type="text"
+                                placeholder="🔍 Cerca proprietario da aggiungere..."
+                                value={searchImmobileProprietarioQuery}
+                                onChange={(e) => setSearchImmobileProprietarioQuery(e.target.value)}
+                                onFocus={() => setIsProprietarioSearchFocused(true)}
+                                onBlur={() => setTimeout(() => setIsProprietarioSearchFocused(false), 200)}
+                                className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none text-[#1D1D1F] hover:bg-[#E5E5EA]/50 focus:bg-white focus:border-[#0071E3] transition-all"
+                              />
+
+                              {isProprietarioSearchFocused && (
+                                <div className="absolute left-0 right-0 mt-1 bg-white border border-[#E5E5EA] rounded-2xl shadow-xl max-h-60 overflow-y-auto z-[60] p-1.5 space-y-1">
+                                  {(() => {
+                                    const filtered = contatti
+                                      .filter(c => String(c.id) !== String(selectedImmobileProprietarioId))
+                                      .filter(c => {
+                                        const qParts = searchImmobileProprietarioQuery.toLowerCase().trim().split(/\s+/).filter(Boolean);
+                                        if (qParts.length === 0) return true;
+                                        const nome = (c.nome || '').toLowerCase();
+                                        const cognome = (c.cognome || '').toLowerCase();
+                                        const societa = (c.societa || '').toLowerCase();
+                                        const rolesStr = (Array.isArray(c.ruolo) ? c.ruolo.join(' ') : (c.ruolo || '')).toLowerCase();
+                                        return qParts.every(part =>
+                                          nome.includes(part) ||
+                                          cognome.includes(part) ||
+                                          societa.includes(part) ||
+                                          rolesStr.includes(part)
+                                        );
+                                      });
+
+                                    if (filtered.length === 0) {
+                                      return (
+                                        <div className="p-3 text-center text-xs text-[#86868B]">
+                                          Nessun contatto trovato
+                                          <button
+                                            type="button"
+                                            onMouseDown={() => {
+                                              setAddingContactForVisit('proprietario');
+                                              handleCreateContatto();
+                                            }}
+                                            className="block mx-auto mt-2 text-xs font-bold text-[#0071E3] hover:underline"
+                                          >
+                                            + Crea come nuovo contatto
+                                          </button>
+                                        </div>
+                                      );
+                                    }
+
+                                    return (
+                                      <>
+                                        {filtered.map(c => {
+                                          const rolesStr = Array.isArray(c.ruolo) ? c.ruolo.join(', ') : (c.ruolo || '');
+                                          return (
+                                            <button
+                                              key={c.id}
+                                              type="button"
+                                              onMouseDown={() => {
+                                                const parsedVal = isNaN(Number(c.id)) ? c.id : Number(c.id);
+                                                setSelectedImmobileProprietarioId(parsedVal);
+                                                setSearchImmobileProprietarioQuery('');
+                                              }}
+                                              className="w-full text-left px-3 py-2 rounded-xl text-xs hover:bg-[#F5F5F7] transition-all flex flex-col gap-0.5"
+                                            >
+                                              <span className="font-bold text-[#1D1D1F]">{c.cognome} {c.nome}</span>
+                                              {(c.societa || rolesStr) && (
+                                                <span className="text-[10px] text-[#86868B]">
+                                                  {c.societa}{c.societa && rolesStr ? ' - ' : ''}{rolesStr}
+                                                </span>
+                                              )}
+                                            </button>
+                                          );
+                                        })}
+                                        <div className="border-t border-gray-100 pt-1 mt-1">
+                                          <button
+                                            type="button"
+                                            onMouseDown={() => {
+                                              setAddingContactForVisit('proprietario');
+                                              handleCreateContatto();
+                                            }}
+                                            className="w-full text-left px-3 py-2 rounded-xl text-xs font-semibold text-[#0071E3] hover:bg-[#0071E3]/5 transition-all"
+                                          >
+                                            + Aggiungi Nuovo Contatto...
+                                          </button>
+                                        </div>
+                                      </>
+                                    );
+                                  })()}
                                 </div>
                               )}
                             </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* ========= SEZIONE: NOTE INTERNE ========= */}
-                  <div className={activeFormTab === 'note_interne' ? 'space-y-5 animate-fade-in' : 'hidden'}>
-                    <div className="glass-panel p-5 rounded-2xl space-y-4">
-                      <div className="flex items-center gap-2 pb-1 border-b border-black/5">
-                        <span className="text-sm">🔒</span>
-                        <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Note Interne Riservate</span>
-                      </div>
-                      <div>
-                        <textarea
-                          name="note_interne"
-                          rows="8"
-                          placeholder="Inserisci note interne ad uso esclusivo dell'agenzia..."
-                          defaultValue={currentImmobile ? currentImmobile.note_interne : ''}
-                          className="glass-input w-full px-4 py-3 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC] leading-relaxed"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* ========= SEZIONE 6: LOG ========= */}
-                  {currentImmobile && (
-                    <div className={activeFormTab === 'log' ? 'space-y-5 animate-fade-in' : 'hidden'}>
-                      <div className="glass-panel p-5 rounded-2xl space-y-4">
-                        <div className="flex items-center gap-2 pb-1 border-b border-black/5">
-                          <span className="text-sm">🕒</span>
-                          <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Registro Tracciabilità</span>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Creato Da</label>
-                            <input
-                              type="text"
-                              disabled
-                              value={currentImmobile.creato_da || '-'}
-                              className="w-full px-4 py-2.5 rounded-xl text-sm cursor-not-allowed bg-black/5 text-[#86868B] border border-black/5"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Data di Creazione</label>
-                            <input
-                              type="text"
-                              disabled
-                              value={currentImmobile.created_at ? new Date(currentImmobile.created_at).toLocaleString('it-CH') : '-'}
-                              className="w-full px-4 py-2.5 rounded-xl text-sm cursor-not-allowed bg-black/5 text-[#86868B] border border-black/5"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Ultima Modifica Il</label>
-                            <input
-                              type="text"
-                              disabled
-                              value={currentImmobile.ultima_modifica_il ? new Date(currentImmobile.ultima_modifica_il).toLocaleString('it-CH', {
-                                year: 'numeric',
-                                month: '2-digit',
-                                day: '2-digit',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              }) : '-'}
-                              className="w-full px-4 py-2.5 rounded-xl text-sm cursor-not-allowed bg-black/5 text-[#86868B] border border-black/5"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Ultima Modifica di</label>
-                            <input
-                              type="text"
-                              disabled
-                              value={currentImmobile.ultima_modifica_fatta_da || '-'}
-                              className="w-full px-4 py-2.5 rounded-xl text-sm cursor-not-allowed bg-black/5 text-[#86868B] border border-black/5"
-                            />
                           </div>
                         </div>
+
+                        <div className="glass-panel p-5 rounded-2xl space-y-4 relative z-10">
+                          <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                            <span className="text-sm">👥</span>
+                            <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Agenti Assegnati</span>
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">
+                              Agenti Assegnati
+                            </label>
+                            <input type="hidden" name="agente_id" value={selectedImmobileAgenteIds.join(',')} />
+
+                            {/* Pill list of active agents */}
+                            <div className="flex flex-wrap gap-1.5 mb-2 max-h-20 overflow-y-auto">
+                              {selectedImmobileAgenteIds.length === 0 ? (
+                                <span className="text-[10px] text-gray-400 italic">Nessun agente assegnato</span>
+                              ) : (
+                                selectedImmobileAgenteIds.map(aid => {
+                                  const match = contatti.find(c => String(c.id) === String(aid));
+                                  if (!match) return null;
+                                  return (
+                                    <span key={aid} className="inline-flex items-center gap-1 bg-[#0071E3]/10 text-[#0071E3] text-[10px] px-2 py-0.5 rounded-full font-medium">
+                                      {match.nome || ''} {match.cognome || ''}
+                                      <button
+                                        type="button"
+                                        onClick={() => setSelectedImmobileAgenteIds(prev => prev.filter(id => String(id) !== String(aid)))}
+                                        className="hover:text-red-500 font-bold ml-0.5"
+                                      >
+                                        ✕
+                                      </button>
+                                    </span>
+                                  );
+                                })
+                              )}
+                            </div>
+
+                            <div className="relative">
+                              <input
+                                type="text"
+                                placeholder="🔍 Cerca agente da aggiungere..."
+                                value={searchImmobileAgenteQuery}
+                                onChange={(e) => setSearchImmobileAgenteQuery(e.target.value)}
+                                onFocus={() => setIsAgenteSearchFocused(true)}
+                                onBlur={() => setTimeout(() => setIsAgenteSearchFocused(false), 200)}
+                                className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none text-[#1D1D1F] hover:bg-[#E5E5EA]/50 focus:bg-white focus:border-[#0071E3] transition-all"
+                              />
+
+                              {isAgenteSearchFocused && (
+                                <div className="absolute left-0 right-0 mt-1 bg-white border border-[#E5E5EA] rounded-2xl shadow-xl max-h-60 overflow-y-auto z-[60] p-1.5 space-y-1">
+                                  {(() => {
+                                    const filtered = contatti
+                                      .filter(c => {
+                                        const roles = c.ruolo;
+                                        if (Array.isArray(roles)) {
+                                          return roles.some(r => r.toLowerCase().includes('agente'));
+                                        }
+                                        return String(roles || '').toLowerCase().includes('agente');
+                                      })
+                                      .filter(c => !selectedImmobileAgenteIds.map(String).includes(String(c.id)))
+                                      .filter(c => {
+                                        const qParts = searchImmobileAgenteQuery.toLowerCase().trim().split(/\s+/).filter(Boolean);
+                                        if (qParts.length === 0) return true;
+                                        const nome = (c.nome || '').toLowerCase();
+                                        const cognome = (c.cognome || '').toLowerCase();
+                                        const societa = (c.societa || '').toLowerCase();
+                                        const rolesStr = (Array.isArray(c.ruolo) ? c.ruolo.join(' ') : (c.ruolo || '')).toLowerCase();
+                                        return qParts.every(part =>
+                                          nome.includes(part) ||
+                                          cognome.includes(part) ||
+                                          societa.includes(part) ||
+                                          rolesStr.includes(part)
+                                        );
+                                      });
+
+                                    if (filtered.length === 0) {
+                                      return (
+                                        <div className="p-3 text-center text-xs text-[#86868B]">
+                                          Nessun agente trovato
+                                          <button
+                                            type="button"
+                                            onMouseDown={() => {
+                                              setAddingContactForVisit('agente');
+                                              handleCreateContatto();
+                                            }}
+                                            className="block mx-auto mt-2 text-xs font-bold text-[#0071E3] hover:underline"
+                                          >
+                                            + Crea come nuovo contatto
+                                          </button>
+                                        </div>
+                                      );
+                                    }
+
+                                    return (
+                                      <>
+                                        {filtered.map(c => {
+                                          const rolesStr = Array.isArray(c.ruolo) ? c.ruolo.join(', ') : (c.ruolo || '');
+                                          return (
+                                            <button
+                                              key={c.id}
+                                              type="button"
+                                              onMouseDown={() => {
+                                                const parsedVal = isNaN(Number(c.id)) ? c.id : Number(c.id);
+                                                if (!selectedImmobileAgenteIds.map(String).includes(String(parsedVal))) {
+                                                  setSelectedImmobileAgenteIds(prev => [...prev, parsedVal]);
+                                                }
+                                                setSearchImmobileAgenteQuery('');
+                                              }}
+                                              className="w-full text-left px-3 py-2 rounded-xl text-xs hover:bg-[#F5F5F7] transition-all flex flex-col gap-0.5"
+                                            >
+                                              <span className="font-bold text-[#1D1D1F]">{c.cognome} {c.nome}</span>
+                                              {(c.societa || rolesStr) && (
+                                                <span className="text-[10px] text-[#86868B]">
+                                                  {c.societa}{c.societa && rolesStr ? ' - ' : ''}{rolesStr}
+                                                </span>
+                                              )}
+                                            </button>
+                                          );
+                                        })}
+                                        <div className="border-t border-gray-100 pt-1 mt-1">
+                                          <button
+                                            type="button"
+                                            onMouseDown={() => {
+                                              setAddingContactForVisit('agente');
+                                              handleCreateContatto();
+                                            }}
+                                            className="w-full text-left px-3 py-2 rounded-xl text-xs font-semibold text-[#0071E3] hover:bg-[#0071E3]/5 transition-all"
+                                          >
+                                            + Aggiungi Nuovo Contatto...
+                                          </button>
+                                        </div>
+                                      </>
+                                    );
+                                  })()}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* ========= SEZIONE 4: AMMINISTRAZIONE ========= */}
+                      <div className={activeFormTab === 'amministrazione' ? 'space-y-5 animate-fade-in' : 'hidden'}>
+                        <div className="glass-panel p-5 rounded-2xl space-y-4">
+                          <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                            <span className="text-sm">💼</span>
+                            <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Mandato & Accordi</span>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Mandato Firmato <span className="text-[#FF3B30]">*</span></label>
+                              <select
+                                name="mandato_firmato"
+                                defaultValue={currentImmobile ? currentImmobile.mandato_firmato : 'No'}
+                                className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F]"
+                              >
+                                <option value="No">No</option>
+                                <option value="Stand By">Stand By</option>
+                                <option value="Si">Si</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Tipo di Mandato <span className="text-[#FF3B30]">*</span></label>
+                              <select
+                                name="tipo_di_mandato"
+                                defaultValue={currentImmobile ? currentImmobile.tipo_di_mandato : 'Non in Esclusiva'}
+                                className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F]"
+                              >
+                                <option value="Non in Esclusiva">Non in Esclusiva</option>
+                                <option value="In Esclusiva">In Esclusiva</option>
+                              </select>
+                            </div>
+                            <div className="md:col-span-2">
+                              <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">File Mandato (Immagine o PDF)</label>
+                              <div className="glass-input rounded-xl px-3 py-2">
+                                <input
+                                  type="file"
+                                  name="mandato_file"
+                                  accept="image/*,application/pdf"
+                                  className="w-full text-xs text-[#86868B] file:mr-3 file:py-1.5 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-bold file:uppercase file:tracking-wide file:bg-[#0071E3]/10 file:text-[#0071E3] hover:file:bg-[#0071E3]/20 cursor-pointer transition-all"
+                                />
+                              </div>
+                              {currentImmobile && currentImmobile.mandato && (
+                                <div className="flex items-center gap-2 mt-2 px-1">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-[#34C759]" />
+                                  <button
+                                    type="button"
+                                    onClick={() => handleViewDocument(currentImmobile.mandato)}
+                                    className="text-[10px] text-[#0071E3] hover:underline truncate max-w-[240px] font-medium cursor-pointer bg-transparent border-0 p-0 text-left"
+                                  >
+                                    {currentImmobile.mandato.split('/').pop()}
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* ========= SEZIONE 5: DOCUMENTI ========= */}
+                      <div className={activeFormTab === 'documenti' ? 'space-y-5 animate-fade-in' : 'hidden'}>
+                        <div className="glass-panel p-5 rounded-2xl space-y-4">
+                          <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                            <span className="text-sm">📄</span>
+                            <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Documenti Immobile</span>
+                          </div>
+                          <p className="text-[11px] text-[#86868B] -mt-2">
+                            Indica lo stato di presenza di ciascun documento cartaceo o digitale e carica il rispettivo file.
+                          </p>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                            {[
+                              { key: 'estratto_registro_fondiario', label: 'Estratto Registro Fondiario', desc: 'estratto_registro_fondiario_doc' },
+                              { key: 'descrittivo_tecnico', label: 'Descrittivo Tecnico', desc: 'descrittivo_tecnico_doc' },
+                              { key: 'regolamento_condominiale', label: 'Regolamento Condominiale', desc: 'regolamento_condominiale_doc' },
+                              { key: 'spese_condominiali_doc', label: 'Spese Condominiali', desc: 'spese_condominiali_doc', isFileOnly: true },
+                              { key: 'assicurazione_stabile', label: 'Assicurazione Stabile', desc: 'assicurazione_stabile_doc' },
+                              { key: 'verbale_ultima_assemblea', label: 'Verbale Ultima Assemblea', desc: 'verbale_ultima_assemblea_doc' },
+                              { key: 'fondo_rinnovamento', label: 'Fondo Rinnovamento', desc: 'fondo_rinnovamento_doc' },
+                              { key: 'valore_di_stima', label: 'Valore di Stima', desc: 'valore_di_stima_doc' },
+                              { key: 'piano_assegnazioni_parti_comuni', label: 'Piano Assegnazioni Parti Comuni', desc: 'piano_assegnazioni_parti_comuni_doc' },
+                              { key: 'rasi', label: 'RASI', desc: 'rasi_doc' },
+                              { key: 'certificato_radon', label: 'Certificato Radon', desc: 'certificato_radon_doc' }
+                            ].map(doc => {
+                              const dbField = doc.key;
+                              return (
+                                <div key={doc.key} className="rounded-xl p-3.5 space-y-2.5 transition-all bg-white/40 border border-black/5 hover:border-black/10">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs">📎</span>
+                                    <span className="text-[11px] font-bold text-[#1D1D1F]">{doc.label}</span>
+                                  </div>
+                                  {doc.isFileOnly ? (
+                                    <div>
+                                      <DocumentFileField dbField={dbField} currentImmobile={currentImmobile} setCurrentImmobile={setCurrentImmobile} isFileOnly={true} />
+                                    </div>
+                                  ) : (
+                                    <div className="grid grid-cols-2 gap-2 items-end">
+                                      <div>
+                                        <label className="block text-[9px] text-[#86868B] mb-0.5 font-semibold uppercase">Presente?</label>
+                                        <select
+                                          name={dbField}
+                                          defaultValue={currentImmobile ? currentImmobile[dbField] : 'No'}
+                                          className="glass-input w-full px-2 py-1 rounded-lg text-xs text-[#1D1D1F]"
+                                        >
+                                          <option value="No">No</option>
+                                          <option value="Si">Si</option>
+                                        </select>
+                                      </div>
+                                      <div>
+                                        <label className="block text-[9px] text-[#86868B] mb-0.5 font-semibold uppercase">File</label>
+                                        <DocumentFileField dbField={dbField} currentImmobile={currentImmobile} setCurrentImmobile={setCurrentImmobile} isFileOnly={false} />
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* ========= SEZIONE: NOTE INTERNE ========= */}
+                      <div className={activeFormTab === 'note_interne' ? 'space-y-5 animate-fade-in' : 'hidden'}>
+                        <div className="glass-panel p-5 rounded-2xl space-y-4">
+                          <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                            <span className="text-sm">🔒</span>
+                            <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Note Interne Riservate</span>
+                          </div>
+                          <div>
+                            <textarea
+                              name="note_interne"
+                              rows="8"
+                              placeholder="Inserisci note interne ad uso esclusivo dell'agenzia..."
+                              defaultValue={currentImmobile ? currentImmobile.note_interne : ''}
+                              className="glass-input w-full px-4 py-3 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC] leading-relaxed"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* ========= SEZIONE 6: LOG ========= */}
+                      {currentImmobile && (
+                        <div className={activeFormTab === 'log' ? 'space-y-5 animate-fade-in' : 'hidden'}>
+                          <div className="glass-panel p-5 rounded-2xl space-y-4">
+                            <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                              <span className="text-sm">🕒</span>
+                              <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Registro Tracciabilità</span>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Creato Da</label>
+                                <input
+                                  type="text"
+                                  disabled
+                                  value={currentImmobile.creato_da || '-'}
+                                  className="w-full px-4 py-2.5 rounded-xl text-sm cursor-not-allowed bg-black/5 text-[#86868B] border border-black/5"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Data di Creazione</label>
+                                <input
+                                  type="text"
+                                  disabled
+                                  value={currentImmobile.created_at ? new Date(currentImmobile.created_at).toLocaleString('it-CH') : '-'}
+                                  className="w-full px-4 py-2.5 rounded-xl text-sm cursor-not-allowed bg-black/5 text-[#86868B] border border-black/5"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Ultima Modifica Il</label>
+                                <input
+                                  type="text"
+                                  disabled
+                                  value={currentImmobile.ultima_modifica_il ? new Date(currentImmobile.ultima_modifica_il).toLocaleString('it-CH', {
+                                    year: 'numeric',
+                                    month: '2-digit',
+                                    day: '2-digit',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  }) : '-'}
+                                  className="w-full px-4 py-2.5 rounded-xl text-sm cursor-not-allowed bg-black/5 text-[#86868B] border border-black/5"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Ultima Modifica di</label>
+                                <input
+                                  type="text"
+                                  disabled
+                                  value={currentImmobile.ultima_modifica_fatta_da || '-'}
+                                  className="w-full px-4 py-2.5 rounded-xl text-sm cursor-not-allowed bg-black/5 text-[#86868B] border border-black/5"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                    </div>
+
+                    {/* Footer con bottoni */}
+                    <div className="p-4 sm:p-6 border-t border-white/20 flex flex-col sm:flex-row gap-3 sm:justify-between items-stretch sm:items-center" style={{ background: 'rgba(250,250,252,0.85)', backdropFilter: 'blur(20px)' }}>
+                      {currentImmobile ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleDeleteImmobile(currentImmobile.id);
+                            setIsImmobileModalOpen(false);
+                          }}
+                          className="w-full sm:w-auto px-6 py-3 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 rounded-full font-semibold text-sm transition-all text-center order-3 sm:order-1"
+                        >
+                          Elimina Immobile
+                        </button>
+                      ) : (
+                        <div className="hidden sm:block" />
+                      )}
+                      <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto order-1 sm:order-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsImmobileModalOpen(false);
+                            setTempImmobileImageUrl(null);
+                            setTempPlanimetriaUrl(null);
+                            setSelectedImmobileProprietarioId(null);
+                            setSearchImmobileProprietarioQuery('');
+                            setIsProprietarioSearchFocused(false);
+                            setSelectedImmobileAgenteIds([]);
+                            setSearchImmobileAgenteQuery('');
+                            setIsAgenteSearchFocused(false);
+                          }}
+                          className="w-full sm:w-auto px-6 py-3 bg-white hover:bg-gray-100 border border-[#D2D2D7] text-[#1D1D1F] rounded-full font-semibold text-sm transition-all text-center order-2 sm:order-1"
+                        >
+                          Annulla
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={isSavingImmobile}
+                          className="w-full sm:w-auto px-8 py-3 btn-glossy text-white rounded-full font-bold text-sm transition-all text-center shadow-sm disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 order-1 sm:order-2"
+                        >
+                          {isSavingImmobile ? (
+                            <>
+                              <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              Salvataggio...
+                            </>
+                          ) : (
+                            'Salva Scheda'
+                          )}
+                        </button>
                       </div>
                     </div>
-                  )}
-
-                  </div>
-
-                  {/* Footer con bottoni */}
-                  <div className="p-4 sm:p-6 border-t border-white/20 flex flex-col sm:flex-row gap-3 sm:justify-between items-stretch sm:items-center" style={{background: 'rgba(250,250,252,0.85)', backdropFilter: 'blur(20px)'}}>
-                    {currentImmobile ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          handleDeleteImmobile(currentImmobile.id);
-                          setIsImmobileModalOpen(false);
-                        }}
-                        className="w-full sm:w-auto px-6 py-3 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 rounded-full font-semibold text-sm transition-all text-center order-3 sm:order-1"
-                      >
-                        Elimina Immobile
-                      </button>
-                    ) : (
-                      <div className="hidden sm:block" />
-                    )}
-                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto order-1 sm:order-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsImmobileModalOpen(false);
-                          setTempImmobileImageUrl(null);
-                          setTempPlanimetriaUrl(null);
-                          setSelectedImmobileProprietarioId(null);
-                          setSearchImmobileProprietarioQuery('');
-                          setIsProprietarioSearchFocused(false);
-                          setSelectedImmobileAgenteIds([]);
-                          setSearchImmobileAgenteQuery('');
-                          setIsAgenteSearchFocused(false);
-                        }}
-                        className="w-full sm:w-auto px-6 py-3 bg-white hover:bg-gray-100 border border-[#D2D2D7] text-[#1D1D1F] rounded-full font-semibold text-sm transition-all text-center order-2 sm:order-1"
-                      >
-                        Annulla
-                      </button>
-                      <button
-                        type="submit"
-                        disabled={isSavingImmobile}
-                        className="w-full sm:w-auto px-8 py-3 btn-glossy text-white rounded-full font-bold text-sm transition-all text-center shadow-sm disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 order-1 sm:order-2"
-                      >
-                        {isSavingImmobile ? (
-                          <>
-                            <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Salvataggio...
-                          </>
-                        ) : (
-                          'Salva Scheda'
-                        )}
-                      </button>
-                    </div>
-                  </div>
                   </fieldset>
                 </form>
               </div>
@@ -6188,11 +6183,11 @@ export default function App() {
               <div className="glass-modal w-full max-w-2xl rounded-none md:rounded-3xl shadow-2xl overflow-hidden h-full md:h-[660px] flex flex-col text-[#1D1D1F]">
 
                 {/* Header con gradiente sottile */}
-                <div className="relative px-6 py-5 border-b border-white/20 flex justify-between items-center" style={{background: 'linear-gradient(135deg, rgba(255,255,255,0.85) 0%, rgba(245,245,247,0.9) 100%)'}}>
-                  <div className="absolute bottom-0 left-0 right-0 h-[2px]" style={{background: 'linear-gradient(90deg, #0071E3 0%, #00C7FF 50%, #7B61FF 100%)', opacity: 0.6}} />
+                <div className="relative px-6 py-5 border-b border-white/20 flex justify-between items-center" style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.85) 0%, rgba(245,245,247,0.9) 100%)' }}>
+                  <div className="absolute bottom-0 left-0 right-0 h-[2px]" style={{ background: 'linear-gradient(90deg, #0071E3 0%, #00C7FF 50%, #7B61FF 100%)', opacity: 0.6 }} />
                   <div className="space-y-0.5">
                     <h3 className="text-lg font-bold tracking-tight text-[#1D1D1F] flex items-center gap-2.5">
-                      <span className="w-8 h-8 rounded-xl flex items-center justify-center text-base" style={{background: 'linear-gradient(135deg, #0071E3 0%, #00C7FF 100%)', color: 'white', boxShadow: '0 4px 12px rgba(0,113,227,0.25)'}}>
+                      <span className="w-8 h-8 rounded-xl flex items-center justify-center text-base" style={{ background: 'linear-gradient(135deg, #0071E3 0%, #00C7FF 100%)', color: 'white', boxShadow: '0 4px 12px rgba(0,113,227,0.25)' }}>
                         👤
                       </span>
                       {currentContatto ? 'Aggiorna Dati Contatto' : 'Registra Nuovo Contatto'}
@@ -6203,7 +6198,7 @@ export default function App() {
                     type="button"
                     onClick={() => setIsContattoModalOpen(false)}
                     className="w-8 h-8 rounded-full flex items-center justify-center text-sm text-[#86868B] hover:text-[#1D1D1F] hover:bg-black/5 transition-all duration-200"
-                    style={{backdropFilter: 'blur(10px)', background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(0,0,0,0.06)'}}
+                    style={{ backdropFilter: 'blur(10px)', background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(0,0,0,0.06)' }}
                   >
                     ✕
                   </button>
@@ -6358,8 +6353,8 @@ export default function App() {
                           <p className="text-xs text-gray-400 italic col-span-2 text-center py-4">Nessun immobile a catalogo</p>
                         ) : (
                           (() => {
-                            const filtered = immobili.filter(imm => 
-                              (imm.nome_immobile || '').toLowerCase().includes(searchPossedutiQuery.toLowerCase()) || 
+                            const filtered = immobili.filter(imm =>
+                              (imm.nome_immobile || '').toLowerCase().includes(searchPossedutiQuery.toLowerCase()) ||
                               (imm.comune || '').toLowerCase().includes(searchPossedutiQuery.toLowerCase()) ||
                               (imm.codice_immobile || '').toLowerCase().includes(searchPossedutiQuery.toLowerCase())
                             );
@@ -6385,21 +6380,21 @@ export default function App() {
                                   </div>
 
                                   {/* Thumbnail header */}
-                                  <div 
+                                  <div
                                     className="h-32 bg-cover bg-center relative flex items-end"
                                     style={{
-                                      backgroundImage: imm.immagine_di_riferimento 
-                                        ? `url(${imm.immagine_di_riferimento})` 
+                                      backgroundImage: imm.immagine_di_riferimento
+                                        ? `url(${imm.immagine_di_riferimento})`
                                         : 'linear-gradient(to bottom right, #E5E5EA, #D2D2D7)'
                                     }}
                                   >
                                     <div className="absolute inset-0 bg-black/10"></div>
-                                    
+
                                     <div className="absolute top-2 left-2 flex gap-1 z-10 flex-wrap">
                                       <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold tracking-wide uppercase shadow-sm ${imm.stato === 'Disponibile' ? 'bg-[#34C759] text-white' :
-                                          imm.stato === 'In Trattativa' ? 'bg-[#FF9500] text-white' :
-                                            imm.stato === 'Venduto' ? 'bg-[#8E8E93] text-white' :
-                                              imm.stato === 'Lead' ? 'bg-[#AF52DE] text-white' : 'bg-[#0071E3] text-white'
+                                        imm.stato === 'In Trattativa' ? 'bg-[#FF9500] text-white' :
+                                          imm.stato === 'Venduto' ? 'bg-[#8E8E93] text-white' :
+                                            imm.stato === 'Lead' ? 'bg-[#AF52DE] text-white' : 'bg-[#0071E3] text-white'
                                         }`}>
                                         {imm.stato}
                                       </span>
@@ -6419,7 +6414,7 @@ export default function App() {
                                     <div className="absolute bottom-2 left-2 text-white text-[9px] font-bold drop-shadow-md z-10">
                                       {imm.comune}{imm.nazione ? `, ${imm.nazione}` : ''}
                                     </div>
-                                    
+
                                     <span className="absolute bottom-2 right-2 bg-[#0071E3] text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full shadow-sm z-10">
                                       {imm.immobile_in ? imm.immobile_in.join(' / ') : ''}
                                     </span>
@@ -6514,8 +6509,8 @@ export default function App() {
                           <p className="text-xs text-gray-400 italic col-span-2 text-center py-4">Nessun immobile a catalogo</p>
                         ) : (
                           (() => {
-                            const filtered = immobili.filter(imm => 
-                              (imm.nome_immobile || '').toLowerCase().includes(searchGestitiQuery.toLowerCase()) || 
+                            const filtered = immobili.filter(imm =>
+                              (imm.nome_immobile || '').toLowerCase().includes(searchGestitiQuery.toLowerCase()) ||
                               (imm.comune || '').toLowerCase().includes(searchGestitiQuery.toLowerCase()) ||
                               (imm.codice_immobile || '').toLowerCase().includes(searchGestitiQuery.toLowerCase())
                             );
@@ -6541,21 +6536,21 @@ export default function App() {
                                   </div>
 
                                   {/* Thumbnail header */}
-                                  <div 
+                                  <div
                                     className="h-32 bg-cover bg-center relative flex items-end"
                                     style={{
-                                      backgroundImage: imm.immagine_di_riferimento 
-                                        ? `url(${imm.immagine_di_riferimento})` 
+                                      backgroundImage: imm.immagine_di_riferimento
+                                        ? `url(${imm.immagine_di_riferimento})`
                                         : 'linear-gradient(to bottom right, #E5E5EA, #D2D2D7)'
                                     }}
                                   >
                                     <div className="absolute inset-0 bg-black/10"></div>
-                                    
+
                                     <div className="absolute top-2 left-2 flex gap-1 z-10 flex-wrap">
                                       <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold tracking-wide uppercase shadow-sm ${imm.stato === 'Disponibile' ? 'bg-[#34C759] text-white' :
-                                          imm.stato === 'In Trattativa' ? 'bg-[#FF9500] text-white' :
-                                            imm.stato === 'Venduto' ? 'bg-[#8E8E93] text-white' :
-                                              imm.stato === 'Lead' ? 'bg-[#AF52DE] text-white' : 'bg-[#0071E3] text-white'
+                                        imm.stato === 'In Trattativa' ? 'bg-[#FF9500] text-white' :
+                                          imm.stato === 'Venduto' ? 'bg-[#8E8E93] text-white' :
+                                            imm.stato === 'Lead' ? 'bg-[#AF52DE] text-white' : 'bg-[#0071E3] text-white'
                                         }`}>
                                         {imm.stato}
                                       </span>
@@ -6575,7 +6570,7 @@ export default function App() {
                                     <div className="absolute bottom-2 left-2 text-white text-[9px] font-bold drop-shadow-md z-10">
                                       {imm.comune}{imm.nazione ? `, ${imm.nazione}` : ''}
                                     </div>
-                                    
+
                                     <span className="absolute bottom-2 right-2 bg-[#0071E3] text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full shadow-sm z-10">
                                       {imm.immobile_in ? imm.immobile_in.join(' / ') : ''}
                                     </span>
@@ -6679,8 +6674,8 @@ export default function App() {
             const dateObj = new Date(viewingVisita.inizio_evento);
             const endDateObj = viewingVisita.fine_evento ? new Date(viewingVisita.fine_evento) : null;
             const dateStr = dateObj.toLocaleDateString('it-CH', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-            const timeStr = viewingVisita.tutto_giorno 
-              ? 'Tutto il giorno' 
+            const timeStr = viewingVisita.tutto_giorno
+              ? 'Tutto il giorno'
               : `${dateObj.toLocaleTimeString('it-CH', { hour: '2-digit', minute: '2-digit' })}${endDateObj ? ` - ${endDateObj.toLocaleTimeString('it-CH', { hour: '2-digit', minute: '2-digit' })}` : ''}`;
 
             const clientObj = contatti.find(c => String(c.id) === String(viewingVisita.cliente_id));
@@ -6691,7 +6686,7 @@ export default function App() {
                 <div className="absolute inset-0 -z-10" onClick={handleCloseVisitaDetail}></div>
 
                 <div className="w-full md:max-w-lg h-full bg-white shadow-2xl border-l border-[#E5E5EA] flex flex-col animate-slide-left overflow-hidden text-[#1D1D1F]">
-                  
+
                   {/* Header */}
                   <div className="px-6 py-5 border-b border-[#E5E5EA] flex justify-between items-center bg-[#F5F5F7]">
                     <div>
@@ -6710,7 +6705,7 @@ export default function App() {
 
                   {/* Body */}
                   <div className="p-6 space-y-5 overflow-y-auto flex-1 custom-scrollbar">
-                    
+
                     {/* Time details */}
                     <div className="flex items-start gap-3 bg-[#F5F5F7] p-4 rounded-2xl border border-transparent">
                       <div className="text-2xl mt-0.5">📅</div>
@@ -6766,14 +6761,14 @@ export default function App() {
                     {propertyObj && (
                       <div className="space-y-2">
                         <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Immobile Collegato</span>
-                        <div 
+                        <div
                           onClick={() => {
                             handleViewImmobile(propertyObj, { type: 'visita', item: viewingVisita });
                             setIsVisitaDetailModalOpen(false);
                           }}
                           className="bg-white rounded-2xl border border-[#E5E5EA] overflow-hidden group shadow-sm flex flex-col cursor-pointer hover:border-[#0071E3]/40 hover:shadow-md transition-all duration-200"
                         >
-                          <SecureImageBackground 
+                          <SecureImageBackground
                             url={propertyObj.immagine_di_riferimento}
                             className="h-36 bg-cover bg-center relative flex items-end"
                           >
@@ -6891,11 +6886,11 @@ export default function App() {
               <div className="glass-modal w-full max-w-2xl rounded-none md:rounded-3xl shadow-2xl overflow-hidden h-full md:h-[660px] flex flex-col text-[#1D1D1F]">
 
                 {/* Header con gradiente sottile */}
-                <div className="relative px-6 py-5 border-b border-white/20 flex justify-between items-center" style={{background: 'linear-gradient(135deg, rgba(255,255,255,0.85) 0%, rgba(245,245,247,0.9) 100%)'}}>
-                  <div className="absolute bottom-0 left-0 right-0 h-[2px]" style={{background: 'linear-gradient(90deg, #0071E3 0%, #00C7FF 50%, #7B61FF 100%)', opacity: 0.6}} />
+                <div className="relative px-6 py-5 border-b border-white/20 flex justify-between items-center" style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.85) 0%, rgba(245,245,247,0.9) 100%)' }}>
+                  <div className="absolute bottom-0 left-0 right-0 h-[2px]" style={{ background: 'linear-gradient(90deg, #0071E3 0%, #00C7FF 50%, #7B61FF 100%)', opacity: 0.6 }} />
                   <div className="space-y-0.5">
                     <h3 className="text-lg font-bold tracking-tight text-[#1D1D1F] flex items-center gap-2.5">
-                      <span className="w-8 h-8 rounded-xl flex items-center justify-center text-base" style={{background: 'linear-gradient(135deg, #0071E3 0%, #00C7FF 100%)', color: 'white', boxShadow: '0 4px 12px rgba(0,113,227,0.25)'}}>
+                      <span className="w-8 h-8 rounded-xl flex items-center justify-center text-base" style={{ background: 'linear-gradient(135deg, #0071E3 0%, #00C7FF 100%)', color: 'white', boxShadow: '0 4px 12px rgba(0,113,227,0.25)' }}>
                         📅
                       </span>
                       {currentVisita ? 'Modifica Appuntamento' : 'Pianifica Attività / Visita'}
@@ -6906,7 +6901,7 @@ export default function App() {
                     type="button"
                     onClick={() => setIsVisitaModalOpen(false)}
                     className="w-8 h-8 rounded-full flex items-center justify-center text-sm text-[#86868B] hover:text-[#1D1D1F] hover:bg-black/5 transition-all duration-200"
-                    style={{backdropFilter: 'blur(10px)', background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(0,0,0,0.06)'}}
+                    style={{ backdropFilter: 'blur(10px)', background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(0,0,0,0.06)' }}
                   >
                     ✕
                   </button>
@@ -6917,10 +6912,10 @@ export default function App() {
                     {currentVisita && <input type="hidden" name="id" value={currentVisita.id} />}
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      
+
                       {/* COLONNA SINISTRA: Informazioni Base */}
                       <div className="space-y-5">
-                        
+
                         {/* Dettagli Attività */}
                         <div className="glass-panel p-5 rounded-2xl space-y-4">
                           <div className="flex items-center gap-2 pb-1 border-b border-black/5">
@@ -6951,16 +6946,16 @@ export default function App() {
                                 name="inizio_evento"
                                 required
                                 defaultValue={currentVisita ? new Date(new Date(currentVisita.inizio_evento) - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, isCalendarAllDay ? 10 : 16) : (() => {
-                                   const rounded = new Date();
-                                   const minutes = rounded.getMinutes();
-                                   if (minutes < 30) {
-                                     rounded.setMinutes(0, 0, 0);
-                                   } else {
-                                     rounded.setHours(rounded.getHours() + 1);
-                                     rounded.setMinutes(0, 0, 0);
-                                   }
-                                   return new Date(rounded.getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, isCalendarAllDay ? 10 : 16);
-                                 })()}
+                                  const rounded = new Date();
+                                  const minutes = rounded.getMinutes();
+                                  if (minutes < 30) {
+                                    rounded.setMinutes(0, 0, 0);
+                                  } else {
+                                    rounded.setHours(rounded.getHours() + 1);
+                                    rounded.setMinutes(0, 0, 0);
+                                  }
+                                  return new Date(rounded.getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, isCalendarAllDay ? 10 : 16);
+                                })()}
                                 className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none"
                               />
                             </div>
@@ -7026,7 +7021,7 @@ export default function App() {
 
                       {/* COLONNA DESTRA: Relazioni e Target */}
                       <div className="space-y-5">
-                        
+
                         {/* Cliente - Stacking context relative z-30 */}
                         <div className="glass-panel p-5 rounded-2xl space-y-3 relative z-30">
                           <div className="flex justify-between items-center pb-1 border-b border-black/5">
@@ -7047,7 +7042,7 @@ export default function App() {
                               </button>
                             )}
                           </div>
-                          
+
                           {selectedCalendarClientId ? (
                             (() => {
                               const selectedClient = contatti.find(c => String(c.id) === String(selectedCalendarClientId));
@@ -7362,12 +7357,12 @@ export default function App() {
                               return (
                                 <div className="bg-white rounded-2xl border border-black/5 overflow-hidden hover:border-[#0071E3] transition-all group shadow-sm flex flex-col">
                                   {/* Header Image */}
-                                  <SecureImageBackground 
+                                  <SecureImageBackground
                                     url={selectedImm.immagine_di_riferimento}
                                     className="h-32 bg-cover bg-center relative flex items-end"
                                   >
                                     <div className="absolute inset-0 bg-black/15"></div>
-                                    
+
                                     {/* Floating ✕ Button to Deselect/Change */}
                                     <button
                                       type="button"
@@ -7380,12 +7375,12 @@ export default function App() {
                                     >
                                       ✕
                                     </button>
-                                    
+
                                     <div className="absolute top-2 left-2 flex gap-1 z-10 flex-wrap">
                                       <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold tracking-wide uppercase shadow-sm ${selectedImm.stato === 'Disponibile' ? 'bg-[#34C759] text-white' :
-                                          selectedImm.stato === 'In Trattativa' ? 'bg-[#FF9500] text-white' :
-                                            selectedImm.stato === 'Venduto' ? 'bg-[#8E8E93] text-white' :
-                                              selectedImm.stato === 'Lead' ? 'bg-[#AF52DE] text-white' : 'bg-[#0071E3] text-white'
+                                        selectedImm.stato === 'In Trattativa' ? 'bg-[#FF9500] text-white' :
+                                          selectedImm.stato === 'Venduto' ? 'bg-[#8E8E93] text-white' :
+                                            selectedImm.stato === 'Lead' ? 'bg-[#AF52DE] text-white' : 'bg-[#0071E3] text-white'
                                         }`}>
                                         {selectedImm.stato}
                                       </span>
@@ -7393,11 +7388,11 @@ export default function App() {
                                         {selectedImm.categoria}
                                       </span>
                                     </div>
-                                    
+
                                     <div className="absolute bottom-2 left-2 text-white text-[10px] font-bold drop-shadow-md z-10">
                                       {selectedImm.comune}{selectedImm.nazione ? `, ${selectedImm.nazione}` : ''}
                                     </div>
-                                    
+
                                     <span className="absolute bottom-2 right-2 bg-[#0071E3] text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full shadow-sm z-10">
                                       {selectedImm.immobile_in ? selectedImm.immobile_in.join(' / ') : ''}
                                     </span>
@@ -7433,8 +7428,8 @@ export default function App() {
                                     </div>
 
                                     <div className="text-sm font-extrabold text-[#0071E3]">
-                                      {Number(selectedImm.prezzo_di_vendita) > 0 
-                                        ? `CHF ${Number(selectedImm.prezzo_di_vendita).toLocaleString('it-CH')}` 
+                                      {Number(selectedImm.prezzo_di_vendita) > 0
+                                        ? `CHF ${Number(selectedImm.prezzo_di_vendita).toLocaleString('it-CH')}`
                                         : `CHF ${Number(selectedImm.prezzo_di_affitto).toLocaleString('it-CH')}/mese`
                                       }
                                     </div>
@@ -7460,8 +7455,8 @@ export default function App() {
                                     <p className="text-xs text-gray-400 italic text-center py-4">Nessun immobile a catalogo</p>
                                   ) : (
                                     (() => {
-                                      const filtered = immobili.filter(imm => 
-                                        (imm.nome_immobile || '').toLowerCase().includes(searchVisitaPropertyQuery.toLowerCase()) || 
+                                      const filtered = immobili.filter(imm =>
+                                        (imm.nome_immobile || '').toLowerCase().includes(searchVisitaPropertyQuery.toLowerCase()) ||
                                         (imm.comune || '').toLowerCase().includes(searchVisitaPropertyQuery.toLowerCase()) ||
                                         (imm.codice_immobile || '').toLowerCase().includes(searchVisitaPropertyQuery.toLowerCase())
                                       );
@@ -7475,11 +7470,11 @@ export default function App() {
                                           }}
                                           className="bg-white p-2 rounded-xl border border-gray-200 flex items-center gap-3 cursor-pointer hover:border-[#0071E3] hover:shadow-md transition-all group"
                                         >
-                                          <div 
+                                          <div
                                             className="w-14 h-14 rounded-lg bg-cover bg-center shrink-0 border border-gray-100"
                                             style={{
-                                              backgroundImage: imm.immagine_di_riferimento 
-                                                ? `url(${imm.immagine_di_riferimento})` 
+                                              backgroundImage: imm.immagine_di_riferimento
+                                                ? `url(${imm.immagine_di_riferimento})`
                                                 : 'linear-gradient(to bottom right, #E5E5EA, #D2D2D7)'
                                             }}
                                           />
@@ -7491,8 +7486,8 @@ export default function App() {
                                               {imm.comune} • {imm.codice_immobile}
                                             </span>
                                             <span className="block text-[10px] text-[#0071E3] font-semibold mt-0.5">
-                                              {Number(imm.prezzo_di_vendita) > 0 
-                                                ? `CHF ${Number(imm.prezzo_di_vendita).toLocaleString('it-CH')}` 
+                                              {Number(imm.prezzo_di_vendita) > 0
+                                                ? `CHF ${Number(imm.prezzo_di_vendita).toLocaleString('it-CH')}`
                                                 : `CHF ${Number(imm.prezzo_di_affitto).toLocaleString('it-CH')}/mese`
                                               }
                                               {Number(imm.numero_di_locali) > 0 && ` • ${imm.numero_di_locali} Locali`}
@@ -7551,9 +7546,8 @@ export default function App() {
                   key={tab.id}
                   type="button"
                   onClick={() => setActiveTab(tab.id)}
-                  className={`relative flex flex-col items-center justify-center py-1.5 px-3 rounded-full transition-all duration-300 ${
-                    isActive ? 'text-white font-bold scale-105 bg-white/10 shadow-sm' : 'text-[#8E8E93] hover:text-white'
-                  }`}
+                  className={`relative flex flex-col items-center justify-center py-1.5 px-3 rounded-full transition-all duration-300 ${isActive ? 'text-white font-bold scale-105 bg-white/10 shadow-sm' : 'text-[#8E8E93] hover:text-white'
+                    }`}
                   style={{ minWidth: '70px' }}
                 >
                   <div className="w-5 h-5 flex items-center justify-center">

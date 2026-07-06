@@ -52,6 +52,8 @@ export const useSecureUrl = (url, expires = 3600) => {
         let bucketName = 'immobili-media';
         if (urlObj.pathname.includes('/immobili-documenti/')) {
           bucketName = 'immobili-documenti';
+        } else if (urlObj.pathname.includes('/profili-avatar/')) {
+          bucketName = 'profili-avatar';
         }
 
         const pathParts = urlObj.pathname.split(`/${bucketName}/`);

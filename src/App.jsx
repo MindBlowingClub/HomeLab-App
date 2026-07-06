@@ -18,6 +18,12 @@ import { VisiteTab } from './components/VisiteTab';
 import { SecureImage, SecureImageBackground } from './components/SecureImage';
 
 
+const IconLogo = () => (
+  <div className="w-full h-full bg-[#1B343F] rounded-xl flex items-center justify-center text-white shadow-inner text-base">
+    🏠
+  </div>
+);
+
 export const CATEGORY_TIPO_MAP = {
   "Appartamento": [
     "Abitazione ammobiliata", "App. a terrazza", "App. ultimo piano", "Appartamento",
@@ -3049,7 +3055,7 @@ export default function App() {
           
           <div className="flex flex-col items-center space-y-6">
             <div className="h-16 w-16 flex items-center justify-center animate-pulse">
-              <img src="https://vndajxcmgqjybhvppkqe.supabase.co/storage/v1/object/public/immobili-media/images/HomeLab-Nero.png" alt="Logo" className="w-full h-full object-contain" />
+              <IconLogo />
             </div>
             <div className="text-center space-y-2 animate-pulse">
               <h1 className="text-2xl font-bold tracking-tight text-[#1D1D1F]">HomeLab CRM</h1>
@@ -3073,7 +3079,7 @@ export default function App() {
           {/* Header */}
           <div className="flex items-center space-x-3 mt-4">
             <div className="w-10 h-10 flex items-center justify-center">
-              <img src="https://vndajxcmgqjybhvppkqe.supabase.co/storage/v1/object/public/immobili-media/images/HomeLab-Nero.png" alt="Logo" className="w-full h-full object-contain" />
+              <IconLogo />
             </div>
             <div>
               <h1 className="text-base font-bold tracking-tight text-[#1D1D1F]">HomeLab CRM</h1>
@@ -3163,7 +3169,7 @@ export default function App() {
           {/* Header */}
           <div className="flex items-center space-x-3 mt-4">
             <div className="w-10 h-10 flex items-center justify-center">
-              <img src="https://vndajxcmgqjybhvppkqe.supabase.co/storage/v1/object/public/immobili-media/images/HomeLab-Nero.png" alt="Logo" className="w-full h-full object-contain" />
+              <IconLogo />
             </div>
             <div>
               <h1 className="text-base font-bold tracking-tight text-[#1D1D1F]">HomeLab CRM</h1>
@@ -3224,7 +3230,7 @@ export default function App() {
           <header className="flex md:hidden items-center justify-between px-4 py-3 bg-white/60 backdrop-blur-lg border-b border-white/20 z-30 shrink-0">
             <div className="flex items-center space-x-2.5">
               <div className="w-7 h-7 flex items-center justify-center">
-                <img src="https://vndajxcmgqjybhvppkqe.supabase.co/storage/v1/object/public/immobili-media/images/HomeLab-Nero.png" alt="Logo" className="w-full h-full object-contain" />
+                <IconLogo />
               </div>
               <h1 className="text-sm font-bold tracking-tight text-[#1D1D1F]">HomeLab CRM</h1>
             </div>
@@ -3234,7 +3240,7 @@ export default function App() {
               className="w-7 h-7 rounded-full bg-gradient-to-tr from-indigo-500 to-pink-500 text-white flex items-center justify-center font-bold text-[10px] cursor-pointer hover:scale-105 transition-transform"
             >
               {profile?.foto && profile.foto.trim() !== '' ? (
-                <img src={profile.foto} alt="Profile" className="w-full h-full rounded-full object-cover" />
+                <SecureImage src={profile.foto} alt="Profile" className="w-full h-full rounded-full object-cover" />
               ) : (
                 <span>{(profile?.nome || 'U')[0]}{(profile?.cognome || '')[0]}</span>
               )}
@@ -3247,7 +3253,7 @@ export default function App() {
               {/* Brand Header */}
               <div className="flex items-center space-x-3 px-3 mb-8">
                 <div className="w-8 h-8 flex items-center justify-center">
-                  <img src="https://vndajxcmgqjybhvppkqe.supabase.co/storage/v1/object/public/immobili-media/images/HomeLab-Nero.png" alt="Logo" className="w-full h-full object-contain" />
+                  <IconLogo />
                 </div>
                 <div>
                   <h1 className="text-base font-semibold tracking-tight text-[#1D1D1F]">HomeLab CRM</h1>
@@ -3382,7 +3388,7 @@ export default function App() {
                  title="Impostazioni Profilo"
                >
                  {profile?.foto && profile.foto.trim() !== '' ? (
-                    <img
+                    <SecureImage
                       src={profile.foto}
                       alt="Profile"
                       className="w-8 h-8 rounded-full object-cover shrink-0"
@@ -4562,7 +4568,7 @@ export default function App() {
                     <div className="flex flex-col items-center space-y-3">
                       <div className="relative group">
                         {tempProfileFotoUrl || (profile?.foto && profile.foto.trim() !== '') ? (
-                          <img
+                          <SecureImage
                             src={tempProfileFotoUrl || profile.foto}
                             alt="Avatar"
                             className="w-20 h-20 rounded-full object-cover border border-white/50 shadow-md"

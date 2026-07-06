@@ -10,10 +10,10 @@ DROP POLICY IF EXISTS "Logs accessibili da autenticati" ON public.immobili_logs;
 CREATE POLICY "Consenti SELECT a utenti autenticati" 
 ON public.immobili_logs FOR SELECT 
 TO authenticated 
-USING (true);
+USING (auth.uid() IS NOT NULL);
 
 -- 3. Crea policy esplicita per la scrittura (INSERT)
 CREATE POLICY "Consenti INSERT a utenti autenticati" 
 ON public.immobili_logs FOR INSERT 
 TO authenticated 
-WITH CHECK (true);
+WITH CHECK (auth.uid() IS NOT NULL);

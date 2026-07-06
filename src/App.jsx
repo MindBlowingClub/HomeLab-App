@@ -1736,7 +1736,7 @@ export default function App() {
           const filePath = pathParts[1];
           const { data, error } = await supabase.storage
             .from('immobili-documenti')
-            .createSignedUrl(filePath, 900); // 15 mins
+            .createSignedUrl(filePath, 60); // 1 min
           
           if (error) throw error;
           window.open(data.signedUrl, '_blank');

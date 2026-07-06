@@ -986,7 +986,7 @@ export default function App() {
   };
 
   // --- OFFLINE SYNC SYSTEM ---
-  const uploadBase64Field = async (val, bucketName = 'immobili-media') => {
+  const uploadBase64Field = async (val, bucketName = null) => {
     if (typeof val === 'string' && val.startsWith('data:')) {
       try {
         const match = val.match(/^data:([^;]+);/);
@@ -1627,11 +1627,15 @@ export default function App() {
     });
   };
 
-  const uploadToSupabase = async (file, bucketName = 'immobili-media') => {
+  const uploadToSupabase = async (file, bucketNameOverride = null) => {
     if (!isRealSupabase || !supabase) return null;
     const fileExt = file.name.split('.').pop().toLowerCase();
     const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif'].includes(fileExt);
+    
+    // Auto-detect bucket based on file type if override is not provided
+    const bucketName = bucketNameOverride || (isImage ? 'immobili-media' : 'immobili-documenti');
     const folder = isImage ? 'images' : 'docs';
+    
     const uniqueName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
     const filePath = `${folder}/${uniqueName}`;
 
@@ -1651,11 +1655,17 @@ export default function App() {
     return publicUrlData.publicUrl;
   };
 
-  const deleteFromSupabase = async (publicUrl, bucketName = 'immobili-media') => {
+  const deleteFromSupabase = async (publicUrl) => {
     if (!isRealSupabase || !supabase || !publicUrl) return;
     try {
       if (publicUrl.startsWith('data:')) return; // Ignore base64
       const urlObj = new URL(publicUrl);
+      
+      let bucketName = 'immobili-media';
+      if (urlObj.pathname.includes('/immobili-documenti/')) {
+        bucketName = 'immobili-documenti';
+      }
+      
       const pathParts = urlObj.pathname.split(`/${bucketName}/`);
       if (pathParts.length > 1) {
         const filePath = pathParts[1];
@@ -1663,7 +1673,7 @@ export default function App() {
         if (error) {
           console.error('Supabase Storage delete error:', error.message);
         } else {
-          console.log(`Deleted ${filePath} from storage.`);
+          console.log(`Deleted ${filePath} from storage ${bucketName}.`);
         }
       }
     } catch (e) {
@@ -1692,6 +1702,47 @@ export default function App() {
     }
     
     return newUrl;
+  };
+
+  const handleViewDocument = async (fileUrl) => {
+    if (!fileUrl) return;
+    if (typeof fileUrl !== 'string') return;
+    if (fileUrl.startsWith('data:')) {
+      // Base64 file locally (offline/demo mode)
+      const newWindow = window.open();
+      if (newWindow) {
+        newWindow.document.write(`<iframe src="${fileUrl}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
+      }
+      return;
+    }
+
+    try {
+      const urlObj = new URL(fileUrl);
+      if (urlObj.pathname.includes('/immobili-documenti/')) {
+        // Private bucket: generate signed url
+        if (!isRealSupabase || !supabase) {
+          triggerToast("In modalità demo non è possibile aprire documenti privati", "warning");
+          return;
+        }
+        const pathParts = urlObj.pathname.split('/immobili-documenti/');
+        if (pathParts.length > 1) {
+          const filePath = pathParts[1];
+          const { data, error } = await supabase.storage
+            .from('immobili-documenti')
+            .createSignedUrl(filePath, 900); // 15 mins
+          
+          if (error) throw error;
+          window.open(data.signedUrl, '_blank');
+        }
+      } else {
+        // Public bucket or external link
+        window.open(fileUrl, '_blank');
+      }
+    } catch (e) {
+      console.error("Errore apertura documento:", e);
+      // Fallback
+      window.open(fileUrl, '_blank');
+    }
   };
 
   // Helper to format ultimo_rinnovo (YYYYMM -> MM/YYYY)
@@ -3747,14 +3798,13 @@ export default function App() {
                           </div>
                         </div>
                         {viewingImmobile.planimetria ? (
-                          <a
-                            href={viewingImmobile.planimetria}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-xs bg-[#0071E3] hover:bg-[#0077ED] text-white px-4 py-1.5 rounded-full font-semibold transition-all shadow-sm"
+                          <button
+                            type="button"
+                            onClick={() => handleViewDocument(viewingImmobile.planimetria)}
+                            className="text-xs bg-[#0071E3] hover:bg-[#0077ED] text-white px-4 py-1.5 rounded-full font-semibold transition-all shadow-sm cursor-pointer"
                           >
                             Apri Planimetria
-                          </a>
+                          </button>
                         ) : (
                           <span className="text-xs text-[#86868B] font-medium bg-black/5 px-3 py-1 rounded-full border border-black/5">Assente</span>
                         )}
@@ -3915,14 +3965,13 @@ export default function App() {
                                 <span className="text-[10px] text-gray-400">mandato_doc</span>
                               </div>
                             </div>
-                            <a
-                              href={viewingImmobile.mandato}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-xs bg-[#0071E3] hover:bg-[#0077ED] text-white px-4 py-1.5 rounded-full font-semibold transition-all shadow-sm"
+                            <button
+                              type="button"
+                              onClick={() => handleViewDocument(viewingImmobile.mandato)}
+                              className="text-xs bg-[#0071E3] hover:bg-[#0077ED] text-white px-4 py-1.5 rounded-full font-semibold transition-all shadow-sm cursor-pointer"
                             >
                               Apri Documento
-                            </a>
+                            </button>
                           </div>
                         ) : (
                           <p className="text-xs text-[#86868B] italic">Nessun file di mandato caricato.</p>
@@ -3967,14 +4016,13 @@ export default function App() {
                                   </span>
                                 </div>
                                 {fileUrl ? (
-                                  <a
-                                    href={fileUrl}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="text-center text-xs bg-[#0071E3] hover:bg-[#0077ED] text-white py-1.5 rounded-xl font-semibold transition-all shadow-sm block w-full"
+                                  <button
+                                    type="button"
+                                    onClick={() => handleViewDocument(fileUrl)}
+                                    className="text-center text-xs bg-[#0071E3] hover:bg-[#0077ED] text-white py-1.5 rounded-xl font-semibold transition-all shadow-sm block w-full cursor-pointer"
                                   >
                                     Apri Documento
-                                  </a>
+                                  </button>
                                 ) : (
                                   <span className="text-center text-[10px] text-gray-400 italic block">Nessun file caricato</span>
                                 )}
@@ -5364,7 +5412,13 @@ export default function App() {
                                       </span>
                                     </div>
                                     {!isNew && (
-                                      <a href={url} target="_blank" rel="noreferrer" className="text-[10px] text-white/70 hover:text-white underline font-medium transition-colors">Apri originale ↗</a>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleViewDocument(url)}
+                                        className="text-[10px] text-white/70 hover:text-white underline font-medium transition-colors cursor-pointer bg-transparent border-0 p-0"
+                                      >
+                                        Apri originale ↗
+                                      </button>
                                     )}
                                   </div>
                                 </div>
@@ -5393,7 +5447,13 @@ export default function App() {
                                     ✕
                                   </button>
                                   {!isNew && (
-                                    <a href={url} target="_blank" rel="noreferrer" className="text-[10px] text-[#0071E3] hover:underline font-semibold flex-shrink-0 ml-1">Apri ↗</a>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleViewDocument(url)}
+                                      className="text-[10px] text-[#0071E3] hover:underline font-semibold flex-shrink-0 ml-1 cursor-pointer bg-transparent border-0 p-0"
+                                    >
+                                      Apri ↗
+                                    </button>
                                   )}
                                 </div>
                               );
@@ -5790,7 +5850,13 @@ export default function App() {
                           {currentImmobile && currentImmobile.mandato && (
                             <div className="flex items-center gap-2 mt-2 px-1">
                               <div className="w-1.5 h-1.5 rounded-full bg-[#34C759]" />
-                              <a href={currentImmobile.mandato} target="_blank" rel="noreferrer" className="text-[10px] text-[#0071E3] hover:underline truncate max-w-[240px] font-medium">{currentImmobile.mandato.split('/').pop()}</a>
+                              <button
+                                type="button"
+                                onClick={() => handleViewDocument(currentImmobile.mandato)}
+                                className="text-[10px] text-[#0071E3] hover:underline truncate max-w-[240px] font-medium cursor-pointer bg-transparent border-0 p-0 text-left"
+                              >
+                                {currentImmobile.mandato.split('/').pop()}
+                              </button>
                             </div>
                           )}
                         </div>

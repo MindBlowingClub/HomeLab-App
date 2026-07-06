@@ -522,6 +522,7 @@ export default function App() {
   const [localLogs, setLocalLogs] = useState(INITIAL_IMMOBILI_LOGS);
   const [immobileLogs, setImmobileLogs] = useState([]);
   const [visitaLogs, setVisitaLogs] = useState([]);
+  const [contattoLogs, setContattoLogs] = useState([]);
 
   // PWA Install states and detection
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
@@ -987,6 +988,31 @@ export default function App() {
       setVisitaLogs([]);
     }
   }, [viewingVisita, isRealSupabase]);
+
+  useEffect(() => {
+    if (viewingContatto) {
+      if (isRealSupabase && supabase) {
+        const fetchContattoLogs = async () => {
+          const { data, error } = await supabase
+            .from('contatti_logs')
+            .select('*')
+            .eq('contatto_id', viewingContatto.id)
+            .order('data_ora', { ascending: false });
+          if (error) {
+            console.error("Errore caricamento log contatto:", error);
+            triggerToast("Errore caricamento log contatto: " + error.message, "error");
+          } else if (data) {
+            setContattoLogs(data);
+          }
+        };
+        fetchContattoLogs();
+      } else {
+        setContattoLogs([]);
+      }
+    } else {
+      setContattoLogs([]);
+    }
+  }, [viewingContatto, isRealSupabase]);
 
   const fetchProfile = async (userId) => {
     try {
@@ -2564,6 +2590,92 @@ export default function App() {
 
     const isActuallyOffline = isOffline || !navigator.onLine;
 
+    // Change detection for logging
+    const changes = [];
+    const userEmail = currentSession?.user?.email ? currentSession.user.email.toUpperCase() : "UTENTE CRM";
+    let logDesc = "";
+
+    if (id) {
+      const existing = contatti.find(c => c.id === id);
+      const compareContattiFields = [
+        { key: 'nome', label: 'Nome' },
+        { key: 'cognome', label: 'Cognome' },
+        { key: 'societa', label: 'Società' },
+        { key: 'ruolo', label: 'Ruolo', type: 'array' },
+        { key: 'telefono', label: 'Telefono' },
+        { key: 'mail', label: 'Email' },
+        { key: 'note_contatto', label: 'Note' },
+        { key: 'immobili_posseduti', label: 'Immobili Posseduti', type: 'properties' },
+        { key: 'immobili_gestiti', label: 'Immobili Gestiti', type: 'properties' }
+      ];
+
+      const formatContattoVal = (val, type) => {
+        if (val === undefined || val === null || val === '') return '-';
+        if (type === 'array') {
+          return Array.isArray(val) ? val.join(', ') : String(val);
+        }
+        if (type === 'properties') {
+          if (!Array.isArray(val) || val.length === 0) return '-';
+          return val.map(pId => {
+            const found = immobili.find(imm => Number(imm.id) === Number(pId));
+            return found ? found.nome_immobile : `#${pId}`;
+          }).join(', ');
+        }
+        return String(val);
+      };
+
+      compareContattiFields.forEach(f => {
+        let oldVal = existing?.[f.key];
+        let newVal = fields[f.key];
+        
+        const oldFormatted = formatContattoVal(oldVal, f.type);
+        const newFormatted = formatContattoVal(newVal, f.type);
+
+        if (oldFormatted !== newFormatted) {
+          changes.push(`${f.label}: "${oldFormatted}" ➔ "${newFormatted}"`);
+        }
+      });
+      logDesc = `Modifica contatto "${existing?.nome || ''} ${existing?.cognome || ''}": ${changes.join(', ')}`;
+    } else {
+      const initialFields = [];
+      const compareContattiFields = [
+        { key: 'nome', label: 'Nome' },
+        { key: 'cognome', label: 'Cognome' },
+        { key: 'societa', label: 'Società' },
+        { key: 'ruolo', label: 'Ruolo', type: 'array' },
+        { key: 'telefono', label: 'Telefono' },
+        { key: 'mail', label: 'Email' },
+        { key: 'note_contatto', label: 'Note' },
+        { key: 'immobili_posseduti', label: 'Immobili Posseduti', type: 'properties' },
+        { key: 'immobili_gestiti', label: 'Immobili Gestiti', type: 'properties' }
+      ];
+
+      const formatContattoVal = (val, type) => {
+        if (val === undefined || val === null || val === '') return '-';
+        if (type === 'array') {
+          return Array.isArray(val) ? val.join(', ') : String(val);
+        }
+        if (type === 'properties') {
+          if (!Array.isArray(val) || val.length === 0) return '-';
+          return val.map(pId => {
+            const found = immobili.find(imm => Number(imm.id) === Number(pId));
+            return found ? found.nome_immobile : `#${pId}`;
+          }).join(', ');
+        }
+        return String(val);
+      };
+
+      compareContattiFields.forEach(f => {
+        const val = fields[f.key];
+        if (val !== undefined && val !== null && val !== "" && !(Array.isArray(val) && val.length === 0)) {
+          const formatted = formatContattoVal(val, f.type);
+          initialFields.push(`${f.label}: "${formatted}"`);
+        }
+      });
+
+      logDesc = `Creazione contatto: "${fields.nome || ''} ${fields.cognome || ''}". Dati inseriti: ${initialFields.join(', ')}`;
+    }
+
     if (isRealSupabase && !isActuallyOffline) {
       try {
         if (id) {
@@ -2576,6 +2688,16 @@ export default function App() {
           const record = data[0] || { id, ...fields };
           setContatti(contatti.map(item => item.id === id ? record : item));
           triggerToast("Contatto aggiornato nel database");
+
+          if (changes.length > 0 && supabase) {
+            await supabase.from('contatti_logs').insert([{
+              contatto_id: id,
+              descrizione: logDesc,
+              utente: userEmail,
+              data_ora: new Date().toISOString()
+            }]);
+          }
+
           if (viewingContatto && viewingContatto.id === id) {
             setViewingContatto(record);
           }
@@ -2632,6 +2754,15 @@ export default function App() {
           const record = data[0];
           setContatti([...contatti, record]);
           triggerToast("Contatto salvato nel database");
+
+          if (supabase && record) {
+            await supabase.from('contatti_logs').insert([{
+              contatto_id: record.id,
+              descrizione: logDesc,
+              utente: userEmail,
+              data_ora: new Date().toISOString()
+            }]);
+          }
 
           const newId = record.id;
           if (selectedPosseduti.length > 0) {
@@ -2725,6 +2856,17 @@ export default function App() {
       const isActuallyOffline = isOffline || !navigator.onLine;
       if (isRealSupabase && !isActuallyOffline) {
         try {
+          if (supabase) {
+            const userEmail = currentSession?.user?.email ? currentSession.user.email.toUpperCase() : "UTENTE CRM";
+            const contact = contatti.find(c => c.id === id);
+            await supabase.from('contatti_logs').insert([{
+              contatto_id: id,
+              descrizione: `Eliminazione contatto "${contact?.nome || ''} ${contact?.cognome || ''}" di ruolo: ${Array.isArray(contact?.ruolo) ? contact.ruolo.join(', ') : contact?.ruolo || '-'}`,
+              utente: userEmail,
+              data_ora: new Date().toISOString()
+            }]);
+          }
+
           const { error } = await supabase
             .from('contatti')
             .delete()
@@ -4629,6 +4771,41 @@ export default function App() {
                       );
                     })()}
                   </div>
+
+                  {/* Contact logs timeline for Admin */}
+                  {profile?.ruolo && profile.ruolo.toLowerCase().includes('admin') && (
+                    <div className="space-y-3 pt-3 border-t border-black/5">
+                      <span className="block font-bold text-[#86868B] uppercase tracking-wide text-[9px]">Cronologia Modifiche Contatto</span>
+                      {contattoLogs.length === 0 ? (
+                        <div className="glass-panel p-4 rounded-xl text-center text-xs text-gray-400 italic">
+                          Nessuna modifica registrata
+                        </div>
+                      ) : (
+                        <div className="space-y-2.5 max-h-[220px] overflow-y-auto pr-1">
+                          {contattoLogs.map((log) => (
+                            <div key={log.id} className="glass-panel p-3 rounded-xl space-y-1 relative shadow-sm hover:shadow transition-all bg-[#F5F5F7]/40 border border-black/5">
+                              <div className="flex justify-between items-center text-[9px] border-b border-black/5 pb-1">
+                                <span className="font-bold text-[#0071E3]">{log.utente}</span>
+                                <span className="text-gray-400 font-medium">
+                                  {log.data_ora ? new Date(log.data_ora).toLocaleString('it-CH', {
+                                    year: 'numeric',
+                                    month: '2-digit',
+                                    day: '2-digit',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  }) : '-'}
+                                </span>
+                              </div>
+                              <p className="text-[10px] text-gray-600 leading-normal whitespace-pre-wrap pt-1">
+                                {log.descrizione}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                 </div>
 
                 <div className="p-6 border-t border-[#E5E5EA] bg-[#F5F5F7] flex space-x-2">
@@ -6402,13 +6579,9 @@ export default function App() {
                                   </div>
 
                                   {/* Thumbnail header */}
-                                  <div
+                                  <SecureImageBackground
+                                    url={imm.immagine_di_riferimento}
                                     className="h-32 bg-cover bg-center relative flex items-end"
-                                    style={{
-                                      backgroundImage: imm.immagine_di_riferimento
-                                        ? `url(${imm.immagine_di_riferimento})`
-                                        : 'linear-gradient(to bottom right, #E5E5EA, #D2D2D7)'
-                                    }}
                                   >
                                     <div className="absolute inset-0 bg-black/10"></div>
 
@@ -6440,7 +6613,7 @@ export default function App() {
                                     <span className="absolute bottom-2 right-2 bg-[#0071E3] text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full shadow-sm z-10">
                                       {imm.immobile_in ? imm.immobile_in.join(' / ') : ''}
                                     </span>
-                                  </div>
+                                  </SecureImageBackground>
 
                                   {/* Details */}
                                   <div className="p-3 flex-1 flex flex-col justify-between space-y-2">
@@ -6558,13 +6731,9 @@ export default function App() {
                                   </div>
 
                                   {/* Thumbnail header */}
-                                  <div
+                                  <SecureImageBackground
+                                    url={imm.immagine_di_riferimento}
                                     className="h-32 bg-cover bg-center relative flex items-end"
-                                    style={{
-                                      backgroundImage: imm.immagine_di_riferimento
-                                        ? `url(${imm.immagine_di_riferimento})`
-                                        : 'linear-gradient(to bottom right, #E5E5EA, #D2D2D7)'
-                                    }}
                                   >
                                     <div className="absolute inset-0 bg-black/10"></div>
 
@@ -6596,7 +6765,7 @@ export default function App() {
                                     <span className="absolute bottom-2 right-2 bg-[#0071E3] text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full shadow-sm z-10">
                                       {imm.immobile_in ? imm.immobile_in.join(' / ') : ''}
                                     </span>
-                                  </div>
+                                  </SecureImageBackground>
 
                                   {/* Details */}
                                   <div className="p-3 flex-1 flex flex-col justify-between space-y-2">
@@ -7492,14 +7661,10 @@ export default function App() {
                                           }}
                                           className="bg-white p-2 rounded-xl border border-gray-200 flex items-center gap-3 cursor-pointer hover:border-[#0071E3] hover:shadow-md transition-all group"
                                         >
-                                          <div
-                                            className="w-14 h-14 rounded-lg bg-cover bg-center shrink-0 border border-gray-100"
-                                            style={{
-                                              backgroundImage: imm.immagine_di_riferimento
-                                                ? `url(${imm.immagine_di_riferimento})`
-                                                : 'linear-gradient(to bottom right, #E5E5EA, #D2D2D7)'
-                                            }}
-                                          />
+                                          <SecureImageBackground
+                                             url={imm.immagine_di_riferimento}
+                                             className="w-14 h-14 rounded-lg bg-cover bg-center shrink-0 border border-gray-100"
+                                           />
                                           <div className="text-xs leading-tight min-w-0 flex-1">
                                             <span className="font-bold text-[#1D1D1F] block truncate group-hover:text-[#0071E3] transition-colors">
                                               {imm.nome_immobile}

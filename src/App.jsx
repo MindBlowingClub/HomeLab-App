@@ -19,8 +19,12 @@ import { SecureImage, SecureImageBackground } from './components/SecureImage';
 
 
 const IconLogo = () => (
-  <div className="w-full h-full bg-[#1B343F] rounded-xl flex items-center justify-center text-white shadow-inner text-base">
-    🏠
+  <div className="w-full h-full flex items-center justify-center p-1 bg-transparent">
+    <img
+      src="/HL-LogoApp.webp"
+      alt="HomeLab Logo"
+      className="w-full h-full object-contain rounded-xl"
+    />
   </div>
 );
 

@@ -724,6 +724,14 @@ export default function App() {
     if (isImmobileModalOpen) {
       setImmobileCategoria(currentImmobile ? (currentImmobile.categoria || '') : '');
       setImmobileTipo(currentImmobile && currentImmobile.tipo && currentImmobile.tipo[0] ? currentImmobile.tipo[0] : '');
+      setFormPrezzoVendita(currentImmobile ? (currentImmobile.prezzo_di_vendita || '') : '');
+      setFormPrezzoAffitto(currentImmobile ? (currentImmobile.prezzo_di_affitto || '') : '');
+      setFormProvvigioneTipo(currentImmobile ? (currentImmobile.provvigione_tipo || 'Percentuale') : 'Percentuale');
+      setFormProvvigioneValore(currentImmobile ? (currentImmobile.provvigione_valore || 0) : 0);
+      setFormCollabAttiva(currentImmobile ? !!currentImmobile.collab_attiva : false);
+      setFormCollabValore(currentImmobile ? (currentImmobile.collab_valore || 0) : 0);
+      setFormSegnalatoreAttivo(currentImmobile ? !!currentImmobile.segnalatore_attivo : false);
+      setFormSegnalatoreValore(currentImmobile ? (currentImmobile.segnalatore_valore || 0) : 0);
     }
   }, [isImmobileModalOpen, currentImmobile]);
   const [isSavingImmobile, setIsSavingImmobile] = useState(false);
@@ -736,6 +744,26 @@ export default function App() {
   const [selectedImmobileAgenteIds, setSelectedImmobileAgenteIds] = useState([]);
   const [searchImmobileAgenteQuery, setSearchImmobileAgenteQuery] = useState('');
   const [isAgenteSearchFocused, setIsAgenteSearchFocused] = useState(false);
+  const [selectedImmobileContattoVisiteIds, setSelectedImmobileContattoVisiteIds] = useState([]);
+  const [searchImmobileContattoVisiteQuery, setSearchImmobileContattoVisiteQuery] = useState('');
+  const [isContattoVisiteSearchFocused, setIsContattoVisiteSearchFocused] = useState(false);
+  const [selectedImmobileCollabId, setSelectedImmobileCollabId] = useState(null);
+  const [searchImmobileCollabQuery, setSearchImmobileCollabQuery] = useState('');
+  const [isCollabSearchFocused, setIsCollabSearchFocused] = useState(false);
+  const [selectedImmobileSegnalatoreId, setSelectedImmobileSegnalatoreId] = useState(null);
+  const [searchImmobileSegnalatoreQuery, setSearchImmobileSegnalatoreQuery] = useState('');
+  const [isSegnalatoreSearchFocused, setIsSegnalatoreSearchFocused] = useState(false);
+  const [tempAccordiFilesUrls, setTempAccordiFilesUrls] = useState([]);
+  const [tempCollabAccordoFileUrl, setTempCollabAccordoFileUrl] = useState(null);
+  const [tempSegnalatoreAccordoFileUrl, setTempSegnalatoreAccordoFileUrl] = useState(null);
+  const [formPrezzoVendita, setFormPrezzoVendita] = useState('');
+  const [formPrezzoAffitto, setFormPrezzoAffitto] = useState('');
+  const [formProvvigioneTipo, setFormProvvigioneTipo] = useState('Percentuale');
+  const [formProvvigioneValore, setFormProvvigioneValore] = useState(0);
+  const [formCollabAttiva, setFormCollabAttiva] = useState(false);
+  const [formCollabValore, setFormCollabValore] = useState(0);
+  const [formSegnalatoreAttivo, setFormSegnalatoreAttivo] = useState(false);
+  const [formSegnalatoreValore, setFormSegnalatoreValore] = useState(0);
   const [isUserSettingsModalOpen, setIsUserSettingsModalOpen] = useState(false);
   const [isProfileEditing, setIsProfileEditing] = useState(false);
   const [tempProfileFotoUrl, setTempProfileFotoUrl] = useState(null);
@@ -1304,8 +1332,14 @@ export default function App() {
         setSelectedCalendarParticipantIds(prev => [...prev, finalId]);
       } else if (addingContactForVisit === 'proprietario') {
         setSelectedImmobileProprietarioId(finalId);
+      } else if (addingContactForVisit === 'contatto_visite') {
+        setSelectedImmobileContattoVisiteIds(prev => [...prev, finalId]);
       } else if (addingContactForVisit === 'agente') {
         setSelectedImmobileAgenteIds(prev => [...prev, finalId]);
+      } else if (addingContactForVisit === 'collab') {
+        setSelectedImmobileCollabId(finalId);
+      } else if (addingContactForVisit === 'segnalatore') {
+        setSelectedImmobileSegnalatoreId(finalId);
       }
       setAddingContactForVisit(null);
     }
@@ -1816,6 +1850,63 @@ export default function App() {
     }
   };
 
+  const handleAccordiFilesChange = async (e) => {
+    const files = Array.from(e.target.files);
+    for (let file of files) {
+      if (file.size > 0) {
+        try {
+          if (isRealSupabase && !isOffline && navigator.onLine) {
+            const url = await uploadToSupabase(file, 'immobili-documenti');
+            if (url) {
+              setTempAccordiFilesUrls(prev => [...prev, url]);
+              triggerToast(`File ${file.name} caricato con successo.`, "success");
+            }
+          } else {
+            const base64 = await readAsBase64(file);
+            setTempAccordiFilesUrls(prev => [...prev, base64]);
+            triggerToast(`File ${file.name} caricato in locale (offline).`, "info");
+          }
+        } catch (err) {
+          console.error("Errore caricamento file accordo:", err);
+          triggerToast(`Errore durante il caricamento di ${file.name}`, "error");
+        }
+      }
+    }
+  };
+
+  const calculateAccordiSpettanze = (prezzo, tipoProv, valoreProv, collabAttiva, collabVal, segnAttivo, segnVal) => {
+    const pVal = Number(prezzo) || 0;
+    const vProv = Number(valoreProv) || 0;
+    const cVal = Number(collabVal) || 0;
+    const sVal = Number(segnVal) || 0;
+
+    let provLorda = 0;
+    if (tipoProv === 'Fisso') {
+      provLorda = vProv;
+    } else {
+      provLorda = pVal * (vProv / 100);
+    }
+
+    let quotaCollab = 0;
+    if (collabAttiva) {
+      quotaCollab = provLorda * (cVal / 100);
+    }
+
+    let quotaSegnalatore = 0;
+    if (segnAttivo) {
+      quotaSegnalatore = provLorda * (sVal / 100);
+    }
+
+    const quotaHomeLab = provLorda - quotaCollab - quotaSegnalatore;
+
+    return {
+      provLorda,
+      quotaCollab,
+      quotaSegnalatore,
+      quotaHomeLab
+    };
+  };
+
   // Helper to format ultimo_rinnovo (YYYYMM -> MM/YYYY)
   const formatUltimoRinnovo = (val) => {
     if (!val) return '-';
@@ -1850,6 +1941,8 @@ export default function App() {
     let piano_assegnazioni_parti_comuni_doc = "";
     let rasi_doc = "";
     let certificato_radon_doc = "";
+    let collab_accordo_file = "";
+    let segnalatore_accordo_file = "";
 
     try {
       immagine_di_riferimento = await handleUploadOrBase64(
@@ -1949,6 +2042,20 @@ export default function App() {
         existing ? existing.certificato_radon_doc : null,
         'immobili-documenti'
       );
+
+      collab_accordo_file = await handleUploadOrBase64(
+        formData.get('collab_accordo_file_input'),
+        tempCollabAccordoFileUrl === '' ? '' : (existing ? existing.collab_accordo_file : ""),
+        existing ? existing.collab_accordo_file : null,
+        'immobili-documenti'
+      );
+
+      segnalatore_accordo_file = await handleUploadOrBase64(
+        formData.get('segnalatore_accordo_file_input'),
+        tempSegnalatoreAccordoFileUrl === '' ? '' : (existing ? existing.segnalatore_accordo_file : ""),
+        existing ? existing.segnalatore_accordo_file : null,
+        'immobili-documenti'
+      );
     } catch (fileErr) {
       console.error("File processing error:", fileErr);
       triggerToast("Errore durante il caricamento dei file: " + (fileErr.message || fileErr), "error");
@@ -2037,6 +2144,7 @@ export default function App() {
       note_interne: formData.get('note_interne') || "",
       proprietario_id: Number(formData.get('proprietario_id')) || null,
       agente_id: formData.get('agente_id') || null,
+      contatto_visite_id: formData.get('contatto_visite_id') || null,
       planimetria,
       link_a_cartella_condivisa: formData.get('link_a_cartella_condivisa') || "",
       numero_di_mappale: formData.get('numero_di_mappale') || "",
@@ -2063,6 +2171,19 @@ export default function App() {
       rasi_doc,
       certificato_radon: formData.get('certificato_radon') || "No",
       certificato_radon_doc,
+      provvigione_tipo: formData.get('provvigione_tipo') || 'Percentuale',
+      provvigione_valore: Number(formData.get('provvigione_valore')) || 0,
+      collab_attiva: formData.get('collab_attiva') === 'on',
+      collab_contatto_id: selectedImmobileCollabId || null,
+      collab_valore: Number(formData.get('collab_valore')) || 0,
+      segnalatore_attivo: formData.get('segnalatore_attivo') === 'on',
+      segnalatore_contatto_id: selectedImmobileSegnalatoreId || null,
+      segnalatore_valore: Number(formData.get('segnalatore_valore')) || 0,
+      accordi_note: formData.get('accordi_note') || "",
+      collab_accordo_file,
+      collab_note: formData.get('collab_note') || "",
+      segnalatore_accordo_file,
+      segnalatore_note: formData.get('segnalatore_note') || "",
       creato_da: existing ? existing.creato_da : (currentSession?.user?.email ? currentSession.user.email.toUpperCase() : "UTENTE CRM"),
       ultima_modifica_il: new Date().toISOString(),
       ultima_modifica_fatta_da: currentSession?.user?.email ? currentSession.user.email.toUpperCase() : "UTENTE CRM"
@@ -2108,7 +2229,8 @@ export default function App() {
       { key: 'link_a_cartella_condivisa', label: 'Link Cartella' },
       { key: 'note_interne', label: 'Note Interne' },
       { key: 'proprietario_id', label: 'ID Proprietario' },
-      { key: 'agente_id', label: 'ID Agente' },
+      { key: 'agente_id', label: 'ID Responsabile Oggetto' },
+      { key: 'contatto_visite_id', label: 'ID Contatto Visite' },
       { key: 'immagine_di_riferimento', label: 'Foto Principale' },
       { key: 'mandato', label: 'File Mandato' },
       { key: 'planimetria', label: 'File Planimetria' },
@@ -2133,6 +2255,19 @@ export default function App() {
       { key: 'rasi_doc', label: 'File Rasi' },
       { key: 'certificato_radon', label: 'Certificato Radon' },
       { key: 'certificato_radon_doc', label: 'File Certificato Radon' },
+      { key: 'provvigione_tipo', label: 'Tipo Provvigione' },
+      { key: 'provvigione_valore', label: 'Valore Provvigione' },
+      { key: 'collab_attiva', label: 'Collaborazione Esterna Attiva' },
+      { key: 'collab_contatto_id', label: 'ID Partner Esterno' },
+      { key: 'collab_valore', label: 'Quota Partner Esterno' },
+      { key: 'segnalatore_attivo', label: 'Segnalatore Attivo' },
+      { key: 'segnalatore_contatto_id', label: 'ID Segnalatore' },
+      { key: 'segnalatore_valore', label: 'Quota Segnalatore' },
+      { key: 'accordi_note', label: 'Note Accordi' },
+      { key: 'collab_accordo_file', label: 'File Accordo Collaborazione' },
+      { key: 'collab_note', label: 'Note Collaborazione' },
+      { key: 'segnalatore_accordo_file', label: 'File Accordo Segnalazione' },
+      { key: 'segnalatore_note', label: 'Note Segnalazione' },
     ];
 
     const formatLogValue = (val) => {
@@ -2289,6 +2424,18 @@ export default function App() {
     setSelectedImmobileProprietarioId(null);
     setSearchImmobileProprietarioQuery('');
     setIsProprietarioSearchFocused(false);
+    setSelectedImmobileContattoVisiteIds([]);
+    setSelectedImmobileCollabId(null);
+    setSearchImmobileCollabQuery('');
+    setIsCollabSearchFocused(false);
+    setSelectedImmobileSegnalatoreId(null);
+    setSearchImmobileSegnalatoreQuery('');
+    setIsSegnalatoreSearchFocused(false);
+    setTempAccordiFilesUrls([]);
+    setTempCollabAccordoFileUrl(null);
+    setTempSegnalatoreAccordoFileUrl(null);
+    setSearchImmobileContattoVisiteQuery('');
+    setIsContattoVisiteSearchFocused(false);
     setSelectedImmobileAgenteIds([]);
     setSearchImmobileAgenteQuery('');
     setIsAgenteSearchFocused(false);
@@ -2345,7 +2492,7 @@ export default function App() {
   const handleEditImmobile = (item) => {
     setCurrentImmobile(item);
     if (viewingImmobile && activeDetailTab) {
-      if (['caratteristiche', 'contatti', 'amministrazione', 'documenti', 'note_interne', 'log'].includes(activeDetailTab)) {
+      if (['caratteristiche', 'contatti', 'accordi', 'documenti', 'note_interne', 'log'].includes(activeDetailTab)) {
         setActiveFormTab(activeDetailTab);
       } else {
         setActiveFormTab('generale');
@@ -2356,12 +2503,28 @@ export default function App() {
     setTempImmobileImageUrl(null);
     setTempPlanimetriaUrl(null);
     setSelectedImmobileProprietarioId(item.proprietario_id);
+    const visitVal = item.contatto_visite_id;
+    let visitIds = [];
+    if (visitVal) {
+      visitIds = String(visitVal).split(',').map(id => id.trim()).filter(Boolean).map(id => isNaN(Number(id)) ? id : Number(id));
+    }
+    setSelectedImmobileContattoVisiteIds(visitIds);
     const agentVal = item.agente_id;
     let agentIds = [];
     if (agentVal) {
       agentIds = String(agentVal).split(',').map(id => id.trim()).filter(Boolean).map(id => isNaN(Number(id)) ? id : Number(id));
     }
     setSelectedImmobileAgenteIds(agentIds);
+    setSelectedImmobileCollabId(item.collab_contatto_id ? Number(item.collab_contatto_id) : null);
+    setSelectedImmobileSegnalatoreId(item.segnalatore_contatto_id ? Number(item.segnalatore_contatto_id) : null);
+    const filesVal = item.accordi_files;
+    let filesArr = [];
+    if (filesVal) {
+      filesArr = String(filesVal).split(',').map(u => u.trim()).filter(Boolean);
+    }
+    setTempAccordiFilesUrls(filesArr);
+    setTempCollabAccordoFileUrl(item.collab_accordo_file || null);
+    setTempSegnalatoreAccordoFileUrl(item.segnalatore_accordo_file || null);
     setIsImmobileModalOpen(true);
   };
 
@@ -2570,7 +2733,23 @@ export default function App() {
     const id = idVal ? parseInt(idVal) : null;
 
     const ruolo = [];
-    const RUOLO_OPTIONS = ["Proprietario", "Locatore", "Acquirente", "Affittuario", "Agente Immobiliare", "Intermediario", "Fotografo"];
+    const RUOLO_OPTIONS = [
+      "Proprietario",
+      "Locatore",
+      "Acquirente",
+      "Affittuario",
+      "Agente Immobiliare",
+      "Intermediario",
+      "Fotografo",
+      "Servizi",
+      "Manutenzione",
+      "Amministratore",
+      "Custode",
+      "Tecnico / Perito",
+      "Artigiano / Impresa",
+      "Notaio / Avvocato",
+      "Altro"
+    ];
     RUOLO_OPTIONS.forEach(r => {
       if (formData.get(`ruolo_${r}`) === 'on') {
         ruolo.push(r);
@@ -2798,8 +2977,14 @@ export default function App() {
               setSelectedCalendarParticipantIds(prev => [...prev, newId]);
             } else if (addingContactForVisit === 'proprietario') {
               setSelectedImmobileProprietarioId(newId);
+            } else if (addingContactForVisit === 'contatto_visite') {
+              setSelectedImmobileContattoVisiteIds(prev => [...prev, newId]);
             } else if (addingContactForVisit === 'agente') {
               setSelectedImmobileAgenteIds(prev => [...prev, newId]);
+            } else if (addingContactForVisit === 'collab') {
+              setSelectedImmobileCollabId(newId);
+            } else if (addingContactForVisit === 'segnalatore') {
+              setSelectedImmobileSegnalatoreId(newId);
             }
             setAddingContactForVisit(null);
           }
@@ -3836,6 +4021,7 @@ export default function App() {
                       setCurrentImmobile(null);
                       setActiveFormTab('generale');
                       setSelectedImmobileProprietarioId(null);
+                      setSelectedImmobileContattoVisiteIds([]);
                     } else if (activeTab === 'contatti') {
                       handleCreateContatto();
                     } else if (activeTab === 'visite') {
@@ -3898,7 +4084,7 @@ export default function App() {
                     { id: 'generale', label: 'Dettagli & Prezzi' },
                     { id: 'caratteristiche', label: 'Caratteristiche' },
                     { id: 'contatti', label: 'Contatti' },
-                    { id: 'amministrazione', label: 'Amministrazione' },
+                    { id: 'accordi', label: 'Accordi' },
                     { id: 'documenti', label: 'Documenti' },
                     { id: 'note_interne', label: 'Note' },
                     { id: 'eventi', label: 'Eventi' },
@@ -4143,62 +4329,126 @@ export default function App() {
                   {activeDetailTab === 'contatti' && (
                     <div className="space-y-5">
                       <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider">anagrafiche collegate</span>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div
-                          onClick={() => {
-                            if (viewingImmobile.proprietario_id) {
-                              const contactObj = contatti.find(c => String(c.id) === String(viewingImmobile.proprietario_id));
-                              if (contactObj) {
-                                const currentProperty = viewingImmobile;
-                                handleCloseImmobileDetail();
-                                handleViewContatto(contactObj, { type: 'immobile', item: currentProperty, tab: 'contatti' });
-                              }
+                      <div className="flex flex-col gap-4">
+                        {/* Proprietario o Referente */}
+                        <div className="glass-panel p-4 rounded-2xl flex flex-col min-h-[160px]">
+                          <span className="block text-[9px] uppercase font-bold text-[#86868B] mb-2">proprietario o referente</span>
+                          {(() => {
+                            const contactId = viewingImmobile.proprietario_id;
+                            const contactObj = contactId ? contatti.find(c => String(c.id) === String(contactId)) : null;
+                            if (!contactObj) {
+                              return (
+                                <div className="flex-1 flex items-center justify-center border border-dashed border-black/10 rounded-xl p-3 bg-black/[0.01]">
+                                  <span className="text-xs text-gray-400 italic">Non assegnato</span>
+                                </div>
+                              );
                             }
-                          }}
-                          className={`group glass-panel p-4 rounded-2xl transition-all duration-200 ${viewingImmobile.proprietario_id
-                              ? 'cursor-pointer hover:border-[#0071E3]/40 hover:shadow-lg'
-                              : ''
-                            }`}
-                        >
-                          <span className="block text-[9px] uppercase font-bold text-[#86868B]">proprietario o referente</span>
-                          <span className={`font-bold text-sm block mt-0.5 transition-colors ${viewingImmobile.proprietario_id ? 'group-hover:text-[#0071E3]' : ''}`}>
-                            {getContactName(viewingImmobile.proprietario_id)}
-                          </span>
-                          {viewingImmobile.proprietario_id && (
-                            <div className="mt-2 text-xs text-[#86868B] space-y-0.5">
-                              <p>📞 {getContactPhone(viewingImmobile.proprietario_id)}</p>
-                              <p>✉️ {getContactEmail(viewingImmobile.proprietario_id)}</p>
-                            </div>
-                          )}
+                            return (
+                              <div
+                                onClick={() => {
+                                  const currentProperty = viewingImmobile;
+                                  handleCloseImmobileDetail();
+                                  handleViewContatto(contactObj, { type: 'immobile', item: currentProperty, tab: 'contatti' });
+                                }}
+                                className="flex-1 flex flex-col justify-between cursor-pointer bg-white/40 hover:bg-white/70 p-3 rounded-xl border border-black/5 hover:border-[#0071E3]/20 hover:shadow-sm transition-all"
+                              >
+                                <div>
+                                  <span className="font-bold text-xs text-[#0071E3] block hover:underline">
+                                    👤 {contactObj.nome} {contactObj.cognome}
+                                  </span>
+                                  {contactObj.societa && (
+                                    <span className="text-[10px] text-gray-500 block pl-4 italic">{contactObj.societa}</span>
+                                  )}
+                                </div>
+                                <div className="mt-2 text-[10px] text-[#86868B] space-y-0.5 pl-4 border-l border-black/5">
+                                  <p>📞 {contactObj.telefono || 'Assente'}</p>
+                                  <p>✉️ {contactObj.mail || 'Assente'}</p>
+                                </div>
+                              </div>
+                            );
+                          })()}
                         </div>
 
-                        <div className="glass-panel p-4 rounded-2xl">
-                          <span className="block text-[9px] uppercase font-bold text-[#86868B]">agente</span>
+                        {/* Responsabile Oggetto */}
+                        <div className="glass-panel p-4 rounded-2xl flex flex-col min-h-[160px]">
+                          <span className="block text-[9px] uppercase font-bold text-[#86868B] mb-2">responsabile oggetto</span>
                           {(() => {
                             const agentIds = viewingImmobile.agente_id ? String(viewingImmobile.agente_id).split(',').map(id => id.trim()).filter(Boolean) : [];
                             if (agentIds.length === 0) {
-                              return <span className="font-bold text-sm block mt-0.5 text-gray-400 italic">Non assegnato</span>;
+                              return (
+                                <div className="flex-1 flex items-center justify-center border border-dashed border-black/10 rounded-xl p-3 bg-black/[0.01]">
+                                  <span className="text-xs text-gray-400 italic">Non assegnato</span>
+                                </div>
+                              );
                             }
                             return (
-                              <div className="space-y-3 mt-2">
+                              <div className="flex-1 space-y-2 overflow-y-auto pr-1">
                                 {agentIds.map(agentId => {
                                   const contactObj = contatti.find(c => String(c.id) === String(agentId));
                                   if (!contactObj) return null;
                                   return (
                                     <div
                                       key={agentId}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
+                                      onClick={() => {
                                         const currentProperty = viewingImmobile;
                                         handleCloseImmobileDetail();
                                         handleViewContatto(contactObj, { type: 'immobile', item: currentProperty, tab: 'contatti' });
                                       }}
-                                      className="cursor-pointer bg-white/30 hover:bg-white/70 p-2 rounded-xl border border-black/5 hover:border-[#0071E3]/20 transition-all"
+                                      className="cursor-pointer bg-white/40 hover:bg-white/70 p-3 rounded-xl border border-black/5 hover:border-[#0071E3]/20 hover:shadow-sm transition-all"
                                     >
-                                      <span className="font-bold text-xs text-[#0071E3] block hover:underline">
-                                        👤 {contactObj.nome} {contactObj.cognome}
-                                      </span>
-                                      <div className="mt-1 text-[10px] text-[#86868B] space-y-0.5 pl-3">
+                                      <div>
+                                        <span className="font-bold text-xs text-[#0071E3] block hover:underline">
+                                          👤 {contactObj.nome} {contactObj.cognome}
+                                        </span>
+                                      </div>
+                                      <div className="mt-1 text-[10px] text-[#86868B] space-y-0.5 pl-4 border-l border-black/5">
+                                        <p>📞 {contactObj.telefono || 'Assente'}</p>
+                                        <p>✉️ {contactObj.mail || 'Assente'}</p>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            );
+                          })()}
+                        </div>
+
+                        {/* Contatto per Visite */}
+                        <div className="glass-panel p-4 rounded-2xl flex flex-col min-h-[160px]">
+                          <span className="block text-[9px] uppercase font-bold text-[#86868B] mb-2">contatto per visite</span>
+                          {(() => {
+                            const visitIds = viewingImmobile.contatto_visite_id ? String(viewingImmobile.contatto_visite_id).split(',').map(id => id.trim()).filter(Boolean) : [];
+                            if (visitIds.length === 0) {
+                              return (
+                                <div className="flex-1 flex items-center justify-center border border-dashed border-black/10 rounded-xl p-3 bg-black/[0.01]">
+                                  <span className="text-xs text-gray-400 italic">Non assegnato</span>
+                                </div>
+                              );
+                            }
+                            return (
+                              <div className="flex-1 space-y-2 overflow-y-auto pr-1">
+                                {visitIds.map(cvid => {
+                                  const contactObj = contatti.find(c => String(c.id) === String(cvid));
+                                  if (!contactObj) return null;
+                                  return (
+                                    <div
+                                      key={cvid}
+                                      onClick={() => {
+                                        const currentProperty = viewingImmobile;
+                                        handleCloseImmobileDetail();
+                                        handleViewContatto(contactObj, { type: 'immobile', item: currentProperty, tab: 'contatti' });
+                                      }}
+                                      className="cursor-pointer bg-white/40 hover:bg-white/70 p-3 rounded-xl border border-black/5 hover:border-[#0071E3]/20 hover:shadow-sm transition-all"
+                                    >
+                                      <div>
+                                        <span className="font-bold text-xs text-[#0071E3] block hover:underline">
+                                          👤 {contactObj.nome} {contactObj.cognome}
+                                        </span>
+                                        {contactObj.societa && (
+                                          <span className="text-[10px] text-gray-500 block pl-4 italic">{contactObj.societa}</span>
+                                        )}
+                                      </div>
+                                      <div className="mt-1 text-[10px] text-[#86868B] space-y-0.5 pl-4 border-l border-black/5">
                                         <p>📞 {contactObj.telefono || 'Assente'}</p>
                                         <p>✉️ {contactObj.mail || 'Assente'}</p>
                                       </div>
@@ -4213,9 +4463,10 @@ export default function App() {
                     </div>
                   )}
 
-                  {/* TAB: AMMINISTRAZIONE */}
-                  {activeDetailTab === 'amministrazione' && (
+                  {/* TAB: ACCORDI */}
+                  {activeDetailTab === 'accordi' && (
                     <div className="space-y-5">
+                      {/* Mandato Card */}
                       <div className="glass-panel p-5 rounded-2xl grid grid-cols-2 gap-4">
                         <div>
                           <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider mb-1">mandato firmato</span>
@@ -4231,31 +4482,214 @@ export default function App() {
                             {formatField(viewingImmobile.tipo_di_mandato)}
                           </span>
                         </div>
-                      </div>
-
-                      <div className="glass-panel p-5 rounded-2xl space-y-3">
-                        <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider">mandato</span>
-                        {viewingImmobile.mandato ? (
-                          <div className="p-4 bg-white/40 rounded-xl border border-black/5 flex items-center justify-between">
-                            <div className="flex items-center space-x-2">
-                              <span className="text-2xl">📄</span>
-                              <div>
-                                <span className="font-bold text-xs block truncate max-w-[280px]">mandato</span>
-                                <span className="text-[10px] text-gray-400">mandato_doc</span>
-                              </div>
-                            </div>
+                        {viewingImmobile.mandato && (
+                          <div className="col-span-2 pt-2 border-t border-black/5 flex items-center justify-between">
+                            <span className="text-xs font-semibold text-[#1D1D1F]">📄 File Mandato Caricato</span>
                             <button
                               type="button"
                               onClick={() => handleViewDocument(viewingImmobile.mandato)}
                               className="text-xs bg-[#0071E3] hover:bg-[#0077ED] text-white px-4 py-1.5 rounded-full font-semibold transition-all shadow-sm cursor-pointer"
                             >
-                              Apri Documento
+                              Apri Mandato
                             </button>
                           </div>
-                        ) : (
-                          <p className="text-xs text-[#86868B] italic">Nessun file di mandato caricato.</p>
                         )}
                       </div>
+
+                      {/* Provvigione e Calcoli Spettanze Card */}
+                      {(() => {
+                        const prezzo = viewingImmobile.prezzo_di_vendita || viewingImmobile.prezzo_di_affitto || 0;
+                        const calcoli = calculateAccordiSpettanze(
+                          prezzo,
+                          viewingImmobile.provvigione_tipo || 'Percentuale',
+                          viewingImmobile.provvigione_valore || 0,
+                          viewingImmobile.collab_attiva,
+                          viewingImmobile.collab_valore || 0,
+                          viewingImmobile.segnalatore_attivo,
+                          viewingImmobile.segnalatore_valore || 0
+                        );
+                        const formatVal = (val) => new Intl.NumberFormat('it-CH', { style: 'currency', currency: 'CHF', maximumFractionDigits: 0 }).format(val);
+
+                        return (
+                          <div className="glass-panel p-5 rounded-2xl space-y-4">
+                            <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Dettagli Economici & Calcoli</span>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <span className="block text-[10px] text-gray-500 font-bold uppercase">Tipo Provvigione</span>
+                                <span className="text-sm font-bold text-[#1D1D1F]">{viewingImmobile.provvigione_tipo || 'Percentuale'}</span>
+                              </div>
+                              <div>
+                                <span className="block text-[10px] text-gray-500 font-bold uppercase">Valore Convenuto</span>
+                                <span className="text-sm font-bold text-[#1D1D1F]">
+                                  {viewingImmobile.provvigione_valore || 0} {viewingImmobile.provvigione_tipo === 'Fisso' ? 'CHF' : '%'}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="p-4 bg-gradient-to-br from-[#0071E3]/5 to-[#00C7FF]/5 border border-[#0071E3]/15 rounded-xl space-y-3">
+                              <span className="block text-[9px] text-[#0071E3] font-black uppercase tracking-wider">Riepilogo Spettanze Stimato</span>
+                              <div className="grid grid-cols-2 gap-3 text-xs">
+                                <div className="flex justify-between border-b border-black/5 pb-1">
+                                  <span className="text-gray-500 font-medium">Prezzo Immobile</span>
+                                  <span className="font-bold text-[#1D1D1F]">{formatVal(prezzo)}</span>
+                                </div>
+                                <div className="flex justify-between border-b border-black/5 pb-1">
+                                  <span className="text-gray-500 font-medium">Provvigione Lorda</span>
+                                  <span className="font-bold text-[#1D1D1F]">{formatVal(calcoli.provLorda)}</span>
+                                </div>
+                                <div className="flex justify-between border-b border-black/5 pb-1">
+                                  <span className="text-gray-500 font-medium">Quota Partner Ext.</span>
+                                  <span className="font-bold text-[#FF9500]">{formatVal(calcoli.quotaCollab)}</span>
+                                </div>
+                                <div className="flex justify-between border-b border-black/5 pb-1">
+                                  <span className="text-gray-500 font-medium">Quota Segnalatore</span>
+                                  <span className="font-bold text-[#FF3B30]">{formatVal(calcoli.quotaSegnalatore)}</span>
+                                </div>
+                                <div className="col-span-2 flex justify-between pt-1 font-bold text-sm">
+                                  <span className="text-[#0071E3] font-bold">Quota Home Lab Netta</span>
+                                  <span className="text-[#0071E3] font-black">{formatVal(calcoli.quotaHomeLab)}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      {/* Partner Esterno Card */}
+                      {viewingImmobile.collab_attiva && (
+                        <div className="glass-panel p-4 rounded-2xl flex flex-col min-h-[120px]">
+                          <span className="block text-[9px] uppercase font-bold text-[#86868B] mb-2">partner esterno (co-brokering)</span>
+                          {(() => {
+                            const partnerId = viewingImmobile.collab_contatto_id;
+                            const partnerObj = partnerId ? contatti.find(c => String(c.id) === String(partnerId)) : null;
+                            if (!partnerObj) {
+                              return (
+                                <div className="flex-1 flex items-center justify-center border border-dashed border-black/10 rounded-xl p-3 bg-black/[0.01]">
+                                  <span className="text-xs text-gray-400 italic">Nessun partner associato</span>
+                                </div>
+                              );
+                            }
+                            return (
+                              <div
+                                onClick={() => {
+                                  const currentProperty = viewingImmobile;
+                                  handleCloseImmobileDetail();
+                                  handleViewContatto(partnerObj, { type: 'immobile', item: currentProperty, tab: 'accordi' });
+                                }}
+                                className="cursor-pointer bg-white/40 hover:bg-white/70 p-3 rounded-xl border border-black/5 hover:border-[#0071E3]/20 hover:shadow-sm transition-all"
+                              >
+                                <div className="flex justify-between items-start">
+                                  <div>
+                                    <span className="font-bold text-xs text-[#0071E3] block hover:underline">
+                                      👤 {partnerObj.nome} {partnerObj.cognome}
+                                    </span>
+                                    {partnerObj.societa && (
+                                      <span className="text-[10px] text-gray-500 block pl-4 italic">{partnerObj.societa}</span>
+                                    )}
+                                  </div>
+                                  <span className="text-[10px] bg-[#FF9500]/10 text-[#FF9500] px-2 py-0.5 rounded-full font-bold">Split {viewingImmobile.collab_valore}%</span>
+                                </div>
+                                <div className="mt-1 text-[10px] text-[#86868B] space-y-0.5 pl-4 border-l border-black/5">
+                                  <p>📞 {partnerObj.telefono || 'Assente'}</p>
+                                  <p>✉️ {partnerObj.mail || 'Assente'}</p>
+                                </div>
+                                {viewingImmobile.collab_accordo_file && (
+                                  <div className="mt-2.5 pt-2 border-t border-black/5 flex items-center justify-between">
+                                    <span className="text-[10px] font-semibold text-gray-500">📄 Accordo Partner</span>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleViewDocument(viewingImmobile.collab_accordo_file);
+                                      }}
+                                      className="text-[10px] bg-[#0071E3] hover:bg-[#0077ED] text-white px-3 py-1 rounded-full font-bold transition-all shadow-sm cursor-pointer"
+                                    >
+                                      Apri Documento
+                                    </button>
+                                  </div>
+                                )}
+                                {viewingImmobile.collab_note && (
+                                  <div className="mt-2 pt-2 border-t border-black/5 text-[11px] text-gray-600 leading-relaxed italic whitespace-pre-wrap">
+                                    📝 {viewingImmobile.collab_note}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      )}
+
+                      {/* Segnalatore Card */}
+                      {viewingImmobile.segnalatore_attivo && (
+                        <div className="glass-panel p-4 rounded-2xl flex flex-col min-h-[120px]">
+                          <span className="block text-[9px] uppercase font-bold text-[#86868B] mb-2">segnalatore</span>
+                          {(() => {
+                            const segnId = viewingImmobile.segnalatore_contatto_id;
+                            const segnObj = segnId ? contatti.find(c => String(c.id) === String(segnId)) : null;
+                            if (!segnObj) {
+                              return (
+                                <div className="flex-1 flex items-center justify-center border border-dashed border-black/10 rounded-xl p-3 bg-black/[0.01]">
+                                  <span className="text-xs text-gray-400 italic">Nessun segnalatore associato</span>
+                                </div>
+                              );
+                            }
+                            return (
+                              <div
+                                onClick={() => {
+                                  const currentProperty = viewingImmobile;
+                                  handleCloseImmobileDetail();
+                                  handleViewContatto(segnObj, { type: 'immobile', item: currentProperty, tab: 'accordi' });
+                                }}
+                                className="cursor-pointer bg-white/40 hover:bg-white/70 p-3 rounded-xl border border-black/5 hover:border-[#0071E3]/20 hover:shadow-sm transition-all"
+                              >
+                                <div className="flex justify-between items-start">
+                                  <div>
+                                    <span className="font-bold text-xs text-[#0071E3] block hover:underline">
+                                      👤 {segnObj.nome} {segnObj.cognome}
+                                    </span>
+                                    {segnObj.societa && (
+                                      <span className="text-[10px] text-gray-500 block pl-4 italic">{segnObj.societa}</span>
+                                    )}
+                                  </div>
+                                  <span className="text-[10px] bg-[#FF3B30]/10 text-[#FF3B30] px-2 py-0.5 rounded-full font-bold">Split {viewingImmobile.segnalatore_valore}%</span>
+                                </div>
+                                <div className="mt-1 text-[10px] text-[#86868B] space-y-0.5 pl-4 border-l border-black/5">
+                                  <p>📞 {segnObj.telefono || 'Assente'}</p>
+                                  <p>✉️ {segnObj.mail || 'Assente'}</p>
+                                </div>
+                                {viewingImmobile.segnalatore_accordo_file && (
+                                  <div className="mt-2.5 pt-2 border-t border-black/5 flex items-center justify-between">
+                                    <span className="text-[10px] font-semibold text-gray-500">📄 Accordo Segnalatore</span>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleViewDocument(viewingImmobile.segnalatore_accordo_file);
+                                      }}
+                                      className="text-[10px] bg-[#0071E3] hover:bg-[#0077ED] text-white px-3 py-1 rounded-full font-bold transition-all shadow-sm cursor-pointer"
+                                    >
+                                      Apri Documento
+                                    </button>
+                                  </div>
+                                )}
+                                {viewingImmobile.segnalatore_note && (
+                                  <div className="mt-2 pt-2 border-t border-black/5 text-[11px] text-gray-600 leading-relaxed italic whitespace-pre-wrap">
+                                    📝 {viewingImmobile.segnalatore_note}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      )}
+
+                      {/* Note Accordi Card */}
+                      {viewingImmobile.accordi_note && (
+                        <div className="glass-panel p-5 rounded-2xl space-y-2">
+                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Note Particolari Accordi</span>
+                          <p className="text-xs text-[#1D1D1F] leading-relaxed whitespace-pre-wrap">{viewingImmobile.accordi_note}</p>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -5169,7 +5603,7 @@ export default function App() {
                     { id: 'generale', label: 'Dettagli & Prezzi' },
                     { id: 'caratteristiche', label: 'Caratteristiche' },
                     { id: 'contatti', label: 'Contatti' },
-                    { id: 'amministrazione', label: 'Amministrazione' },
+                    { id: 'accordi', label: 'Accordi' },
                     { id: 'documenti', label: 'Documenti' },
                     { id: 'note_interne', label: 'Note' },
                     { id: 'log', label: 'Log', hidden: !currentImmobile },
@@ -5418,7 +5852,8 @@ export default function App() {
                                   type="number"
                                   name="prezzo_di_vendita"
                                   placeholder="3'450'000"
-                                  defaultValue={currentImmobile ? currentImmobile.prezzo_di_vendita : ''}
+                                  value={formPrezzoVendita}
+                                  onChange={(e) => setFormPrezzoVendita(e.target.value)}
                                   className="glass-input w-full pl-12 pr-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
                                 />
                               </div>
@@ -5444,7 +5879,8 @@ export default function App() {
                                   type="number"
                                   name="prezzo_di_affitto"
                                   placeholder="3'100"
-                                  defaultValue={currentImmobile ? currentImmobile.prezzo_di_affitto : ''}
+                                  value={formPrezzoAffitto}
+                                  onChange={(e) => setFormPrezzoAffitto(e.target.value)}
                                   className="glass-input w-full pl-12 pr-20 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC]"
                                 />
                                 <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-[#86868B] font-medium">/ al mese</span>
@@ -6022,19 +6458,19 @@ export default function App() {
                         <div className="glass-panel p-5 rounded-2xl space-y-4 relative z-10">
                           <div className="flex items-center gap-2 pb-1 border-b border-black/5">
                             <span className="text-sm">👥</span>
-                            <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Agenti Assegnati</span>
+                            <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Responsabile Oggetto</span>
                           </div>
 
                           <div>
                             <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">
-                              Agenti Assegnati
+                              Responsabile Oggetto
                             </label>
                             <input type="hidden" name="agente_id" value={selectedImmobileAgenteIds.join(',')} />
 
                             {/* Pill list of active agents */}
                             <div className="flex flex-wrap gap-1.5 mb-2 max-h-20 overflow-y-auto">
                               {selectedImmobileAgenteIds.length === 0 ? (
-                                <span className="text-[10px] text-gray-400 italic">Nessun agente assegnato</span>
+                                <span className="text-[10px] text-gray-400 italic">Nessun responsabile oggetto assegnato</span>
                               ) : (
                                 selectedImmobileAgenteIds.map(aid => {
                                   const match = contatti.find(c => String(c.id) === String(aid));
@@ -6058,7 +6494,7 @@ export default function App() {
                             <div className="relative">
                               <input
                                 type="text"
-                                placeholder="🔍 Cerca agente da aggiungere..."
+                                placeholder="🔍 Cerca responsabile oggetto da aggiungere..."
                                 value={searchImmobileAgenteQuery}
                                 onChange={(e) => setSearchImmobileAgenteQuery(e.target.value)}
                                 onFocus={() => setIsAgenteSearchFocused(true)}
@@ -6157,10 +6593,143 @@ export default function App() {
                             </div>
                           </div>
                         </div>
+
+                        <div className="glass-panel p-5 rounded-2xl space-y-4 relative z-0">
+                          <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                            <span className="text-sm">👤</span>
+                            <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Contatto per Visite</span>
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">
+                              Contatto per Visite
+                            </label>
+                            <input type="hidden" name="contatto_visite_id" value={selectedImmobileContattoVisiteIds.join(',')} />
+
+                            {/* Pill list of active visit contacts */}
+                            <div className="flex flex-wrap gap-1.5 mb-2 max-h-20 overflow-y-auto">
+                              {selectedImmobileContattoVisiteIds.length === 0 ? (
+                                <span className="text-[10px] text-gray-400 italic">Nessun contatto per visite selezionato</span>
+                              ) : (
+                                selectedImmobileContattoVisiteIds.map(cvid => {
+                                  const match = contatti.find(c => String(c.id) === String(cvid));
+                                  if (!match) return null;
+                                  return (
+                                    <span key={cvid} className="inline-flex items-center gap-1 bg-[#0071E3]/10 text-[#0071E3] text-[10px] px-2 py-0.5 rounded-full font-medium">
+                                      {match.nome || ''} {match.cognome || ''}
+                                      <button
+                                        type="button"
+                                        onClick={() => setSelectedImmobileContattoVisiteIds(prev => prev.filter(id => String(id) !== String(cvid)))}
+                                        className="hover:text-red-500 font-bold ml-0.5"
+                                      >
+                                        ✕
+                                      </button>
+                                    </span>
+                                  );
+                                })
+                              )}
+                            </div>
+
+                            <div className="relative">
+                              <input
+                                type="text"
+                                placeholder="🔍 Cerca contatto visite da aggiungere..."
+                                value={searchImmobileContattoVisiteQuery}
+                                onChange={(e) => setSearchImmobileContattoVisiteQuery(e.target.value)}
+                                onFocus={() => setIsContattoVisiteSearchFocused(true)}
+                                onBlur={() => setTimeout(() => setIsContattoVisiteSearchFocused(false), 200)}
+                                className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none text-[#1D1D1F] hover:bg-[#E5E5EA]/50 focus:bg-white focus:border-[#0071E3] transition-all"
+                              />
+
+                              {isContattoVisiteSearchFocused && (
+                                <div className="absolute left-0 right-0 mt-1 bg-white border border-[#E5E5EA] rounded-2xl shadow-xl max-h-60 overflow-y-auto z-[60] p-1.5 space-y-1">
+                                  {(() => {
+                                    const filtered = contatti
+                                      .filter(c => !selectedImmobileContattoVisiteIds.map(String).includes(String(c.id)))
+                                      .filter(c => {
+                                        const qParts = searchImmobileContattoVisiteQuery.toLowerCase().trim().split(/\s+/).filter(Boolean);
+                                        if (qParts.length === 0) return true;
+                                        const nome = (c.nome || '').toLowerCase();
+                                        const cognome = (c.cognome || '').toLowerCase();
+                                        const societa = (c.societa || '').toLowerCase();
+                                        const rolesStr = (Array.isArray(c.ruolo) ? c.ruolo.join(' ') : (c.ruolo || '')).toLowerCase();
+                                        return qParts.every(part =>
+                                          nome.includes(part) ||
+                                          cognome.includes(part) ||
+                                          societa.includes(part) ||
+                                          rolesStr.includes(part)
+                                        );
+                                      });
+
+                                    if (filtered.length === 0) {
+                                      return (
+                                        <div className="p-3 text-center text-xs text-[#86868B]">
+                                          Nessun contatto trovato
+                                          <button
+                                            type="button"
+                                            onMouseDown={() => {
+                                              setAddingContactForVisit('contatto_visite');
+                                              handleCreateContatto();
+                                            }}
+                                            className="block mx-auto mt-2 text-xs font-bold text-[#0071E3] hover:underline"
+                                          >
+                                            + Crea come nuovo contatto
+                                          </button>
+                                        </div>
+                                      );
+                                    }
+
+                                    return (
+                                      <>
+                                        {filtered.map(c => {
+                                          const rolesStr = Array.isArray(c.ruolo) ? c.ruolo.join(', ') : (c.ruolo || '');
+                                          return (
+                                            <button
+                                              key={c.id}
+                                              type="button"
+                                              onMouseDown={() => {
+                                                const parsedVal = isNaN(Number(c.id)) ? c.id : Number(c.id);
+                                                if (!selectedImmobileContattoVisiteIds.map(String).includes(String(parsedVal))) {
+                                                  setSelectedImmobileContattoVisiteIds(prev => [...prev, parsedVal]);
+                                                }
+                                                setSearchImmobileContattoVisiteQuery('');
+                                              }}
+                                              className="w-full text-left px-3 py-2 rounded-xl text-xs hover:bg-[#F5F5F7] transition-all flex flex-col gap-0.5"
+                                            >
+                                              <span className="font-bold text-[#1D1D1F]">{c.cognome} {c.nome}</span>
+                                              {(c.societa || rolesStr) && (
+                                                <span className="text-[10px] text-[#86868B]">
+                                                  {c.societa}{c.societa && rolesStr ? ' - ' : ''}{rolesStr}
+                                                </span>
+                                              )}
+                                            </button>
+                                          );
+                                        })}
+                                        <div className="border-t border-gray-100 pt-1 mt-1">
+                                          <button
+                                            type="button"
+                                            onMouseDown={() => {
+                                              setAddingContactForVisit('contatto_visite');
+                                              handleCreateContatto();
+                                            }}
+                                            className="w-full text-left px-3 py-2 rounded-xl text-xs font-semibold text-[#0071E3] hover:bg-[#0071E3]/5 transition-all"
+                                          >
+                                            + Aggiungi Nuovo Contatto...
+                                          </button>
+                                        </div>
+                                      </>
+                                    );
+                                  })()}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
                       </div>
 
-                      {/* ========= SEZIONE 4: AMMINISTRAZIONE ========= */}
-                      <div className={activeFormTab === 'amministrazione' ? 'space-y-5 animate-fade-in' : 'hidden'}>
+                      {/* ========= SEZIONE 4: ACCORDI ========= */}
+                      <div className={activeFormTab === 'accordi' ? 'space-y-5 animate-fade-in' : 'hidden'}>
+                        {/* Mandato Box */}
                         <div className="glass-panel p-5 rounded-2xl space-y-4">
                           <div className="flex items-center gap-2 pb-1 border-b border-black/5">
                             <span className="text-sm">💼</span>
@@ -6215,6 +6784,431 @@ export default function App() {
                             </div>
                           </div>
                         </div>
+
+                        {/* Provvigione Box */}
+                        <div className="glass-panel p-5 rounded-2xl space-y-4">
+                          <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                            <span className="text-sm">🪙</span>
+                            <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Provvigione Home Lab</span>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Tipo Provvigione</label>
+                              <select
+                                name="provvigione_tipo"
+                                value={formProvvigioneTipo}
+                                onChange={(e) => setFormProvvigioneTipo(e.target.value)}
+                                className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F]"
+                              >
+                                <option value="Percentuale">Percentuale (%)</option>
+                                <option value="Fisso">Importo Fisso (CHF)</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Valore Provvigione</label>
+                              <div className="relative">
+                                <input
+                                  type="number"
+                                  step="any"
+                                  name="provvigione_valore"
+                                  value={formProvvigioneValore}
+                                  onChange={(e) => setFormProvvigioneValore(Number(e.target.value) || 0)}
+                                  className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F]"
+                                />
+                                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold text-[#86868B]">
+                                  {formProvvigioneTipo === 'Percentuale' ? '%' : 'CHF'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Collaborazione Esterna Box */}
+                        <div className="glass-panel p-5 rounded-2xl space-y-4">
+                          <div className="flex items-center justify-between pb-1 border-b border-black/5">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm">🤝</span>
+                              <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Collaborazione Esterna</span>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                name="collab_attiva"
+                                checked={formCollabAttiva}
+                                onChange={(e) => setFormCollabAttiva(e.target.checked)}
+                                className="sr-only peer"
+                              />
+                              <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#34C759]"></div>
+                            </label>
+                          </div>
+
+                          {formCollabAttiva && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in">
+                              <div className="relative">
+                                <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Partner Esterno (Cerca contatto)</label>
+                                <input type="hidden" name="collab_contatto_id" value={selectedImmobileCollabId || ''} />
+
+                                {/* Active Partner Pill */}
+                                {selectedImmobileCollabId ? (() => {
+                                  const match = contatti.find(c => String(c.id) === String(selectedImmobileCollabId));
+                                  return (
+                                    <div className="flex items-center justify-between bg-[#0071E3]/10 text-[#0071E3] text-xs px-3 py-2 rounded-xl font-medium mb-2">
+                                      <span>👤 {match ? `${match.nome || ''} ${match.cognome || ''}` : 'Contatto'}</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => setSelectedImmobileCollabId(null)}
+                                        className="hover:text-red-500 font-bold"
+                                      >
+                                        ✕
+                                      </button>
+                                    </div>
+                                  );
+                                })() : (
+                                  <div className="relative">
+                                    <input
+                                      type="text"
+                                      placeholder="🔍 Cerca intermediario/partner..."
+                                      value={searchImmobileCollabQuery}
+                                      onChange={(e) => setSearchImmobileCollabQuery(e.target.value)}
+                                      onFocus={() => setIsCollabSearchFocused(true)}
+                                      onBlur={() => setTimeout(() => setIsCollabSearchFocused(false), 200)}
+                                      className="w-full px-4 py-2.5 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none text-[#1D1D1F]"
+                                    />
+                                    {isCollabSearchFocused && (
+                                      <div className="absolute left-0 right-0 mt-1 bg-white border border-[#E5E5EA] rounded-2xl shadow-xl max-h-40 overflow-y-auto z-[60] p-1.5 space-y-1">
+                                        {contatti
+                                          .filter(c => {
+                                            const qParts = searchImmobileCollabQuery.toLowerCase().trim().split(/\s+/).filter(Boolean);
+                                            if (qParts.length === 0) return true;
+                                            return qParts.every(part =>
+                                              (c.nome || '').toLowerCase().includes(part) ||
+                                              (c.cognome || '').toLowerCase().includes(part) ||
+                                              (c.societa || '').toLowerCase().includes(part)
+                                            );
+                                          })
+                                          .slice(0, 10)
+                                          .map(c => (
+                                            <button
+                                              key={c.id}
+                                              type="button"
+                                              onMouseDown={() => {
+                                                setSelectedImmobileCollabId(Number(c.id));
+                                                setSearchImmobileCollabQuery('');
+                                              }}
+                                              className="w-full text-left px-3 py-1.5 rounded-lg text-xs hover:bg-[#F5F5F7]"
+                                            >
+                                              {c.cognome} {c.nome} {c.societa ? `(${c.societa})` : ''}
+                                            </button>
+                                          ))}
+                                        <div className="border-t border-gray-100 pt-1 mt-1">
+                                          <button
+                                            type="button"
+                                            onMouseDown={() => {
+                                              setAddingContactForVisit('collab');
+                                              handleCreateContatto();
+                                            }}
+                                            className="w-full text-left px-3 py-1 text-[11px] font-semibold text-[#0071E3] hover:bg-[#0071E3]/5 transition-all"
+                                          >
+                                            + Aggiungi Nuovo Contatto...
+                                          </button>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+
+                              <div>
+                                <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Quota Split Partner (%)</label>
+                                <div className="relative">
+                                  <input
+                                    type="number"
+                                    step="any"
+                                    name="collab_valore"
+                                    value={formCollabValore}
+                                    onChange={(e) => setFormCollabValore(Number(e.target.value) || 0)}
+                                    className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F]"
+                                  />
+                                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold text-[#86868B]">%</span>
+                                </div>
+                              </div>
+                              <div className="md:col-span-2">
+                                <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">File Accordo Collaborazione (PDF o Immagine)</label>
+                                <div className="glass-input rounded-xl px-3 py-2">
+                                  <input
+                                    type="file"
+                                    name="collab_accordo_file_input"
+                                    accept="image/*,application/pdf"
+                                    onChange={async (e) => {
+                                      const file = e.target.files[0];
+                                      if (file && file.size > 0) {
+                                        if (isRealSupabase && !isOffline && navigator.onLine) {
+                                          const url = await uploadToSupabase(file, 'immobili-documenti');
+                                          if (url) setTempCollabAccordoFileUrl(url);
+                                        } else {
+                                          const base64 = await readAsBase64(file);
+                                          setTempCollabAccordoFileUrl(base64);
+                                        }
+                                      }
+                                    }}
+                                    className="w-full text-xs text-[#86868B] file:mr-3 file:py-1.5 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-bold file:uppercase file:tracking-wide file:bg-[#0071E3]/10 file:text-[#0071E3] hover:file:bg-[#0071E3]/20 cursor-pointer transition-all"
+                                  />
+                                </div>
+                                {tempCollabAccordoFileUrl && tempCollabAccordoFileUrl !== '' && (
+                                  <div className="flex items-center justify-between mt-2 bg-[#F5F5F7] px-3 py-1.5 rounded-xl border border-black/5 text-xs">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleViewDocument(tempCollabAccordoFileUrl)}
+                                      className="text-[#0071E3] hover:underline font-medium text-left truncate flex-1 pr-4 bg-transparent border-0 p-0"
+                                    >
+                                      📄 {tempCollabAccordoFileUrl.startsWith('data:') ? 'Nuovo File caricato' : tempCollabAccordoFileUrl.split('/').pop()}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setTempCollabAccordoFileUrl('')}
+                                      className="text-red-500 hover:text-red-700 font-bold px-1.5"
+                                      title="Rimuovi file"
+                                    >
+                                      ✕
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="md:col-span-2">
+                                <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Note Collaborazione</label>
+                                <textarea
+                                  name="collab_note"
+                                  defaultValue={currentImmobile ? currentImmobile.collab_note : ''}
+                                  placeholder="Dettagli dell'accordo di co-brokering, clausole di split, tempistiche..."
+                                  rows="2"
+                                  className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC] resize-y"
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Segnalatore Box */}
+                        <div className="glass-panel p-5 rounded-2xl space-y-4">
+                          <div className="flex items-center justify-between pb-1 border-b border-black/5">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm">📣</span>
+                              <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Segnalatore</span>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                name="segnalatore_attivo"
+                                checked={formSegnalatoreAttivo}
+                                onChange={(e) => setFormSegnalatoreAttivo(e.target.checked)}
+                                className="sr-only peer"
+                              />
+                              <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#34C759]"></div>
+                            </label>
+                          </div>
+
+                          {formSegnalatoreAttivo && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in">
+                              <div className="relative">
+                                <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Contatto Segnalatore (Cerca contatto)</label>
+                                <input type="hidden" name="segnalatore_contatto_id" value={selectedImmobileSegnalatoreId || ''} />
+
+                                {/* Active Referrer Pill */}
+                                {selectedImmobileSegnalatoreId ? (() => {
+                                  const match = contatti.find(c => String(c.id) === String(selectedImmobileSegnalatoreId));
+                                  return (
+                                    <div className="flex items-center justify-between bg-[#0071E3]/10 text-[#0071E3] text-xs px-3 py-2 rounded-xl font-medium mb-2">
+                                      <span>👤 {match ? `${match.nome || ''} ${match.cognome || ''}` : 'Contatto'}</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => setSelectedImmobileSegnalatoreId(null)}
+                                        className="hover:text-red-500 font-bold"
+                                      >
+                                        ✕
+                                      </button>
+                                    </div>
+                                  );
+                                })() : (
+                                  <div className="relative">
+                                    <input
+                                      type="text"
+                                      placeholder="🔍 Cerca segnalatore..."
+                                      value={searchImmobileSegnalatoreQuery}
+                                      onChange={(e) => setSearchImmobileSegnalatoreQuery(e.target.value)}
+                                      onFocus={() => setIsSegnalatoreSearchFocused(true)}
+                                      onBlur={() => setTimeout(() => setIsSegnalatoreSearchFocused(false), 200)}
+                                      className="w-full px-4 py-2.5 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none text-[#1D1D1F]"
+                                    />
+                                    {isSegnalatoreSearchFocused && (
+                                      <div className="absolute left-0 right-0 mt-1 bg-white border border-[#E5E5EA] rounded-2xl shadow-xl max-h-40 overflow-y-auto z-[60] p-1.5 space-y-1">
+                                        {contatti
+                                          .filter(c => {
+                                            const qParts = searchImmobileSegnalatoreQuery.toLowerCase().trim().split(/\s+/).filter(Boolean);
+                                            if (qParts.length === 0) return true;
+                                            return qParts.every(part =>
+                                              (c.nome || '').toLowerCase().includes(part) ||
+                                              (c.cognome || '').toLowerCase().includes(part) ||
+                                              (c.societa || '').toLowerCase().includes(part)
+                                            );
+                                          })
+                                          .slice(0, 10)
+                                          .map(c => (
+                                            <button
+                                              key={c.id}
+                                              type="button"
+                                              onMouseDown={() => {
+                                                setSelectedImmobileSegnalatoreId(Number(c.id));
+                                                setSearchImmobileSegnalatoreQuery('');
+                                              }}
+                                              className="w-full text-left px-3 py-1.5 rounded-lg text-xs hover:bg-[#F5F5F7]"
+                                            >
+                                              {c.cognome} {c.nome} {c.societa ? `(${c.societa})` : ''}
+                                            </button>
+                                          ))}
+                                        <div className="border-t border-gray-100 pt-1 mt-1">
+                                          <button
+                                            type="button"
+                                            onMouseDown={() => {
+                                              setAddingContactForVisit('segnalatore');
+                                              handleCreateContatto();
+                                            }}
+                                            className="w-full text-left px-3 py-1 text-[11px] font-semibold text-[#0071E3] hover:bg-[#0071E3]/5 transition-all"
+                                          >
+                                            + Aggiungi Nuovo Contatto...
+                                          </button>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+
+                              <div>
+                                <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Provvigione Segnalatore (%)</label>
+                                <div className="relative">
+                                  <input
+                                    type="number"
+                                    step="any"
+                                    name="segnalatore_valore"
+                                    value={formSegnalatoreValore}
+                                    onChange={(e) => setFormSegnalatoreValore(Number(e.target.value) || 0)}
+                                    className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F]"
+                                  />
+                                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold text-[#86868B]">%</span>
+                                </div>
+                              </div>
+                              <div className="md:col-span-2">
+                                <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">File Accordo Segnalazione (PDF o Immagine)</label>
+                                <div className="glass-input rounded-xl px-3 py-2">
+                                  <input
+                                    type="file"
+                                    name="segnalatore_accordo_file_input"
+                                    accept="image/*,application/pdf"
+                                    onChange={async (e) => {
+                                      const file = e.target.files[0];
+                                      if (file && file.size > 0) {
+                                        if (isRealSupabase && !isOffline && navigator.onLine) {
+                                          const url = await uploadToSupabase(file, 'immobili-documenti');
+                                          if (url) setTempSegnalatoreAccordoFileUrl(url);
+                                        } else {
+                                          const base64 = await readAsBase64(file);
+                                          setTempSegnalatoreAccordoFileUrl(base64);
+                                        }
+                                      }
+                                    }}
+                                    className="w-full text-xs text-[#86868B] file:mr-3 file:py-1.5 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-bold file:uppercase file:tracking-wide file:bg-[#0071E3]/10 file:text-[#0071E3] hover:file:bg-[#0071E3]/20 cursor-pointer transition-all"
+                                  />
+                                </div>
+                                {tempSegnalatoreAccordoFileUrl && tempSegnalatoreAccordoFileUrl !== '' && (
+                                  <div className="flex items-center justify-between mt-2 bg-[#F5F5F7] px-3 py-1.5 rounded-xl border border-black/5 text-xs">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleViewDocument(tempSegnalatoreAccordoFileUrl)}
+                                      className="text-[#0071E3] hover:underline font-medium text-left truncate flex-1 pr-4 bg-transparent border-0 p-0"
+                                    >
+                                      📄 {tempSegnalatoreAccordoFileUrl.startsWith('data:') ? 'Nuovo File caricato' : tempSegnalatoreAccordoFileUrl.split('/').pop()}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setTempSegnalatoreAccordoFileUrl('')}
+                                      className="text-red-500 hover:text-red-700 font-bold px-1.5"
+                                      title="Rimuovi file"
+                                    >
+                                      ✕
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="md:col-span-2">
+                                <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Note Segnalatore</label>
+                                <textarea
+                                  name="segnalatore_note"
+                                  defaultValue={currentImmobile ? currentImmobile.segnalatore_note : ''}
+                                  placeholder="Dettagli sull'accordo col segnalatore, contatti, info utili..."
+                                  rows="2"
+                                  className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC] resize-y"
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Real-time Calculation Panel */}
+                        {(() => {
+                          const prezzo = formPrezzoVendita || formPrezzoAffitto || 0;
+                          const calcoli = calculateAccordiSpettanze(
+                            prezzo,
+                            formProvvigioneTipo,
+                            formProvvigioneValore,
+                            formCollabAttiva,
+                            formCollabValore,
+                            formSegnalatoreAttivo,
+                            formSegnalatoreValore
+                          );
+                          const formatVal = (val) => new Intl.NumberFormat('it-CH', { style: 'currency', currency: 'CHF', maximumFractionDigits: 0 }).format(val);
+
+                          return (
+                            <div className="glass-panel p-5 rounded-2xl bg-gradient-to-br from-[#0071E3]/5 to-[#00C7FF]/5 border border-[#0071E3]/15 space-y-3">
+                              <span className="block text-[10px] font-bold text-[#0071E3] uppercase tracking-wider">Riepilogo Calcolo Provvigioni (Valori Stime)</span>
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-1">
+                                <div className="p-3 bg-white/60 rounded-xl border border-black/5">
+                                  <span className="block text-[9px] text-gray-500 uppercase font-bold">Provvigione Lorda</span>
+                                  <span className="text-sm font-black text-[#1D1D1F]">{formatVal(calcoli.provLorda)}</span>
+                                </div>
+                                <div className="p-3 bg-white/60 rounded-xl border border-black/5">
+                                  <span className="block text-[9px] text-gray-500 uppercase font-bold">Quota Partner</span>
+                                  <span className="text-sm font-black text-[#FF9500]">{formatVal(calcoli.quotaCollab)}</span>
+                                </div>
+                                <div className="p-3 bg-white/60 rounded-xl border border-black/5">
+                                  <span className="block text-[9px] text-gray-500 uppercase font-bold">Quota Segnalatore</span>
+                                  <span className="text-sm font-black text-[#FF3B30]">{formatVal(calcoli.quotaSegnalatore)}</span>
+                                </div>
+                                <div className="p-3 bg-white/90 rounded-xl border border-[#0071E3]/35 shadow-sm">
+                                  <span className="block text-[9px] text-[#0071E3] uppercase font-bold">Home Lab Netta</span>
+                                  <span className="text-sm font-black text-[#0071E3]">{formatVal(calcoli.quotaHomeLab)}</span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })()}
+
+                         {/* Notes Box */}
+                         <div className="glass-panel p-5 rounded-2xl space-y-4">
+                           <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                             <span className="text-sm">📝</span>
+                             <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Note Accordi</span>
+                           </div>
+
+                           <div>
+                             <textarea
+                               name="accordi_note"
+                               defaultValue={currentImmobile ? currentImmobile.accordi_note : ''}
+                               placeholder="Inserisci qui i dettagli sugli accordi provvigionali generali..."
+                               rows="3"
+                               className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC] resize-y"
+                             />
+                           </div>
+                         </div>
                       </div>
 
                       {/* ========= SEZIONE 5: DOCUMENTI ========= */}
@@ -6518,7 +7512,23 @@ export default function App() {
                              <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Ruoli del Contatto</span>
                            </div>
                            <div className="grid grid-cols-2 gap-2 bg-white/30 p-3 rounded-2xl border border-black/5">
-                             {["Proprietario", "Locatore", "Acquirente", "Affittuario", "Agente Immobiliare", "Intermediario", "Fotografo"].map(r => {
+                             {[
+                               "Proprietario",
+                               "Locatore",
+                               "Acquirente",
+                               "Affittuario",
+                               "Agente Immobiliare",
+                               "Intermediario",
+                               "Fotografo",
+                               "Servizi",
+                               "Manutenzione",
+                               "Amministratore",
+                               "Custode",
+                               "Tecnico / Perito",
+                               "Artigiano / Impresa",
+                               "Notaio / Avvocato",
+                               "Altro"
+                             ].map(r => {
                                const currentRoles = currentContatto ? (Array.isArray(currentContatto.ruolo) ? currentContatto.ruolo : String(currentContatto.ruolo || '').split(',').map(x => x.trim())) : [];
                                const isChecked = currentRoles.includes(r);
                                return (

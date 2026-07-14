@@ -401,7 +401,7 @@
                   {/* ========= SEZIONE 3: CONTATTI ========= */}
                   <div className="space-y-4">
                     <h4 className="text-xs font-bold uppercase tracking-wider text-[#0071E3] border-b pb-1">3. Contatti</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-4">
                       <div>
                         <label className="block text-xs font-semibold text-[#86868B] mb-1">proprietario_oreferrente_id *</label>
                         <select
@@ -417,7 +417,7 @@
                       </div>
 
                       <div>
-                        <label className="block text-xs font-semibold text-[#86868B] mb-1">agente_id</label>
+                        <label className="block text-xs font-semibold text-[#86868B] mb-1">responsabile_oggetto</label>
                         <select
                           name="agente_id"
                           defaultValue={currentImmobile ? currentImmobile.agente_id : ''}
@@ -435,6 +435,20 @@
                             .map(c => (
                               <option key={c.id} value={c.id}>{c.cognome} {c.nome}</option>
                             ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-[#86868B] mb-1">contatto_visite_id</label>
+                        <select
+                          name="contatto_visite_id"
+                          defaultValue={currentImmobile ? currentImmobile.contatto_visite_id : ''}
+                          className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none focus:border-[#0071E3] focus:bg-white transition-all text-[#1D1D1F]"
+                        >
+                          <option value="">Nessuno (Seleziona contatto)</option>
+                          {contatti.map(c => (
+                            <option key={c.id} value={c.id}>{c.cognome} {c.nome}</option>
+                          ))}
                         </select>
                       </div>
                     </div>

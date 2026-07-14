@@ -99,9 +99,19 @@ export const ContattiTab = React.memo(({
               <option value="Agente Immobiliare">Agente Immobiliare</option>
               <option value="Proprietario">Proprietario</option>
               <option value="Locatore">Locatore</option>
+              <option value="Acquirente">Acquirente</option>
+              <option value="Affittuario">Affittuario</option>
               <option value="Intermediario">Intermediario</option>
               <option value="Fotografo">Fotografo</option>
+              <option value="Servizi">Servizi</option>
+              <option value="Manutenzione">Manutenzione</option>
+              <option value="Amministratore">Amministratore</option>
+              <option value="Custode">Custode</option>
+              <option value="Tecnico / Perito">Tecnico / Perito</option>
+              <option value="Artigiano / Impresa">Artigiano / Impresa</option>
+              <option value="Notaio / Avvocato">Notaio / Avvocato</option>
               <option value="Cliente">Cliente</option>
+              <option value="Altro">Altro</option>
             </select>
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-[#86868B]">
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">

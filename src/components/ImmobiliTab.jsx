@@ -338,16 +338,16 @@ export const ImmobiliTab = React.memo(({
               </div>
             </div>
 
-            {/* Agente Referente */}
+            {/* Responsabile Oggetto */}
             <div>
-              <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868B] mb-1">Agente Referente</label>
+              <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#86868B] mb-1">Responsabile Oggetto</label>
               <div className="relative">
                 <select
                   value={filterAgenteId}
                   onChange={(e) => setFilterAgenteId(e.target.value)}
                   className="w-full pl-3 pr-8 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-xs focus:outline-none focus:border-[#0071E3] focus:bg-white text-[#1D1D1F] transition-all appearance-none cursor-pointer"
                 >
-                  <option value="Tutti">Tutti gli agenti</option>
+                  <option value="Tutti">Tutti i responsabili</option>
                   {contatti.filter(c => {
                     const roles = c.ruolo;
                     if (Array.isArray(roles)) {

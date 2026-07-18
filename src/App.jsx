@@ -798,11 +798,14 @@ export default function App() {
   const [isContattoModalOpen, setIsContattoModalOpen] = useState(false);
   const [selectedPosseduti, setSelectedPosseduti] = useState([]);
   const [selectedGestiti, setSelectedGestiti] = useState([]);
+  const [selectedVisite, setSelectedVisite] = useState([]);
   const [addingPropertyForContact, setAddingPropertyForContact] = useState(null);
   const [searchPossedutiQuery, setSearchPossedutiQuery] = useState('');
   const [isPossedutiSearchFocused, setIsPossedutiSearchFocused] = useState(false);
   const [searchGestitiQuery, setSearchGestitiQuery] = useState('');
   const [isGestitiSearchFocused, setIsGestitiSearchFocused] = useState(false);
+  const [searchVisiteQuery, setSearchVisiteQuery] = useState('');
+  const [isVisiteSearchFocused, setIsVisiteSearchFocused] = useState(false);
 
   const [currentVisita, setCurrentVisita] = useState(null);
   const [isVisitaModalOpen, setIsVisitaModalOpen] = useState(false);
@@ -1267,6 +1270,8 @@ export default function App() {
           setSelectedPosseduti(prev => [...prev, finalId]);
         } else if (addingPropertyForContact.type === 'gestiti') {
           setSelectedGestiti(prev => [...prev, finalId]);
+        } else if (addingPropertyForContact.type === 'visite') {
+          setSelectedVisite(prev => [...prev, finalId]);
         }
         setAddingPropertyForContact(null);
       }
@@ -1331,6 +1336,19 @@ export default function App() {
           changed = true;
         }
 
+        // Contatto per Visite
+        const isVisite = selectedVisite.includes(Number(imm.id));
+        const visitIds = imm.contatto_visite_id ? String(imm.contatto_visite_id).split(',').map(s => s.trim()).filter(Boolean) : [];
+        const containsThisVisit = visitIds.includes(String(id));
+        if (isVisite && !containsThisVisit) {
+          updatedImm.contatto_visite_id = Array.from(new Set([...visitIds, String(id)])).join(',');
+          changed = true;
+        } else if (!isVisite && containsThisVisit) {
+          const filtered = visitIds.filter(s => s !== String(id));
+          updatedImm.contatto_visite_id = filtered.length > 0 ? filtered.join(',') : null;
+          changed = true;
+        }
+
         return changed ? updatedImm : imm;
       }));
     } else {
@@ -1347,6 +1365,11 @@ export default function App() {
         if (selectedGestiti.includes(Number(imm.id))) {
           const agentIds = imm.agente_id ? String(imm.agente_id).split(',').map(s => s.trim()).filter(Boolean) : [];
           updatedImm.agente_id = Array.from(new Set([...agentIds, String(finalId)])).join(',');
+          changed = true;
+        }
+        if (selectedVisite.includes(Number(imm.id))) {
+          const visitIds = imm.contatto_visite_id ? String(imm.contatto_visite_id).split(',').map(s => s.trim()).filter(Boolean) : [];
+          updatedImm.contatto_visite_id = Array.from(new Set([...visitIds, String(finalId)])).join(',');
           changed = true;
         }
         return changed ? updatedImm : imm;
@@ -2187,26 +2210,16 @@ export default function App() {
       numero_di_mappale: formData.get('numero_di_mappale') || "",
       tipo_di_residenza,
       vendibile_a_stranieri: formData.get('vendibile_a_stranieri') || "No",
-      estratto_registro_fondiario: formData.get('estratto_registro_fondiario') || "No",
       estratto_registro_fondiario_doc,
-      descrittivo_tecnico: formData.get('descrittivo_tecnico') || "No",
       descrittivo_tecnico_doc,
-      regolamento_condominiale: formData.get('regolamento_condominiale') || "No",
       regolamento_condominiale_doc,
       spese_condominiali_doc,
-      assicurazione_stabile: formData.get('assicurazione_stabile') || "No",
       assicurazione_stabile_doc,
-      verbale_ultima_assemblea: formData.get('verbale_ultima_assemblea') || "No",
       verbale_ultima_assemblea_doc,
-      fondo_rinnovamento: formData.get('fondo_rinnovamento') || "No",
       fondo_rinnovamento_doc,
-      valore_di_stima: formData.get('valore_di_stima') || "No",
       valore_di_stima_doc,
-      piano_assegnazioni_parti_comuni: formData.get('piano_assegnazioni_parti_comuni') || "No",
       piano_assegnazioni_parti_comuni_doc,
-      rasi: formData.get('rasi') || "No",
       rasi_doc,
-      certificato_radon: formData.get('certificato_radon') || "No",
       certificato_radon_doc,
       provvigione_tipo: formData.get('provvigione_tipo') || 'Percentuale',
       provvigione_valore: Number(formData.get('provvigione_valore')) || 0,
@@ -2271,26 +2284,16 @@ export default function App() {
       { key: 'immagine_di_riferimento', label: 'Foto Principale' },
       { key: 'mandato', label: 'File Mandato' },
       { key: 'planimetria', label: 'File Planimetria' },
-      { key: 'estratto_registro_fondiario', label: 'Estratto RF' },
       { key: 'estratto_registro_fondiario_doc', label: 'File Estratto RF' },
-      { key: 'descrittivo_tecnico', label: 'Descrittivo Tecnico' },
       { key: 'descrittivo_tecnico_doc', label: 'File Descrittivo Tecnico' },
-      { key: 'regolamento_condominiale', label: 'Regolamento Condominiale' },
       { key: 'regolamento_condominiale_doc', label: 'File Regolamento Condominiale' },
       { key: 'spese_condominiali_doc', label: 'File Spese Condominiali' },
-      { key: 'assicurazione_stabile', label: 'Assicurazione Stabile' },
       { key: 'assicurazione_stabile_doc', label: 'File Assicurazione Stabile' },
-      { key: 'verbale_ultima_assemblea', label: 'Verbale Ultima Assemblea' },
       { key: 'verbale_ultima_assemblea_doc', label: 'File Verbale Assemblea' },
-      { key: 'fondo_rinnovamento', label: 'Fondo Rinnovamento' },
       { key: 'fondo_rinnovamento_doc', label: 'File Fondo Rinnovamento' },
-      { key: 'valore_di_stima', label: 'Valore di Stima' },
       { key: 'valore_di_stima_doc', label: 'File Valore di Stima' },
-      { key: 'piano_assegnazioni_parti_comuni', label: 'Piano Assegnazioni Parti Comuni' },
       { key: 'piano_assegnazioni_parti_comuni_doc', label: 'File Piano Assegnazioni' },
-      { key: 'rasi', label: 'Rasi' },
       { key: 'rasi_doc', label: 'File Rasi' },
-      { key: 'certificato_radon', label: 'Certificato Radon' },
       { key: 'certificato_radon_doc', label: 'File Certificato Radon' },
       { key: 'provvigione_tipo', label: 'Tipo Provvigione' },
       { key: 'provvigione_valore', label: 'Valore Provvigione' },
@@ -2372,21 +2375,27 @@ export default function App() {
           setImmobili(immobili.map(item => item.id === id ? record : item));
           triggerToast("Immobile aggiornato nel database");
 
-          // Sync contatti table array columns for owner/agent changes
+          // Sync contatti table array columns for owner/agent/visite changes
           const oldOwnerId = existing ? existing.proprietario_id : null;
           const newOwnerId = record.proprietario_id;
           const oldAgentId = existing ? existing.agente_id : null;
           const newAgentId = record.agente_id;
+          const oldVisiteId = existing ? existing.contatto_visite_id : null;
+          const newVisiteId = record.contatto_visite_id;
 
           const oldOwnerIds = oldOwnerId ? [Number(oldOwnerId)] : [];
           const newOwnerIds = newOwnerId ? [Number(newOwnerId)] : [];
           const oldAgentIds = parseIds(oldAgentId);
           const newAgentIds = parseIds(newAgentId);
+          const oldVisiteIds = parseIds(oldVisiteId);
+          const newVisiteIds = parseIds(newVisiteId);
 
           const removedOwnerIds = oldOwnerIds.filter(oId => !newOwnerIds.includes(oId));
           const addedOwnerIds = newOwnerIds.filter(oId => !oldOwnerIds.includes(oId));
           const removedAgentIds = oldAgentIds.filter(aId => !newAgentIds.includes(aId));
           const addedAgentIds = newAgentIds.filter(aId => !oldAgentIds.includes(aId));
+          const removedVisiteIds = oldVisiteIds.filter(vId => !newVisiteIds.includes(vId));
+          const addedVisiteIds = newVisiteIds.filter(vId => !oldVisiteIds.includes(vId));
 
           setContatti(prevContatti => prevContatti.map(c => {
             let updated = { ...c };
@@ -2414,6 +2423,19 @@ export default function App() {
               const arr = c.immobili_gestiti || [];
               if (!arr.includes(id)) {
                 updated.immobili_gestiti = [...arr, id];
+                changed = true;
+              }
+            }
+
+            // Visite
+            if (removedVisiteIds.includes(c.id)) {
+              updated.immobili_visite = (c.immobili_visite || []).filter(pId => pId !== id);
+              changed = true;
+            }
+            if (addedVisiteIds.includes(c.id)) {
+              const arr = c.immobili_visite || [];
+              if (!arr.includes(id)) {
+                updated.immobili_visite = [...arr, id];
                 changed = true;
               }
             }
@@ -2448,6 +2470,20 @@ export default function App() {
               if (c) {
                 const nextArr = Array.from(new Set([...(c.immobili_gestiti || []), id]));
                 await supabase.from('contatti').update({ immobili_gestiti: nextArr }).eq('id', aId);
+              }
+            }
+            for (const vId of removedVisiteIds) {
+              const c = contatti.find(item => item.id === vId);
+              if (c) {
+                const nextArr = (c.immobili_visite || []).filter(pId => pId !== id);
+                await supabase.from('contatti').update({ immobili_visite: nextArr }).eq('id', vId);
+              }
+            }
+            for (const vId of addedVisiteIds) {
+              const c = contatti.find(item => item.id === vId);
+              if (c) {
+                const nextArr = Array.from(new Set([...(c.immobili_visite || []), id]));
+                await supabase.from('contatti').update({ immobili_visite: nextArr }).eq('id', vId);
               }
             }
           }
@@ -2490,6 +2526,7 @@ export default function App() {
 
           const newOwnerIds = record.proprietario_id ? [Number(record.proprietario_id)] : [];
           const newAgentIds = parseIds(record.agente_id);
+          const newVisiteIds = parseIds(record.contatto_visite_id);
           const newImmId = record.id;
 
           setContatti(prevContatti => prevContatti.map(c => {
@@ -2509,6 +2546,13 @@ export default function App() {
                 changed = true;
               }
             }
+            if (newVisiteIds.includes(c.id)) {
+              const arr = c.immobili_visite || [];
+              if (!arr.includes(newImmId)) {
+                updated.immobili_visite = [...arr, newImmId];
+                changed = true;
+              }
+            }
             return changed ? updated : c;
           }));
 
@@ -2525,6 +2569,13 @@ export default function App() {
               if (c) {
                 const nextArr = Array.from(new Set([...(c.immobili_gestiti || []), newImmId]));
                 await supabase.from('contatti').update({ immobili_gestiti: nextArr }).eq('id', aId);
+              }
+            }
+            for (const vId of newVisiteIds) {
+              const c = contatti.find(item => item.id === vId);
+              if (c) {
+                const nextArr = Array.from(new Set([...(c.immobili_visite || []), newImmId]));
+                await supabase.from('contatti').update({ immobili_visite: nextArr }).eq('id', vId);
               }
             }
           }
@@ -2547,6 +2598,8 @@ export default function App() {
               setSelectedPosseduti(prev => [...prev, record.id]);
             } else if (addingPropertyForContact.type === 'gestiti') {
               setSelectedGestiti(prev => [...prev, record.id]);
+            } else if (addingPropertyForContact.type === 'visite') {
+              setSelectedVisite(prev => [...prev, record.id]);
             }
             setAddingPropertyForContact(null);
           }
@@ -2924,7 +2977,8 @@ export default function App() {
       note: formData.get('note_contatto'),
       note_contatto: formData.get('note_contatto'),
       immobili_posseduti: selectedPosseduti,
-      immobili_gestiti: selectedGestiti
+      immobili_gestiti: selectedGestiti,
+      immobili_visite: selectedVisite
     };
 
     const isActuallyOffline = isOffline || !navigator.onLine;
@@ -2945,7 +2999,8 @@ export default function App() {
         { key: 'mail', label: 'Email' },
         { key: 'note_contatto', label: 'Note' },
         { key: 'immobili_posseduti', label: 'Immobili Posseduti', type: 'properties' },
-        { key: 'immobili_gestiti', label: 'Immobili Gestiti', type: 'properties' }
+        { key: 'immobili_gestiti', label: 'Immobili Gestiti', type: 'properties' },
+        { key: 'immobili_visite', label: 'Contatto per Visite', type: 'properties' }
       ];
 
       const formatContattoVal = (val, type) => {
@@ -2986,7 +3041,8 @@ export default function App() {
         { key: 'mail', label: 'Email' },
         { key: 'note_contatto', label: 'Note' },
         { key: 'immobili_posseduti', label: 'Immobili Posseduti', type: 'properties' },
-        { key: 'immobili_gestiti', label: 'Immobili Gestiti', type: 'properties' }
+        { key: 'immobili_gestiti', label: 'Immobili Gestiti', type: 'properties' },
+        { key: 'immobili_visite', label: 'Contatto per Visite', type: 'properties' }
       ];
 
       const formatContattoVal = (val, type) => {
@@ -3054,6 +3110,14 @@ export default function App() {
           const toAddAgent = selectedGestiti.filter(immId => !prevManagedIds.includes(immId));
           const toRemoveAgent = prevManagedIds.filter(immId => !selectedGestiti.includes(immId));
 
+          const previouslyVisite = immobili.filter(imm => {
+            const cvIds = imm.contatto_visite_id ? String(imm.contatto_visite_id).split(',').map(s => s.trim()).filter(Boolean) : [];
+            return cvIds.includes(String(id));
+          });
+          const prevVisiteIds = previouslyVisite.map(imm => imm.id);
+          const toAddVisite = selectedVisite.filter(immId => !prevVisiteIds.includes(immId));
+          const toRemoveVisite = prevVisiteIds.filter(immId => !selectedVisite.includes(immId));
+
           for (const immId of toAddOwner) {
             await supabase.from('immobili').update({ proprietario_id: id }).eq('id', immId);
           }
@@ -3078,6 +3142,23 @@ export default function App() {
             }
           }
 
+          for (const immId of toAddVisite) {
+            const imm = immobili.find(item => item.id === immId);
+            if (imm) {
+              const currentVisite = imm.contatto_visite_id ? String(imm.contatto_visite_id).split(',').map(s => s.trim()).filter(Boolean) : [];
+              const nextVisite = Array.from(new Set([...currentVisite, String(id)])).join(',');
+              await supabase.from('immobili').update({ contatto_visite_id: nextVisite }).eq('id', immId);
+            }
+          }
+          for (const immId of toRemoveVisite) {
+            const imm = immobili.find(item => item.id === immId);
+            if (imm) {
+              const currentVisite = imm.contatto_visite_id ? String(imm.contatto_visite_id).split(',').map(s => s.trim()).filter(Boolean) : [];
+              const nextVisite = currentVisite.filter(s => s !== String(id)).join(',');
+              await supabase.from('immobili').update({ contatto_visite_id: nextVisite || null }).eq('id', immId);
+            }
+          }
+
           setImmobili(prevImmobili => prevImmobili.map(imm => {
             let updatedImm = { ...imm };
             let changed = false;
@@ -3098,6 +3179,17 @@ export default function App() {
               const currentAgents = imm.agente_id ? String(imm.agente_id).split(',').map(s => s.trim()).filter(Boolean) : [];
               const nextAgents = currentAgents.filter(s => s !== String(id)).join(',');
               updatedImm.agente_id = nextAgents || null;
+              changed = true;
+            }
+
+            if (toAddVisite.includes(imm.id)) {
+              const currentVisite = imm.contatto_visite_id ? String(imm.contatto_visite_id).split(',').map(s => s.trim()).filter(Boolean) : [];
+              updatedImm.contatto_visite_id = Array.from(new Set([...currentVisite, String(id)])).join(',');
+              changed = true;
+            } else if (toRemoveVisite.includes(imm.id)) {
+              const currentVisite = imm.contatto_visite_id ? String(imm.contatto_visite_id).split(',').map(s => s.trim()).filter(Boolean) : [];
+              const nextVisite = currentVisite.filter(s => s !== String(id)).join(',');
+              updatedImm.contatto_visite_id = nextVisite || null;
               changed = true;
             }
 
@@ -3135,6 +3227,14 @@ export default function App() {
               await supabase.from('immobili').update({ agente_id: nextAgents }).eq('id', immId);
             }
           }
+          for (const immId of selectedVisite) {
+            const imm = immobili.find(item => item.id === immId);
+            if (imm) {
+              const currentVisite = imm.contatto_visite_id ? String(imm.contatto_visite_id).split(',').map(s => s.trim()).filter(Boolean) : [];
+              const nextVisite = Array.from(new Set([...currentVisite, String(newId)])).join(',');
+              await supabase.from('immobili').update({ contatto_visite_id: nextVisite }).eq('id', immId);
+            }
+          }
 
           setImmobili(prevImmobili => prevImmobili.map(imm => {
             let updatedImm = { ...imm };
@@ -3146,6 +3246,11 @@ export default function App() {
             if (selectedGestiti.includes(Number(imm.id))) {
               const currentAgents = imm.agente_id ? String(imm.agente_id).split(',').map(s => s.trim()).filter(Boolean) : [];
               updatedImm.agente_id = Array.from(new Set([...currentAgents, String(newId)])).join(',');
+              changed = true;
+            }
+            if (selectedVisite.includes(Number(imm.id))) {
+              const currentVisite = imm.contatto_visite_id ? String(imm.contatto_visite_id).split(',').map(s => s.trim()).filter(Boolean) : [];
+              updatedImm.contatto_visite_id = Array.from(new Set([...currentVisite, String(newId)])).join(',');
               changed = true;
             }
             return changed ? updatedImm : imm;
@@ -3190,8 +3295,14 @@ export default function App() {
       return agentIds.includes(String(item.id));
     }).map(imm => imm.id);
     setSelectedGestiti(Array.from(new Set([...(item.immobili_gestiti || []), ...managedIds])));
+    const visitIds = immobili.filter(imm => {
+      const cvIds = imm.contatto_visite_id ? String(imm.contatto_visite_id).split(',').map(s => s.trim()).filter(Boolean) : [];
+      return cvIds.includes(String(item.id));
+    }).map(imm => imm.id);
+    setSelectedVisite(Array.from(new Set(visitIds)));
     setSearchPossedutiQuery('');
     setSearchGestitiQuery('');
+    setSearchVisiteQuery('');
     setActiveContactFormTab('generale');
     setIsContattoModalOpen(true);
   };
@@ -3200,8 +3311,10 @@ export default function App() {
     setCurrentContatto(null);
     setSelectedPosseduti([]);
     setSelectedGestiti([]);
+    setSelectedVisite([]);
     setSearchPossedutiQuery('');
     setSearchGestitiQuery('');
+    setSearchVisiteQuery('');
     setActiveContactFormTab('generale');
     setIsContattoModalOpen(true);
   };
@@ -4554,50 +4667,6 @@ export default function App() {
                           })()}
                         </div>
 
-                        {/* Responsabile Oggetto */}
-                        <div className="glass-panel p-4 rounded-2xl flex flex-col min-h-[160px]">
-                          <span className="block text-[9px] uppercase font-bold text-[#86868B] mb-2">Agente</span>
-                          {(() => {
-                            const agentIds = viewingImmobile.agente_id ? String(viewingImmobile.agente_id).split(',').map(id => id.trim()).filter(Boolean) : [];
-                            if (agentIds.length === 0) {
-                              return (
-                                <div className="flex-1 flex items-center justify-center border border-dashed border-black/10 rounded-xl p-3 bg-black/[0.01]">
-                                  <span className="text-xs text-gray-400 italic">Non assegnato</span>
-                                </div>
-                              );
-                            }
-                            return (
-                              <div className="flex-1 space-y-2 overflow-y-auto pr-1">
-                                {agentIds.map(agentId => {
-                                  const contactObj = contatti.find(c => String(c.id) === String(agentId));
-                                  if (!contactObj) return null;
-                                  return (
-                                    <div
-                                      key={agentId}
-                                      onClick={() => {
-                                        const currentProperty = viewingImmobile;
-                                        handleCloseImmobileDetail();
-                                        handleViewContatto(contactObj, { type: 'immobile', item: currentProperty, tab: 'contatti' });
-                                      }}
-                                      className="cursor-pointer bg-white/40 hover:bg-white/70 p-3 rounded-xl border border-black/5 hover:border-[#0071E3]/20 hover:shadow-sm transition-all"
-                                    >
-                                      <div>
-                                        <span className="font-bold text-xs text-[#0071E3] block hover:underline">
-                                          👤 {contactObj.nome} {contactObj.cognome}
-                                        </span>
-                                      </div>
-                                      <div className="mt-1 text-[10px] text-[#86868B] space-y-0.5 pl-4 border-l border-black/5">
-                                        <p>📞 {contactObj.telefono || 'Assente'}</p>
-                                        <p>✉️ {contactObj.mail || 'Assente'}</p>
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            );
-                          })()}
-                        </div>
-
                         {/* Contatto per Visite */}
                         <div className="glass-panel p-4 rounded-2xl flex flex-col min-h-[160px]">
                           <span className="block text-[9px] uppercase font-bold text-[#86868B] mb-2">contatto per visite</span>
@@ -4632,6 +4701,50 @@ export default function App() {
                                         {contactObj.societa && (
                                           <span className="text-[10px] text-gray-500 block pl-4 italic">{contactObj.societa}</span>
                                         )}
+                                      </div>
+                                      <div className="mt-1 text-[10px] text-[#86868B] space-y-0.5 pl-4 border-l border-black/5">
+                                        <p>📞 {contactObj.telefono || 'Assente'}</p>
+                                        <p>✉️ {contactObj.mail || 'Assente'}</p>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            );
+                          })()}
+                        </div>
+
+                        {/* Responsabile Oggetto */}
+                        <div className="glass-panel p-4 rounded-2xl flex flex-col min-h-[160px]">
+                          <span className="block text-[9px] uppercase font-bold text-[#86868B] mb-2">Agente</span>
+                          {(() => {
+                            const agentIds = viewingImmobile.agente_id ? String(viewingImmobile.agente_id).split(',').map(id => id.trim()).filter(Boolean) : [];
+                            if (agentIds.length === 0) {
+                              return (
+                                <div className="flex-1 flex items-center justify-center border border-dashed border-black/10 rounded-xl p-3 bg-black/[0.01]">
+                                  <span className="text-xs text-gray-400 italic">Non assegnato</span>
+                                </div>
+                              );
+                            }
+                            return (
+                              <div className="flex-1 space-y-2 overflow-y-auto pr-1">
+                                {agentIds.map(agentId => {
+                                  const contactObj = contatti.find(c => String(c.id) === String(agentId));
+                                  if (!contactObj) return null;
+                                  return (
+                                    <div
+                                      key={agentId}
+                                      onClick={() => {
+                                        const currentProperty = viewingImmobile;
+                                        handleCloseImmobileDetail();
+                                        handleViewContatto(contactObj, { type: 'immobile', item: currentProperty, tab: 'contatti' });
+                                      }}
+                                      className="cursor-pointer bg-white/40 hover:bg-white/70 p-3 rounded-xl border border-black/5 hover:border-[#0071E3]/20 hover:shadow-sm transition-all"
+                                    >
+                                      <div>
+                                        <span className="font-bold text-xs text-[#0071E3] block hover:underline">
+                                          👤 {contactObj.nome} {contactObj.cognome}
+                                        </span>
                                       </div>
                                       <div className="mt-1 text-[10px] text-[#86868B] space-y-0.5 pl-4 border-l border-black/5">
                                         <p>📞 {contactObj.telefono || 'Assente'}</p>
@@ -4902,15 +5015,8 @@ export default function App() {
                             const isPresent = doc.isFileOnly ? !!fileUrl : status === 'Si';
                             return (
                               <div key={doc.key} className="glass-panel p-4 rounded-2xl flex flex-col justify-between space-y-3">
-                                <div className="flex justify-between items-start">
-                                  <div>
-                                    <span className="block text-xs font-bold text-[#1D1D1F]">{doc.label}</span>
-                                    <span className="text-[10px] text-[#86868B] block mt-0.5">{doc.desc}</span>
-                                  </div>
-                                  <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase shadow-sm ${isPresent ? 'bg-[#34C759] text-white' : 'bg-[#8E8E93] text-white'
-                                    }`}>
-                                    {isPresent ? 'Sì' : 'No'}
-                                  </span>
+                                <div>
+                                  <span className="block text-xs font-bold text-[#1D1D1F]">{doc.label}</span>
                                 </div>
                                 {fileUrl ? (
                                   <button
@@ -5272,64 +5378,102 @@ export default function App() {
                     )}
 
                     {activeContactDetailTab === 'immobili' && (
-                      <div className="space-y-4">
+                      <div className="space-y-5">
                         <h4 className="text-xs font-bold text-[#86868B] uppercase tracking-wider border-b pb-1">Immobili Collegati</h4>
 
-                        {/* Immobili Posseduti */}
-                        <div className="space-y-2">
-                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Immobili Posseduti (Proprietà)</span>
-                          {(() => {
-                            const owned = immobili.filter(imm =>
-                              (viewingContatto.immobili_posseduti && viewingContatto.immobili_posseduti.includes(imm.id)) ||
-                              (imm.proprietario_id !== null && imm.proprietario_id !== undefined && String(imm.proprietario_id) === String(viewingContatto.id))
-                            );
-                            if (owned.length === 0) return <p className="text-xs text-gray-400 italic pl-1">Nessun immobile posseduto collegato.</p>;
-                            return owned.map(imm => (
-                              <div
-                                key={imm.id}
-                                onClick={() => {
-                                  setIsContactDetailModalOpen(false);
-                                  handleViewImmobile(imm, { type: 'contatto', item: viewingContatto });
-                                }}
-                                className="bg-white p-3.5 rounded-xl border border-[#E5E5EA] flex justify-between items-center hover:border-[#0071E3] cursor-pointer transition-all group shadow-sm"
-                              >
-                                <div>
-                                  <span className="font-bold text-sm group-hover:text-[#0071E3] transition-all">{imm.nome_immobile}</span>
-                                  <span className="block text-xs text-[#86868B]">{imm.comune} • {formatField(imm.prezzo_di_vendita || imm.prezzo_di_affitto, "", true)}</span>
+                        {/* Sezione 1: Proprietà e Visite */}
+                        <div className="bg-[#F5F5F7] p-5 rounded-2xl border border-[#E5E5EA] space-y-4">
+                          <h5 className="text-[10px] font-extrabold text-[#86868B] uppercase tracking-wider">Proprietà & Visite</h5>
+
+                          {/* Immobili Posseduti */}
+                          <div className="space-y-2">
+                            <span className="block text-[9px] font-bold text-[#86868B] uppercase tracking-wider">Immobili Posseduti (Proprietario)</span>
+                            {(() => {
+                              const owned = immobili.filter(imm =>
+                                (viewingContatto.immobili_posseduti && viewingContatto.immobili_posseduti.includes(imm.id)) ||
+                                (imm.proprietario_id !== null && imm.proprietario_id !== undefined && String(imm.proprietario_id) === String(viewingContatto.id))
+                              );
+                              if (owned.length === 0) return <p className="text-xs text-gray-400 italic pl-1">Nessun immobile posseduto collegato.</p>;
+                              return owned.map(imm => (
+                                <div
+                                  key={imm.id}
+                                  onClick={() => {
+                                    setIsContactDetailModalOpen(false);
+                                    handleViewImmobile(imm, { type: 'contatto', item: viewingContatto });
+                                  }}
+                                  className="bg-white p-3.5 rounded-xl border border-[#E5E5EA] flex justify-between items-center hover:border-[#0071E3] cursor-pointer transition-all group shadow-sm"
+                                >
+                                  <div>
+                                    <span className="font-bold text-sm group-hover:text-[#0071E3] transition-all">{imm.nome_immobile}</span>
+                                    <span className="block text-xs text-[#86868B]">{imm.comune} • {formatField(imm.prezzo_di_vendita || imm.prezzo_di_affitto, "", true)}</span>
+                                  </div>
+                                  <span className="text-xs text-[#86868B] group-hover:text-[#0071E3] transition-all">→</span>
                                 </div>
-                                <span className="text-xs text-[#86868B] group-hover:text-[#0071E3] transition-all">→</span>
-                              </div>
-                            ));
-                          })()}
+                              ));
+                            })()}
+                          </div>
+
+                          {/* Contatto per Visite */}
+                          <div className="space-y-2 pt-2 border-t border-black/5">
+                            <span className="block text-[9px] font-bold text-[#86868B] uppercase tracking-wider">Contatto per Visite</span>
+                            {(() => {
+                              const visitProperty = immobili.filter(imm => {
+                                const visitIds = imm.contatto_visite_id ? String(imm.contatto_visite_id).split(',').map(s => s.trim()).filter(Boolean) : [];
+                                return visitIds.includes(String(viewingContatto.id));
+                              });
+                              if (visitProperty.length === 0) return <p className="text-xs text-gray-400 italic pl-1">Nessun immobile collegato come contatto per visite.</p>;
+                              return visitProperty.map(imm => (
+                                <div
+                                  key={imm.id}
+                                  onClick={() => {
+                                    setIsContactDetailModalOpen(false);
+                                    handleViewImmobile(imm, { type: 'contatto', item: viewingContatto });
+                                  }}
+                                  className="bg-white p-3.5 rounded-xl border border-[#E5E5EA] flex justify-between items-center hover:border-[#0071E3] cursor-pointer transition-all group shadow-sm"
+                                >
+                                  <div>
+                                    <span className="font-bold text-sm group-hover:text-[#0071E3] transition-all">{imm.nome_immobile}</span>
+                                    <span className="block text-xs text-[#86868B]">{imm.comune} • {formatField(imm.prezzo_di_vendita || imm.prezzo_di_affitto, "", true)}</span>
+                                  </div>
+                                  <span className="text-xs text-[#86868B] group-hover:text-[#0071E3] transition-all">→</span>
+                                </div>
+                              ));
+                            })()}
+                          </div>
                         </div>
 
-                        {/* Immobili Gestiti */}
-                        <div className="space-y-2 pt-2">
-                          <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Immobili Gestiti (Agente)</span>
-                          {(() => {
-                            const managed = immobili.filter(imm => {
-                              const agentIds = imm.agente_id ? String(imm.agente_id).split(',').map(s => s.trim()).filter(Boolean) : [];
-                              return (viewingContatto.immobili_gestiti && viewingContatto.immobili_gestiti.includes(imm.id)) ||
-                                     agentIds.includes(String(viewingContatto.id));
-                            });
-                            if (managed.length === 0) return <p className="text-xs text-gray-400 italic pl-1">Nessun immobile gestito collegato.</p>;
-                            return managed.map(imm => (
-                              <div
-                                key={imm.id}
-                                onClick={() => {
-                                  setIsContactDetailModalOpen(false);
-                                  handleViewImmobile(imm, { type: 'contatto', item: viewingContatto });
-                                }}
-                                className="bg-white p-3.5 rounded-xl border border-[#E5E5EA] flex justify-between items-center hover:border-[#0071E3] cursor-pointer transition-all group shadow-sm"
-                              >
-                                <div>
-                                  <span className="font-bold text-sm group-hover:text-[#0071E3] transition-all">{imm.nome_immobile}</span>
-                                  <span className="block text-xs text-[#86868B]">{imm.comune} • {formatField(imm.prezzo_di_vendita || imm.prezzo_di_affitto, "", true)}</span>
+                        {/* Sezione 2: Gestione (Agente) */}
+                        <div className="bg-[#F5F5F7] p-5 rounded-2xl border border-[#E5E5EA] space-y-4">
+                          <h5 className="text-[10px] font-extrabold text-[#86868B] uppercase tracking-wider">Gestione (Agente)</h5>
+
+                          {/* Immobili Gestiti */}
+                          <div className="space-y-2">
+                            <span className="block text-[9px] font-bold text-[#86868B] uppercase tracking-wider">Immobili Gestiti (Agente)</span>
+                            {(() => {
+                              const managed = immobili.filter(imm => {
+                                const agentIds = imm.agente_id ? String(imm.agente_id).split(',').map(s => s.trim()).filter(Boolean) : [];
+                                return (viewingContatto.immobili_gestiti && viewingContatto.immobili_gestiti.includes(imm.id)) ||
+                                       agentIds.includes(String(viewingContatto.id));
+                              });
+                              if (managed.length === 0) return <p className="text-xs text-gray-400 italic pl-1">Nessun immobile gestito collegato.</p>;
+                              return managed.map(imm => (
+                                <div
+                                  key={imm.id}
+                                  onClick={() => {
+                                    setIsContactDetailModalOpen(false);
+                                    handleViewImmobile(imm, { type: 'contatto', item: viewingContatto });
+                                  }}
+                                  className="bg-white p-3.5 rounded-xl border border-[#E5E5EA] flex justify-between items-center hover:border-[#0071E3] cursor-pointer transition-all group shadow-sm"
+                                >
+                                  <div>
+                                    <span className="font-bold text-sm group-hover:text-[#0071E3] transition-all">{imm.nome_immobile}</span>
+                                    <span className="block text-xs text-[#86868B]">{imm.comune} • {formatField(imm.prezzo_di_vendita || imm.prezzo_di_affitto, "", true)}</span>
+                                  </div>
+                                  <span className="text-xs text-[#86868B] group-hover:text-[#0071E3] transition-all">→</span>
                                 </div>
-                                <span className="text-xs text-[#86868B] group-hover:text-[#0071E3] transition-all">→</span>
-                              </div>
-                            ));
-                          })()}
+                              ));
+                            })()}
+                          </div>
                         </div>
                       </div>
                     )}
@@ -6641,7 +6785,141 @@ export default function App() {
                           </div>
                         </div>
 
+                        {/* Contatto per Visite */}
                         <div className="glass-panel p-5 rounded-2xl space-y-4 relative z-10">
+                          <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                            <span className="text-sm">👤</span>
+                            <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Contatto per Visite</span>
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">
+                              Contatto per Visite
+                            </label>
+                            <input type="hidden" name="contatto_visite_id" value={selectedImmobileContattoVisiteIds.join(',')} />
+
+                            {/* Pill list of active visit contacts */}
+                            <div className="flex flex-wrap gap-1.5 mb-2 max-h-20 overflow-y-auto">
+                              {selectedImmobileContattoVisiteIds.length === 0 ? (
+                                <span className="text-[10px] text-gray-400 italic">Nessun contatto per visite selezionato</span>
+                              ) : (
+                                selectedImmobileContattoVisiteIds.map(cvid => {
+                                  const match = contatti.find(c => String(c.id) === String(cvid));
+                                  if (!match) return null;
+                                  return (
+                                    <span key={cvid} className="inline-flex items-center gap-1 bg-[#0071E3]/10 text-[#0071E3] text-[10px] px-2 py-0.5 rounded-full font-medium">
+                                      {match.nome || ''} {match.cognome || ''}
+                                      <button
+                                        type="button"
+                                        onClick={() => setSelectedImmobileContattoVisiteIds(prev => prev.filter(id => String(id) !== String(cvid)))}
+                                        className="hover:text-red-500 font-bold ml-0.5"
+                                      >
+                                        ✕
+                                      </button>
+                                    </span>
+                                  );
+                                })
+                              )}
+                            </div>
+
+                            <div className="relative">
+                              <input
+                                type="text"
+                                placeholder="🔍 Cerca contatto visite da aggiungere..."
+                                value={searchImmobileContattoVisiteQuery}
+                                onChange={(e) => setSearchImmobileContattoVisiteQuery(e.target.value)}
+                                onFocus={() => setIsContattoVisiteSearchFocused(true)}
+                                onBlur={() => setTimeout(() => setIsContattoVisiteSearchFocused(false), 200)}
+                                className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none text-[#1D1D1F] hover:bg-[#E5E5EA]/50 focus:bg-white focus:border-[#0071E3] transition-all"
+                              />
+
+                              {isContattoVisiteSearchFocused && (
+                                <div className="absolute left-0 right-0 mt-1 bg-white border border-[#E5E5EA] rounded-2xl shadow-xl max-h-60 overflow-y-auto z-[60] p-1.5 space-y-1">
+                                  {(() => {
+                                    const filtered = contatti
+                                      .filter(c => !selectedImmobileContattoVisiteIds.map(String).includes(String(c.id)))
+                                      .filter(c => {
+                                        const qParts = searchImmobileContattoVisiteQuery.toLowerCase().trim().split(/\s+/).filter(Boolean);
+                                        if (qParts.length === 0) return true;
+                                        const nome = (c.nome || '').toLowerCase();
+                                        const cognome = (c.cognome || '').toLowerCase();
+                                        const societa = (c.societa || '').toLowerCase();
+                                        const rolesStr = (Array.isArray(c.ruolo) ? c.ruolo.join(' ') : (c.ruolo || '')).toLowerCase();
+                                        return qParts.every(part =>
+                                          nome.includes(part) ||
+                                          cognome.includes(part) ||
+                                          societa.includes(part) ||
+                                          rolesStr.includes(part)
+                                        );
+                                      });
+
+                                    if (filtered.length === 0) {
+                                      return (
+                                        <div className="p-3 text-center text-xs text-[#86868B]">
+                                          Nessun contatto trovato
+                                          <button
+                                            type="button"
+                                            onMouseDown={() => {
+                                              setAddingContactForVisit('contatto_visite');
+                                              handleCreateContatto();
+                                            }}
+                                            className="block mx-auto mt-2 text-xs font-bold text-[#0071E3] hover:underline"
+                                          >
+                                            + Crea come nuovo contatto
+                                          </button>
+                                        </div>
+                                      );
+                                    }
+
+                                    return (
+                                      <>
+                                        {filtered.map(c => {
+                                          const rolesStr = Array.isArray(c.ruolo) ? c.ruolo.join(', ') : (c.ruolo || '');
+                                          return (
+                                            <button
+                                              key={c.id}
+                                              type="button"
+                                              onMouseDown={() => {
+                                                const parsedVal = isNaN(Number(c.id)) ? c.id : Number(c.id);
+                                                if (!selectedImmobileContattoVisiteIds.map(String).includes(String(parsedVal))) {
+                                                  setSelectedImmobileContattoVisiteIds(prev => [...prev, parsedVal]);
+                                                }
+                                                setSearchImmobileContattoVisiteQuery('');
+                                              }}
+                                              className="w-full text-left px-3 py-2 rounded-xl text-xs hover:bg-[#F5F5F7] transition-all flex flex-col gap-0.5"
+                                            >
+                                              <span className="font-bold text-[#1D1D1F]">{c.cognome} {c.nome}</span>
+                                              {(c.societa || rolesStr) && (
+                                                <span className="text-[10px] text-[#86868B]">
+                                                  {c.societa}{c.societa && rolesStr ? ' - ' : ''}{rolesStr}
+                                                </span>
+                                              )}
+                                            </button>
+                                          );
+                                        })}
+                                        <div className="border-t border-gray-100 pt-1 mt-1">
+                                          <button
+                                            type="button"
+                                            onMouseDown={() => {
+                                              setAddingContactForVisit('contatto_visite');
+                                              handleCreateContatto();
+                                            }}
+                                            className="w-full text-left px-3 py-2 rounded-xl text-xs font-semibold text-[#0071E3] hover:bg-[#0071E3]/5 transition-all"
+                                          >
+                                            + Aggiungi Nuovo Contatto...
+                                          </button>
+                                        </div>
+                                      </>
+                                    );
+                                  })()}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Agente */}
+                        <div className="glass-panel p-5 rounded-2xl space-y-4 relative z-0">
                           <div className="flex items-center gap-2 pb-1 border-b border-black/5">
                             <span className="text-sm">👥</span>
                             <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Agente</span>
@@ -6764,138 +7042,6 @@ export default function App() {
                                             type="button"
                                             onMouseDown={() => {
                                               setAddingContactForVisit('agente');
-                                              handleCreateContatto();
-                                            }}
-                                            className="w-full text-left px-3 py-2 rounded-xl text-xs font-semibold text-[#0071E3] hover:bg-[#0071E3]/5 transition-all"
-                                          >
-                                            + Aggiungi Nuovo Contatto...
-                                          </button>
-                                        </div>
-                                      </>
-                                    );
-                                  })()}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="glass-panel p-5 rounded-2xl space-y-4 relative z-0">
-                          <div className="flex items-center gap-2 pb-1 border-b border-black/5">
-                            <span className="text-sm">👤</span>
-                            <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Contatto per Visite</span>
-                          </div>
-
-                          <div>
-                            <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">
-                              Contatto per Visite
-                            </label>
-                            <input type="hidden" name="contatto_visite_id" value={selectedImmobileContattoVisiteIds.join(',')} />
-
-                            {/* Pill list of active visit contacts */}
-                            <div className="flex flex-wrap gap-1.5 mb-2 max-h-20 overflow-y-auto">
-                              {selectedImmobileContattoVisiteIds.length === 0 ? (
-                                <span className="text-[10px] text-gray-400 italic">Nessun contatto per visite selezionato</span>
-                              ) : (
-                                selectedImmobileContattoVisiteIds.map(cvid => {
-                                  const match = contatti.find(c => String(c.id) === String(cvid));
-                                  if (!match) return null;
-                                  return (
-                                    <span key={cvid} className="inline-flex items-center gap-1 bg-[#0071E3]/10 text-[#0071E3] text-[10px] px-2 py-0.5 rounded-full font-medium">
-                                      {match.nome || ''} {match.cognome || ''}
-                                      <button
-                                        type="button"
-                                        onClick={() => setSelectedImmobileContattoVisiteIds(prev => prev.filter(id => String(id) !== String(cvid)))}
-                                        className="hover:text-red-500 font-bold ml-0.5"
-                                      >
-                                        ✕
-                                      </button>
-                                    </span>
-                                  );
-                                })
-                              )}
-                            </div>
-
-                            <div className="relative">
-                              <input
-                                type="text"
-                                placeholder="🔍 Cerca contatto visite da aggiungere..."
-                                value={searchImmobileContattoVisiteQuery}
-                                onChange={(e) => setSearchImmobileContattoVisiteQuery(e.target.value)}
-                                onFocus={() => setIsContattoVisiteSearchFocused(true)}
-                                onBlur={() => setTimeout(() => setIsContattoVisiteSearchFocused(false), 200)}
-                                className="w-full px-3.5 py-2 bg-[#F5F5F7] border border-transparent rounded-xl text-sm focus:outline-none text-[#1D1D1F] hover:bg-[#E5E5EA]/50 focus:bg-white focus:border-[#0071E3] transition-all"
-                              />
-
-                              {isContattoVisiteSearchFocused && (
-                                <div className="absolute left-0 right-0 mt-1 bg-white border border-[#E5E5EA] rounded-2xl shadow-xl max-h-60 overflow-y-auto z-[60] p-1.5 space-y-1">
-                                  {(() => {
-                                    const filtered = contatti
-                                      .filter(c => !selectedImmobileContattoVisiteIds.map(String).includes(String(c.id)))
-                                      .filter(c => {
-                                        const qParts = searchImmobileContattoVisiteQuery.toLowerCase().trim().split(/\s+/).filter(Boolean);
-                                        if (qParts.length === 0) return true;
-                                        const nome = (c.nome || '').toLowerCase();
-                                        const cognome = (c.cognome || '').toLowerCase();
-                                        const societa = (c.societa || '').toLowerCase();
-                                        const rolesStr = (Array.isArray(c.ruolo) ? c.ruolo.join(' ') : (c.ruolo || '')).toLowerCase();
-                                        return qParts.every(part =>
-                                          nome.includes(part) ||
-                                          cognome.includes(part) ||
-                                          societa.includes(part) ||
-                                          rolesStr.includes(part)
-                                        );
-                                      });
-
-                                    if (filtered.length === 0) {
-                                      return (
-                                        <div className="p-3 text-center text-xs text-[#86868B]">
-                                          Nessun contatto trovato
-                                          <button
-                                            type="button"
-                                            onMouseDown={() => {
-                                              setAddingContactForVisit('contatto_visite');
-                                              handleCreateContatto();
-                                            }}
-                                            className="block mx-auto mt-2 text-xs font-bold text-[#0071E3] hover:underline"
-                                          >
-                                            + Crea come nuovo contatto
-                                          </button>
-                                        </div>
-                                      );
-                                    }
-
-                                    return (
-                                      <>
-                                        {filtered.map(c => {
-                                          const rolesStr = Array.isArray(c.ruolo) ? c.ruolo.join(', ') : (c.ruolo || '');
-                                          return (
-                                            <button
-                                              key={c.id}
-                                              type="button"
-                                              onMouseDown={() => {
-                                                const parsedVal = isNaN(Number(c.id)) ? c.id : Number(c.id);
-                                                if (!selectedImmobileContattoVisiteIds.map(String).includes(String(parsedVal))) {
-                                                  setSelectedImmobileContattoVisiteIds(prev => [...prev, parsedVal]);
-                                                }
-                                                setSearchImmobileContattoVisiteQuery('');
-                                              }}
-                                              className="w-full text-left px-3 py-2 rounded-xl text-xs hover:bg-[#F5F5F7] transition-all flex flex-col gap-0.5"
-                                            >
-                                              <span className="font-bold text-[#1D1D1F]">{c.cognome} {c.nome}</span>
-                                              {(c.societa || rolesStr) && (
-                                                <span className="text-[10px] text-[#86868B]">
-                                                  {c.societa}{c.societa && rolesStr ? ' - ' : ''}{rolesStr}
-                                                </span>
-                                              )}
-                                            </button>
-                                          );
-                                        })}
-                                        <div className="border-t border-gray-100 pt-1 mt-1">
-                                          <button
-                                            type="button"
-                                            onMouseDown={() => {
-                                              setAddingContactForVisit('contatto_visite');
                                               handleCreateContatto();
                                             }}
                                             className="w-full text-left px-3 py-2 rounded-xl text-xs font-semibold text-[#0071E3] hover:bg-[#0071E3]/5 transition-all"
@@ -7420,7 +7566,7 @@ export default function App() {
                             <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Documenti Immobile</span>
                           </div>
                           <p className="text-[11px] text-[#86868B] -mt-2">
-                            Indica lo stato di presenza di ciascun documento cartaceo o digitale e carica il rispettivo file.
+                            Carica il file per ciascun documento disponibile.
                           </p>
 
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
@@ -7444,29 +7590,9 @@ export default function App() {
                                     <span className="text-xs">📎</span>
                                     <span className="text-[11px] font-bold text-[#1D1D1F]">{doc.label}</span>
                                   </div>
-                                  {doc.isFileOnly ? (
-                                    <div>
-                                      <DocumentFileField dbField={dbField} currentImmobile={currentImmobile} setCurrentImmobile={setCurrentImmobile} isFileOnly={true} />
-                                    </div>
-                                  ) : (
-                                    <div className="grid grid-cols-2 gap-2 items-end">
-                                      <div>
-                                        <label className="block text-[9px] text-[#86868B] mb-0.5 font-semibold uppercase">Presente?</label>
-                                        <select
-                                          name={dbField}
-                                          defaultValue={currentImmobile ? currentImmobile[dbField] : 'No'}
-                                          className="glass-input w-full px-2 py-1 rounded-lg text-xs text-[#1D1D1F]"
-                                        >
-                                          <option value="No">No</option>
-                                          <option value="Si">Si</option>
-                                        </select>
-                                      </div>
-                                      <div>
-                                        <label className="block text-[9px] text-[#86868B] mb-0.5 font-semibold uppercase">File</label>
-                                        <DocumentFileField dbField={dbField} currentImmobile={currentImmobile} setCurrentImmobile={setCurrentImmobile} isFileOnly={false} />
-                                      </div>
-                                    </div>
-                                  )}
+                                  <div>
+                                    <DocumentFileField dbField={dbField} currentImmobile={currentImmobile} setCurrentImmobile={setCurrentImmobile} isFileOnly={doc.isFileOnly || false} />
+                                  </div>
                                 </div>
                               );
                             })}
@@ -7794,7 +7920,11 @@ export default function App() {
                       </div>
 
 
-                      <div className={activeContactFormTab === 'immobili' ? 'space-y-5 animate-fade-in' : 'hidden'}>
+                      <div className={activeContactFormTab === 'immobili' ? 'space-y-6 animate-fade-in' : 'hidden'}>
+
+                        {/* Sezione 1: Proprietà & Visite */}
+                        <div className="space-y-4 p-4 bg-black/[0.02] rounded-3xl border border-black/[0.04]">
+                          <span className="block text-[10px] font-extrabold text-[#86868B] uppercase tracking-wider pl-1">Proprietà & Visite</span>
 
                           {/* Immobili Posseduti */}
                           <div className={`glass-panel p-5 rounded-2xl space-y-4 relative ${isPossedutiSearchFocused ? 'z-30' : 'z-10'}`}>
@@ -7922,6 +8052,137 @@ export default function App() {
                             </div>
                           </div>
 
+                          {/* Contatto per Visite */}
+                          <div className={`glass-panel p-5 rounded-2xl space-y-4 relative ${isVisiteSearchFocused ? 'z-30' : 'z-10'}`}>
+                            <div className="flex justify-between items-center pb-1 border-b border-black/5">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm">👤</span>
+                                <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Contatto per Visite</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setAddingPropertyForContact({ contactId: currentContatto?.id || 'new', type: 'visite' });
+                                  setIsImmobileModalOpen(true);
+                                  setCurrentImmobile(null);
+                                  setSelectedImmobileProprietarioId(null);
+                                }}
+                                className="text-[10px] text-[#0071E3] hover:underline font-semibold"
+                              >
+                                + Aggiungi Immobile
+                              </button>
+                            </div>
+
+                            {/* Selected Properties */}
+                            {selectedVisite.length > 0 && (
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-2">
+                                {selectedVisite.map(id => {
+                                  const imm = immobili.find(i => i.id === id);
+                                  if (!imm) return null;
+                                  return (
+                                    <div key={imm.id} className="relative border border-[#0071E3]/25 bg-white p-2 rounded-xl flex items-center gap-3 shadow-sm group">
+                                      <SecureImageBackground
+                                        url={imm.immagine_di_riferimento}
+                                        className="w-14 h-14 rounded-lg bg-cover bg-center shrink-0 border border-gray-100"
+                                      />
+                                      <div className="text-xs leading-tight min-w-0 flex-1">
+                                        <span className="font-bold text-[#1D1D1F] block truncate">
+                                          {imm.nome_immobile}
+                                        </span>
+                                        <span className="block text-[10px] text-[#86868B] mt-0.5">
+                                          {imm.comune} • {imm.codice_immobile}
+                                        </span>
+                                        <span className="block text-[10px] text-[#0071E3] font-semibold mt-0.5">
+                                          {Number(imm.prezzo_di_vendita) > 0
+                                            ? `CHF ${Number(imm.prezzo_di_vendita).toLocaleString('it-CH')}`
+                                            : `CHF ${Number(imm.prezzo_di_affitto).toLocaleString('it-CH')}/mese`
+                                          }
+                                        </span>
+                                      </div>
+                                      <button
+                                        type="button"
+                                        onClick={() => setSelectedVisite(selectedVisite.filter(pid => pid !== imm.id))}
+                                        className="w-6 h-6 rounded-full hover:bg-red-50 flex items-center justify-center text-[#86868B] hover:text-red-500 transition-all text-xs shrink-0"
+                                        title="Rimuovi"
+                                      >
+                                        ✕
+                                      </button>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+
+                            <div className="space-y-2">
+                              <input
+                                type="text"
+                                placeholder="🔍 Cerca immobile per nome, codice o comune..."
+                                value={searchVisiteQuery}
+                                onChange={(e) => setSearchVisiteQuery(e.target.value)}
+                                onFocus={() => setIsVisiteSearchFocused(true)}
+                                onBlur={() => setTimeout(() => setIsVisiteSearchFocused(false), 200)}
+                                className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none"
+                              />
+
+                              {isVisiteSearchFocused && (
+                                <div className="max-h-60 overflow-y-auto border border-black/5 rounded-2xl p-2 bg-[#F5F5F7]/50 flex flex-col gap-2 mt-2">
+                                  {(() => {
+                                    const filtered = immobili.filter(imm =>
+                                      !selectedVisite.includes(imm.id) && (
+                                        (imm.nome_immobile || '').toLowerCase().includes(searchVisiteQuery.toLowerCase()) ||
+                                        (imm.comune || '').toLowerCase().includes(searchVisiteQuery.toLowerCase()) ||
+                                        (imm.codice_immobile || '').toLowerCase().includes(searchVisiteQuery.toLowerCase())
+                                      )
+                                    );
+                                    if (filtered.length === 0) {
+                                      return (
+                                        <div className="p-3 text-center text-xs text-[#86868B] italic">
+                                          Nessun immobile disponibile
+                                        </div>
+                                      );
+                                    }
+                                    return filtered.map(imm => (
+                                      <div
+                                        key={imm.id}
+                                        onMouseDown={() => {
+                                          setSelectedVisite([...selectedVisite, imm.id]);
+                                          setSearchVisiteQuery('');
+                                        }}
+                                        className="bg-white p-2 rounded-xl border border-gray-200 flex items-center gap-3 cursor-pointer hover:border-[#0071E3] hover:shadow-md transition-all group"
+                                      >
+                                        <SecureImageBackground
+                                          url={imm.immagine_di_riferimento}
+                                          className="w-14 h-14 rounded-lg bg-cover bg-center shrink-0 border border-gray-100"
+                                        />
+                                        <div className="text-xs leading-tight min-w-0 flex-1">
+                                          <span className="font-bold text-[#1D1D1F] block truncate group-hover:text-[#0071E3] transition-colors">
+                                            {imm.nome_immobile}
+                                          </span>
+                                          <span className="block text-[10px] text-[#86868B] mt-0.5">
+                                            {imm.comune} • {imm.codice_immobile}
+                                          </span>
+                                          <span className="block text-[10px] text-[#0071E3] font-semibold mt-0.5">
+                                            {Number(imm.prezzo_di_vendita) > 0
+                                              ? `CHF ${Number(imm.prezzo_di_vendita).toLocaleString('it-CH')}`
+                                              : `CHF ${Number(imm.prezzo_di_affitto).toLocaleString('it-CH')}/mese`
+                                            }
+                                            {Number(imm.numero_di_locali) > 0 && ` • ${imm.numero_di_locali} Locali`}
+                                            {Number(imm.superficie_abitabile) > 0 && ` • ${imm.superficie_abitabile} m²`}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    ));
+                                  })()}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Sezione 2: Gestione (Agente) */}
+                        <div className="space-y-4 p-4 bg-black/[0.02] rounded-3xl border border-black/[0.04]">
+                          <span className="block text-[10px] font-extrabold text-[#86868B] uppercase tracking-wider pl-1">Gestione (Agente)</span>
+
                           {/* Immobili Gestiti */}
                           <div className={`glass-panel p-5 rounded-2xl space-y-4 relative ${isGestitiSearchFocused ? 'z-30' : 'z-10'}`}>
                             <div className="flex justify-between items-center pb-1 border-b border-black/5">
@@ -8047,6 +8308,7 @@ export default function App() {
                               )}
                             </div>
                           </div>
+                        </div>
                       </div>
                    </div>
 

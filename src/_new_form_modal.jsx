@@ -417,7 +417,7 @@
                       </div>
 
                       <div>
-                        <label className="block text-xs font-semibold text-[#86868B] mb-1">responsabile_oggetto</label>
+                        <label className="block text-xs font-semibold text-[#86868B] mb-1">Agente</label>
                         <select
                           name="agente_id"
                           defaultValue={currentImmobile ? currentImmobile.agente_id : ''}

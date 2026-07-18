@@ -800,7 +800,10 @@ export default function App() {
   const [selectedGestiti, setSelectedGestiti] = useState([]);
   const [addingPropertyForContact, setAddingPropertyForContact] = useState(null);
   const [searchPossedutiQuery, setSearchPossedutiQuery] = useState('');
+  const [isPossedutiSearchFocused, setIsPossedutiSearchFocused] = useState(false);
   const [searchGestitiQuery, setSearchGestitiQuery] = useState('');
+  const [isGestitiSearchFocused, setIsGestitiSearchFocused] = useState(false);
+
   const [currentVisita, setCurrentVisita] = useState(null);
   const [isVisitaModalOpen, setIsVisitaModalOpen] = useState(false);
 
@@ -1302,17 +1305,33 @@ export default function App() {
 
       setImmobili(prevImmobili => prevImmobili.map(imm => {
         let updatedImm = { ...imm };
-        if (selectedPosseduti.includes(Number(imm.id))) {
+        let changed = false;
+        
+        // Proprietario
+        const isPosseduto = selectedPosseduti.includes(Number(imm.id));
+        const wasPosseduto = imm.proprietario_id !== null && imm.proprietario_id !== undefined && String(imm.proprietario_id) === String(id);
+        if (isPosseduto && !wasPosseduto) {
           updatedImm.proprietario_id = id;
-        } else if (imm.proprietario_id === id) {
+          changed = true;
+        } else if (!isPosseduto && wasPosseduto) {
           updatedImm.proprietario_id = null;
+          changed = true;
         }
-        if (selectedGestiti.includes(Number(imm.id))) {
-          updatedImm.agente_id = id;
-        } else if (imm.agente_id === id) {
-          updatedImm.agente_id = null;
+
+        // Agente
+        const isGestito = selectedGestiti.includes(Number(imm.id));
+        const agentIds = imm.agente_id ? String(imm.agente_id).split(',').map(s => s.trim()).filter(Boolean) : [];
+        const containsThisAgent = agentIds.includes(String(id));
+        if (isGestito && !containsThisAgent) {
+          updatedImm.agente_id = Array.from(new Set([...agentIds, String(id)])).join(',');
+          changed = true;
+        } else if (!isGestito && containsThisAgent) {
+          const filtered = agentIds.filter(s => s !== String(id));
+          updatedImm.agente_id = filtered.length > 0 ? filtered.join(',') : null;
+          changed = true;
         }
-        return updatedImm;
+
+        return changed ? updatedImm : imm;
       }));
     } else {
       setContatti([...contatti, localFields]);
@@ -1320,13 +1339,17 @@ export default function App() {
 
       setImmobili(prevImmobili => prevImmobili.map(imm => {
         let updatedImm = { ...imm };
+        let changed = false;
         if (selectedPosseduti.includes(Number(imm.id))) {
           updatedImm.proprietario_id = finalId;
+          changed = true;
         }
         if (selectedGestiti.includes(Number(imm.id))) {
-          updatedImm.agente_id = finalId;
+          const agentIds = imm.agente_id ? String(imm.agente_id).split(',').map(s => s.trim()).filter(Boolean) : [];
+          updatedImm.agente_id = Array.from(new Set([...agentIds, String(finalId)])).join(',');
+          changed = true;
         }
-        return updatedImm;
+        return changed ? updatedImm : imm;
       }));
     }
     if (addingContactForVisit) {
@@ -1921,6 +1944,16 @@ export default function App() {
     return String(val);
   };
 
+  const parseIds = (val) => {
+    if (!val) return [];
+    return String(val)
+      .split(',')
+      .map(id => id.trim())
+      .filter(Boolean)
+      .map(id => Number(id))
+      .filter(id => !isNaN(id));
+  };
+
   // --- HANDLERS FOR IMMOBILI ---
   const handleSaveImmobile = async (e) => {
     e.preventDefault();
@@ -2339,6 +2372,86 @@ export default function App() {
           setImmobili(immobili.map(item => item.id === id ? record : item));
           triggerToast("Immobile aggiornato nel database");
 
+          // Sync contatti table array columns for owner/agent changes
+          const oldOwnerId = existing ? existing.proprietario_id : null;
+          const newOwnerId = record.proprietario_id;
+          const oldAgentId = existing ? existing.agente_id : null;
+          const newAgentId = record.agente_id;
+
+          const oldOwnerIds = oldOwnerId ? [Number(oldOwnerId)] : [];
+          const newOwnerIds = newOwnerId ? [Number(newOwnerId)] : [];
+          const oldAgentIds = parseIds(oldAgentId);
+          const newAgentIds = parseIds(newAgentId);
+
+          const removedOwnerIds = oldOwnerIds.filter(oId => !newOwnerIds.includes(oId));
+          const addedOwnerIds = newOwnerIds.filter(oId => !oldOwnerIds.includes(oId));
+          const removedAgentIds = oldAgentIds.filter(aId => !newAgentIds.includes(aId));
+          const addedAgentIds = newAgentIds.filter(aId => !oldAgentIds.includes(aId));
+
+          setContatti(prevContatti => prevContatti.map(c => {
+            let updated = { ...c };
+            let changed = false;
+            
+            // Posseduti
+            if (removedOwnerIds.includes(c.id)) {
+              updated.immobili_posseduti = (c.immobili_posseduti || []).filter(pId => pId !== id);
+              changed = true;
+            }
+            if (addedOwnerIds.includes(c.id)) {
+              const arr = c.immobili_posseduti || [];
+              if (!arr.includes(id)) {
+                updated.immobili_posseduti = [...arr, id];
+                changed = true;
+              }
+            }
+            
+            // Gestiti
+            if (removedAgentIds.includes(c.id)) {
+              updated.immobili_gestiti = (c.immobili_gestiti || []).filter(pId => pId !== id);
+              changed = true;
+            }
+            if (addedAgentIds.includes(c.id)) {
+              const arr = c.immobili_gestiti || [];
+              if (!arr.includes(id)) {
+                updated.immobili_gestiti = [...arr, id];
+                changed = true;
+              }
+            }
+            
+            return changed ? updated : c;
+          }));
+
+          if (supabase) {
+            for (const oId of removedOwnerIds) {
+              const c = contatti.find(item => item.id === oId);
+              if (c) {
+                const nextArr = (c.immobili_posseduti || []).filter(pId => pId !== id);
+                await supabase.from('contatti').update({ immobili_posseduti: nextArr }).eq('id', oId);
+              }
+            }
+            for (const oId of addedOwnerIds) {
+              const c = contatti.find(item => item.id === oId);
+              if (c) {
+                const nextArr = Array.from(new Set([...(c.immobili_posseduti || []), id]));
+                await supabase.from('contatti').update({ immobili_posseduti: nextArr }).eq('id', oId);
+              }
+            }
+            for (const aId of removedAgentIds) {
+              const c = contatti.find(item => item.id === aId);
+              if (c) {
+                const nextArr = (c.immobili_gestiti || []).filter(pId => pId !== id);
+                await supabase.from('contatti').update({ immobili_gestiti: nextArr }).eq('id', aId);
+              }
+            }
+            for (const aId of addedAgentIds) {
+              const c = contatti.find(item => item.id === aId);
+              if (c) {
+                const nextArr = Array.from(new Set([...(c.immobili_gestiti || []), id]));
+                await supabase.from('contatti').update({ immobili_gestiti: nextArr }).eq('id', aId);
+              }
+            }
+          }
+
           if (changes.length > 0 && supabase) {
             const { error: logErr } = await supabase.from('immobili_logs').insert([{
               immobile_id: id,
@@ -2374,6 +2487,47 @@ export default function App() {
           const record = data[0];
           setImmobili([...immobili, record]);
           triggerToast("Immobile salvato nel database");
+
+          const newOwnerIds = record.proprietario_id ? [Number(record.proprietario_id)] : [];
+          const newAgentIds = parseIds(record.agente_id);
+          const newImmId = record.id;
+
+          setContatti(prevContatti => prevContatti.map(c => {
+            let updated = { ...c };
+            let changed = false;
+            if (newOwnerIds.includes(c.id)) {
+              const arr = c.immobili_posseduti || [];
+              if (!arr.includes(newImmId)) {
+                updated.immobili_posseduti = [...arr, newImmId];
+                changed = true;
+              }
+            }
+            if (newAgentIds.includes(c.id)) {
+              const arr = c.immobili_gestiti || [];
+              if (!arr.includes(newImmId)) {
+                updated.immobili_gestiti = [...arr, newImmId];
+                changed = true;
+              }
+            }
+            return changed ? updated : c;
+          }));
+
+          if (supabase) {
+            for (const oId of newOwnerIds) {
+              const c = contatti.find(item => item.id === oId);
+              if (c) {
+                const nextArr = Array.from(new Set([...(c.immobili_posseduti || []), newImmId]));
+                await supabase.from('contatti').update({ immobili_posseduti: nextArr }).eq('id', oId);
+              }
+            }
+            for (const aId of newAgentIds) {
+              const c = contatti.find(item => item.id === aId);
+              if (c) {
+                const nextArr = Array.from(new Set([...(c.immobili_gestiti || []), newImmId]));
+                await supabase.from('contatti').update({ immobili_gestiti: nextArr }).eq('id', aId);
+              }
+            }
+          }
 
           if (supabase) {
             const { error: logErr } = await supabase.from('immobili_logs').insert([{
@@ -2887,47 +3041,67 @@ export default function App() {
             setViewingContatto(record);
           }
 
-          // Rimuove l'associazione per gli immobili precedentemente posseduti/gestiti ma non più selezionati
-          await supabase
-            .from('immobili')
-            .update({ proprietario_id: null })
-            .eq('proprietario_id', id)
-            .not('id', 'in', `(${selectedPosseduti.join(',') || 0})`);
+          const previouslyOwned = immobili.filter(imm => imm.proprietario_id !== null && imm.proprietario_id !== undefined && String(imm.proprietario_id) === String(id));
+          const prevOwnedIds = previouslyOwned.map(imm => imm.id);
+          const toAddOwner = selectedPosseduti.filter(immId => !prevOwnedIds.includes(immId));
+          const toRemoveOwner = prevOwnedIds.filter(immId => !selectedPosseduti.includes(immId));
 
-          await supabase
-            .from('immobili')
-            .update({ agente_id: null })
-            .eq('agente_id', id)
-            .not('id', 'in', `(${selectedGestiti.join(',') || 0})`);
+          const previouslyManaged = immobili.filter(imm => {
+            const agentIds = imm.agente_id ? String(imm.agente_id).split(',').map(s => s.trim()).filter(Boolean) : [];
+            return agentIds.includes(String(id));
+          });
+          const prevManagedIds = previouslyManaged.map(imm => imm.id);
+          const toAddAgent = selectedGestiti.filter(immId => !prevManagedIds.includes(immId));
+          const toRemoveAgent = prevManagedIds.filter(immId => !selectedGestiti.includes(immId));
 
-          // Imposta l'associazione per gli immobili correnti
-          if (selectedPosseduti.length > 0) {
-            await supabase
-              .from('immobili')
-              .update({ proprietario_id: id })
-              .in('id', selectedPosseduti);
+          for (const immId of toAddOwner) {
+            await supabase.from('immobili').update({ proprietario_id: id }).eq('id', immId);
           }
-          if (selectedGestiti.length > 0) {
-            await supabase
-              .from('immobili')
-              .update({ agente_id: id })
-              .in('id', selectedGestiti);
+          for (const immId of toRemoveOwner) {
+            await supabase.from('immobili').update({ proprietario_id: null }).eq('id', immId);
           }
 
-          // Aggiorna lo stato locale degli immobili
+          for (const immId of toAddAgent) {
+            const imm = immobili.find(item => item.id === immId);
+            if (imm) {
+              const currentAgents = imm.agente_id ? String(imm.agente_id).split(',').map(s => s.trim()).filter(Boolean) : [];
+              const nextAgents = Array.from(new Set([...currentAgents, String(id)])).join(',');
+              await supabase.from('immobili').update({ agente_id: nextAgents }).eq('id', immId);
+            }
+          }
+          for (const immId of toRemoveAgent) {
+            const imm = immobili.find(item => item.id === immId);
+            if (imm) {
+              const currentAgents = imm.agente_id ? String(imm.agente_id).split(',').map(s => s.trim()).filter(Boolean) : [];
+              const nextAgents = currentAgents.filter(s => s !== String(id)).join(',');
+              await supabase.from('immobili').update({ agente_id: nextAgents || null }).eq('id', immId);
+            }
+          }
+
           setImmobili(prevImmobili => prevImmobili.map(imm => {
             let updatedImm = { ...imm };
-            if (selectedPosseduti.includes(Number(imm.id))) {
+            let changed = false;
+
+            if (toAddOwner.includes(imm.id)) {
               updatedImm.proprietario_id = id;
-            } else if (imm.proprietario_id === id) {
+              changed = true;
+            } else if (toRemoveOwner.includes(imm.id)) {
               updatedImm.proprietario_id = null;
+              changed = true;
             }
-            if (selectedGestiti.includes(Number(imm.id))) {
-              updatedImm.agente_id = id;
-            } else if (imm.agente_id === id) {
-              updatedImm.agente_id = null;
+
+            if (toAddAgent.includes(imm.id)) {
+              const currentAgents = imm.agente_id ? String(imm.agente_id).split(',').map(s => s.trim()).filter(Boolean) : [];
+              updatedImm.agente_id = Array.from(new Set([...currentAgents, String(id)])).join(',');
+              changed = true;
+            } else if (toRemoveAgent.includes(imm.id)) {
+              const currentAgents = imm.agente_id ? String(imm.agente_id).split(',').map(s => s.trim()).filter(Boolean) : [];
+              const nextAgents = currentAgents.filter(s => s !== String(id)).join(',');
+              updatedImm.agente_id = nextAgents || null;
+              changed = true;
             }
-            return updatedImm;
+
+            return changed ? updatedImm : imm;
           }));
 
         } else {
@@ -2950,29 +3124,31 @@ export default function App() {
           }
 
           const newId = record.id;
-          if (selectedPosseduti.length > 0) {
-            await supabase
-              .from('immobili')
-              .update({ proprietario_id: newId })
-              .in('id', selectedPosseduti);
+          for (const immId of selectedPosseduti) {
+            await supabase.from('immobili').update({ proprietario_id: newId }).eq('id', immId);
           }
-          if (selectedGestiti.length > 0) {
-            await supabase
-              .from('immobili')
-              .update({ agente_id: newId })
-              .in('id', selectedGestiti);
+          for (const immId of selectedGestiti) {
+            const imm = immobili.find(item => item.id === immId);
+            if (imm) {
+              const currentAgents = imm.agente_id ? String(imm.agente_id).split(',').map(s => s.trim()).filter(Boolean) : [];
+              const nextAgents = Array.from(new Set([...currentAgents, String(newId)])).join(',');
+              await supabase.from('immobili').update({ agente_id: nextAgents }).eq('id', immId);
+            }
           }
 
-          // Aggiorna lo stato locale degli immobili
           setImmobili(prevImmobili => prevImmobili.map(imm => {
             let updatedImm = { ...imm };
+            let changed = false;
             if (selectedPosseduti.includes(Number(imm.id))) {
               updatedImm.proprietario_id = newId;
+              changed = true;
             }
             if (selectedGestiti.includes(Number(imm.id))) {
-              updatedImm.agente_id = newId;
+              const currentAgents = imm.agente_id ? String(imm.agente_id).split(',').map(s => s.trim()).filter(Boolean) : [];
+              updatedImm.agente_id = Array.from(new Set([...currentAgents, String(newId)])).join(',');
+              changed = true;
             }
-            return updatedImm;
+            return changed ? updatedImm : imm;
           }));
           if (addingContactForVisit) {
             if (addingContactForVisit === 'cliente') {
@@ -3007,8 +3183,13 @@ export default function App() {
 
   const handleEditContatto = (item) => {
     setCurrentContatto(item);
-    setSelectedPosseduti(item.immobili_posseduti || []);
-    setSelectedGestiti(item.immobili_gestiti || []);
+    const ownedIds = immobili.filter(imm => imm.proprietario_id !== null && imm.proprietario_id !== undefined && String(imm.proprietario_id) === String(item.id)).map(imm => imm.id);
+    setSelectedPosseduti(Array.from(new Set([...(item.immobili_posseduti || []), ...ownedIds])));
+    const managedIds = immobili.filter(imm => {
+      const agentIds = imm.agente_id ? String(imm.agente_id).split(',').map(s => s.trim()).filter(Boolean) : [];
+      return agentIds.includes(String(item.id));
+    }).map(imm => imm.id);
+    setSelectedGestiti(Array.from(new Set([...(item.immobili_gestiti || []), ...managedIds])));
     setSearchPossedutiQuery('');
     setSearchGestitiQuery('');
     setActiveContactFormTab('generale');
@@ -4075,7 +4256,7 @@ export default function App() {
                   </div>
                   <button
                     onClick={handleCloseImmobileDetail}
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-sm text-[#86868B] hover:text-[#1D1D1F] hover:bg-black/5 transition-all duration-200"
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-sm text-[#86868B] hover:text-[#1D1D1F] hover:bg-black/5 transition-all duration-200 flex-shrink-0"
                     style={{ backdropFilter: 'blur(10px)', background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(0,0,0,0.06)' }}
                   >
                     ✕
@@ -4375,7 +4556,7 @@ export default function App() {
 
                         {/* Responsabile Oggetto */}
                         <div className="glass-panel p-4 rounded-2xl flex flex-col min-h-[160px]">
-                          <span className="block text-[9px] uppercase font-bold text-[#86868B] mb-2">responsabile oggetto</span>
+                          <span className="block text-[9px] uppercase font-bold text-[#86868B] mb-2">Agente</span>
                           {(() => {
                             const agentIds = viewingImmobile.agente_id ? String(viewingImmobile.agente_id).split(',').map(id => id.trim()).filter(Boolean) : [];
                             if (agentIds.length === 0) {
@@ -4532,26 +4713,26 @@ export default function App() {
 
                             <div className="p-4 bg-gradient-to-br from-[#0071E3]/5 to-[#00C7FF]/5 border border-[#0071E3]/15 rounded-xl space-y-3">
                               <span className="block text-[9px] text-[#0071E3] font-black uppercase tracking-wider">Riepilogo Spettanze Stimato</span>
-                              <div className="grid grid-cols-2 gap-3 text-xs">
-                                <div className="flex justify-between border-b border-black/5 pb-1">
-                                  <span className="text-gray-500 font-medium">Prezzo Immobile</span>
-                                  <span className="font-bold text-[#1D1D1F]">{formatVal(prezzo)}</span>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                                <div className="flex justify-between border-b border-black/5 pb-1 gap-2">
+                                  <span className="text-gray-500 font-medium whitespace-nowrap">Prezzo Immobile</span>
+                                  <span className="font-bold text-[#1D1D1F] text-right">{formatVal(prezzo)}</span>
                                 </div>
-                                <div className="flex justify-between border-b border-black/5 pb-1">
-                                  <span className="text-gray-500 font-medium">Provvigione Lorda</span>
-                                  <span className="font-bold text-[#1D1D1F]">{formatVal(calcoli.provLorda)}</span>
+                                <div className="flex justify-between border-b border-black/5 pb-1 gap-2">
+                                  <span className="text-gray-500 font-medium whitespace-nowrap">Provvigione Lorda</span>
+                                  <span className="font-bold text-[#1D1D1F] text-right">{formatVal(calcoli.provLorda)}</span>
                                 </div>
-                                <div className="flex justify-between border-b border-black/5 pb-1">
-                                  <span className="text-gray-500 font-medium">Quota Partner Ext.</span>
-                                  <span className="font-bold text-[#FF9500]">{formatVal(calcoli.quotaCollab)}</span>
+                                <div className="flex justify-between border-b border-black/5 pb-1 gap-2">
+                                  <span className="text-gray-500 font-medium whitespace-nowrap">Quota Partner Ext.</span>
+                                  <span className="font-bold text-[#FF9500] text-right">{formatVal(calcoli.quotaCollab)}</span>
                                 </div>
-                                <div className="flex justify-between border-b border-black/5 pb-1">
-                                  <span className="text-gray-500 font-medium">Quota Segnalatore</span>
-                                  <span className="font-bold text-[#FF3B30]">{formatVal(calcoli.quotaSegnalatore)}</span>
+                                <div className="flex justify-between border-b border-black/5 pb-1 gap-2">
+                                  <span className="text-gray-500 font-medium whitespace-nowrap">Quota Segnalatore</span>
+                                  <span className="font-bold text-[#FF3B30] text-right">{formatVal(calcoli.quotaSegnalatore)}</span>
                                 </div>
-                                <div className="col-span-2 flex justify-between pt-1 font-bold text-sm">
-                                  <span className="text-[#0071E3] font-bold">Quota Home Lab Netta</span>
-                                  <span className="text-[#0071E3] font-black">{formatVal(calcoli.quotaHomeLab)}</span>
+                                <div className="col-span-1 md:col-span-2 flex justify-between pt-1 font-bold text-sm gap-2">
+                                  <span className="text-[#0071E3] font-bold whitespace-nowrap">Quota Home Lab Netta</span>
+                                  <span className="text-[#0071E3] font-black text-right">{formatVal(calcoli.quotaHomeLab)}</span>
                                 </div>
                               </div>
                             </div>
@@ -4591,7 +4772,7 @@ export default function App() {
                                       <span className="text-[10px] text-gray-500 block pl-4 italic">{partnerObj.societa}</span>
                                     )}
                                   </div>
-                                  <span className="text-[10px] bg-[#FF9500]/10 text-[#FF9500] px-2 py-0.5 rounded-full font-bold">Split {viewingImmobile.collab_valore}%</span>
+                                  <span className="text-[10px] bg-[#FF9500]/10 text-[#FF9500] px-2 py-0.5 rounded-full font-bold">Split {String(viewingImmobile.collab_valore ?? 0).replace('.', ',')}%</span>
                                 </div>
                                 <div className="mt-1 text-[10px] text-[#86868B] space-y-0.5 pl-4 border-l border-black/5">
                                   <p>📞 {partnerObj.telefono || 'Assente'}</p>
@@ -4655,7 +4836,7 @@ export default function App() {
                                       <span className="text-[10px] text-gray-500 block pl-4 italic">{segnObj.societa}</span>
                                     )}
                                   </div>
-                                  <span className="text-[10px] bg-[#FF3B30]/10 text-[#FF3B30] px-2 py-0.5 rounded-full font-bold">Split {viewingImmobile.segnalatore_valore}%</span>
+                                  <span className="text-[10px] bg-[#FF3B30]/10 text-[#FF3B30] px-2 py-0.5 rounded-full font-bold">Split {String(viewingImmobile.segnalatore_valore ?? 0).replace('.', ',')}%</span>
                                 </div>
                                 <div className="mt-1 text-[10px] text-[#86868B] space-y-0.5 pl-4 border-l border-black/5">
                                   <p>📞 {segnObj.telefono || 'Assente'}</p>
@@ -5100,7 +5281,7 @@ export default function App() {
                           {(() => {
                             const owned = immobili.filter(imm =>
                               (viewingContatto.immobili_posseduti && viewingContatto.immobili_posseduti.includes(imm.id)) ||
-                              imm.proprietario_id === viewingContatto.id
+                              (imm.proprietario_id !== null && imm.proprietario_id !== undefined && String(imm.proprietario_id) === String(viewingContatto.id))
                             );
                             if (owned.length === 0) return <p className="text-xs text-gray-400 italic pl-1">Nessun immobile posseduto collegato.</p>;
                             return owned.map(imm => (
@@ -5126,10 +5307,11 @@ export default function App() {
                         <div className="space-y-2 pt-2">
                           <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Immobili Gestiti (Agente)</span>
                           {(() => {
-                            const managed = immobili.filter(imm =>
-                              (viewingContatto.immobili_gestiti && viewingContatto.immobili_gestiti.includes(imm.id)) ||
-                              imm.agente_id === viewingContatto.id
-                            );
+                            const managed = immobili.filter(imm => {
+                              const agentIds = imm.agente_id ? String(imm.agente_id).split(',').map(s => s.trim()).filter(Boolean) : [];
+                              return (viewingContatto.immobili_gestiti && viewingContatto.immobili_gestiti.includes(imm.id)) ||
+                                     agentIds.includes(String(viewingContatto.id));
+                            });
                             if (managed.length === 0) return <p className="text-xs text-gray-400 italic pl-1">Nessun immobile gestito collegato.</p>;
                             return managed.map(imm => (
                               <div
@@ -5567,7 +5749,7 @@ export default function App() {
 
           {/* 1. MODALE IMMOBILI (FORM COMPLETO PER CREAZIONE/MODIFICA) */}
           {isImmobileModalOpen && (
-            <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 backdrop-blur-sm p-0 md:p-4">
+            <div className={`fixed inset-0 ${addingPropertyForContact ? 'z-[70]' : 'z-[60]'} flex items-center justify-center bg-black/30 backdrop-blur-sm p-0 md:p-4`}>
               <div className="glass-modal w-full max-w-3xl rounded-none md:rounded-3xl shadow-2xl overflow-hidden my-0 md:my-8 h-full md:h-[680px] flex flex-col text-[#1D1D1F]">
 
                 {/* Header con gradiente sottile */}
@@ -6462,7 +6644,7 @@ export default function App() {
                         <div className="glass-panel p-5 rounded-2xl space-y-4 relative z-10">
                           <div className="flex items-center gap-2 pb-1 border-b border-black/5">
                             <span className="text-sm">👥</span>
-                            <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Responsabile Oggetto</span>
+                            <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Agente</span>
                           </div>
 
                           <div>
@@ -6812,11 +6994,16 @@ export default function App() {
                               <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Valore Provvigione</label>
                               <div className="relative">
                                 <input
-                                  type="number"
-                                  step="any"
+                                  type="text"
+                                  inputMode="decimal"
                                   name="provvigione_valore"
                                   value={formProvvigioneValore}
-                                  onChange={(e) => setFormProvvigioneValore(Number(e.target.value) || 0)}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    if (/^[0-9]*[.,]?[0-9]*$/.test(val)) {
+                                      setFormProvvigioneValore(val);
+                                    }
+                                  }}
                                   className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F]"
                                 />
                                 <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold text-[#86868B]">
@@ -6926,11 +7113,16 @@ export default function App() {
                                 <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Quota Split Partner (%)</label>
                                 <div className="relative">
                                   <input
-                                    type="number"
-                                    step="any"
+                                    type="text"
+                                    inputMode="decimal"
                                     name="collab_valore"
                                     value={formCollabValore}
-                                    onChange={(e) => setFormCollabValore(Number(e.target.value) || 0)}
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      if (/^[0-9]*[.,]?[0-9]*$/.test(val)) {
+                                        setFormCollabValore(val);
+                                      }
+                                    }}
                                     className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F]"
                                   />
                                   <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold text-[#86868B]">%</span>
@@ -7091,11 +7283,16 @@ export default function App() {
                                 <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Provvigione Segnalatore (%)</label>
                                 <div className="relative">
                                   <input
-                                    type="number"
-                                    step="any"
+                                    type="text"
+                                    inputMode="decimal"
                                     name="segnalatore_valore"
                                     value={formSegnalatoreValore}
-                                    onChange={(e) => setFormSegnalatoreValore(Number(e.target.value) || 0)}
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      if (/^[0-9]*[.,]?[0-9]*$/.test(val)) {
+                                        setFormSegnalatoreValore(val);
+                                      }
+                                    }}
                                     className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F]"
                                   />
                                   <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold text-[#86868B]">%</span>
@@ -7415,7 +7612,7 @@ export default function App() {
 
           {/* 2. MODALE CONTATTI (CREAZIONE E MODIFICA) */}
           {isContattoModalOpen && (
-            <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 backdrop-blur-sm p-0 md:p-4">
+            <div className={`fixed inset-0 ${addingContactForVisit ? 'z-[70]' : 'z-[60]'} flex items-center justify-center bg-black/30 backdrop-blur-sm p-0 md:p-4`}>
               <div className="glass-modal w-full max-w-2xl rounded-none md:rounded-3xl shadow-2xl overflow-hidden h-full md:h-[660px] flex flex-col text-[#1D1D1F]">
 
                 {/* Header con gradiente sottile */}
@@ -7433,7 +7630,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => setIsContattoModalOpen(false)}
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-sm text-[#86868B] hover:text-[#1D1D1F] hover:bg-black/5 transition-all duration-200"
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-sm text-[#86868B] hover:text-[#1D1D1F] hover:bg-black/5 transition-all duration-200 flex-shrink-0"
                     style={{ backdropFilter: 'blur(10px)', background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(0,0,0,0.06)' }}
                   >
                     ✕
@@ -7466,8 +7663,8 @@ export default function App() {
                    <div className="flex-1 overflow-y-auto p-6 space-y-5">
                      {currentContatto && <input type="hidden" name="id" value={currentContatto.id} />}
 
-                     {activeContactFormTab === 'generale' && (
-                       <>
+                      <div className={activeContactFormTab === 'generale' ? 'space-y-5 animate-fade-in' : 'hidden'}>
+
                          {/* Informazioni Personali */}
                          <div className="glass-panel p-5 rounded-2xl space-y-4">
                            <div className="flex items-center gap-2 pb-1 border-b border-black/5">
@@ -7594,316 +7791,263 @@ export default function App() {
                              className="w-full p-3.5 glass-input rounded-xl text-sm focus:outline-none resize-none"
                            />
                          </div>
-                       </>
-                     )}
+                      </div>
 
-                     {activeContactFormTab === 'immobili' && (
-                       <>
-                         {/* Immobili Posseduti */}
-                         <div className="glass-panel p-5 rounded-2xl space-y-4">
-                           <div className="flex justify-between items-center pb-1 border-b border-black/5">
-                             <div className="flex items-center gap-2">
-                               <span className="text-sm">🔑</span>
-                               <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Immobili Posseduti (Proprietario)</span>
-                             </div>
-                             <button
-                               type="button"
-                               onClick={() => {
-                                 setAddingPropertyForContact({ contactId: currentContatto?.id || 'new', type: 'posseduti' });
-                                 setIsImmobileModalOpen(true);
-                                 setCurrentImmobile(null);
-                                 setSelectedImmobileProprietarioId(currentContatto ? currentContatto.id : null);
-                               }}
-                               className="text-[10px] text-[#0071E3] hover:underline font-semibold"
-                             >
-                               + Aggiungi Immobile
-                             </button>
-                           </div>
 
-                           <input
-                             type="text"
-                             placeholder="🔍 Cerca per nome, codice o comune..."
-                             value={searchPossedutiQuery}
-                             onChange={(e) => setSearchPossedutiQuery(e.target.value)}
-                             className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none"
-                           />
+                      <div className={activeContactFormTab === 'immobili' ? 'space-y-5 animate-fade-in' : 'hidden'}>
 
-                           <div className="max-h-72 overflow-y-auto border border-black/5 rounded-2xl p-2.5 bg-white/20 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                             {immobili.length === 0 ? (
-                               <p className="text-xs text-gray-400 italic col-span-2 text-center py-4">Nessun immobile a catalogo</p>
-                             ) : (
-                               (() => {
-                                 const filtered = immobili.filter(imm =>
-                                   (imm.nome_immobile || '').toLowerCase().includes(searchPossedutiQuery.toLowerCase()) ||
-                                   (imm.comune || '').toLowerCase().includes(searchPossedutiQuery.toLowerCase()) ||
-                                   (imm.codice_immobile || '').toLowerCase().includes(searchPossedutiQuery.toLowerCase())
-                                 );
-                                 if (filtered.length === 0) return <p className="text-[10px] text-gray-400 italic col-span-2 text-center py-4">Nessun risultato</p>;
-                                 return filtered.map(imm => {
-                                   const isSelected = selectedPosseduti.includes(imm.id);
-                                   return (
-                                     <label key={imm.id} className={`relative border rounded-2xl overflow-hidden bg-white flex flex-col cursor-pointer transition-all hover:shadow-md ${isSelected ? 'border-[#0071E3] ring-1 ring-[#0071E3]/25 shadow-sm' : 'border-gray-200 hover:border-gray-300'}`}>
-                                       {/* Floating checkbox */}
-                                       <div className="absolute top-2 right-2 z-20">
-                                         <input
-                                           type="checkbox"
-                                           checked={isSelected}
-                                           onChange={(e) => {
-                                             if (e.target.checked) {
-                                               setSelectedPosseduti([...selectedPosseduti, imm.id]);
-                                             } else {
-                                               setSelectedPosseduti(selectedPosseduti.filter(id => id !== imm.id));
-                                             }
-                                           }}
-                                           className="rounded-full text-[#0071E3] focus:ring-[#0071E3] w-4.5 h-4.5 cursor-pointer shadow-sm bg-white border-gray-300"
-                                         />
-                                       </div>
+                          {/* Immobili Posseduti */}
+                          <div className={`glass-panel p-5 rounded-2xl space-y-4 relative ${isPossedutiSearchFocused ? 'z-30' : 'z-10'}`}>
+                            <div className="flex justify-between items-center pb-1 border-b border-black/5">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm">🔑</span>
+                                <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Immobili Posseduti (Proprietario)</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setAddingPropertyForContact({ contactId: currentContatto?.id || 'new', type: 'posseduti' });
+                                  setIsImmobileModalOpen(true);
+                                  setCurrentImmobile(null);
+                                  setSelectedImmobileProprietarioId(currentContatto ? currentContatto.id : null);
+                                }}
+                                className="text-[10px] text-[#0071E3] hover:underline font-semibold"
+                              >
+                                + Aggiungi Immobile
+                              </button>
+                            </div>
 
-                                       {/* Thumbnail header */}
-                                       <SecureImageBackground
-                                         url={imm.immagine_di_riferimento}
-                                         className="h-32 bg-cover bg-center relative flex items-end"
-                                       >
-                                         <div className="absolute inset-0 bg-black/10"></div>
+                            {/* Selected Properties */}
+                            {selectedPosseduti.length > 0 && (
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-2">
+                                {selectedPosseduti.map(id => {
+                                  const imm = immobili.find(i => i.id === id);
+                                  if (!imm) return null;
+                                  return (
+                                    <div key={imm.id} className="relative border border-[#0071E3]/25 bg-white p-2 rounded-xl flex items-center gap-3 shadow-sm group">
+                                      <SecureImageBackground
+                                        url={imm.immagine_di_riferimento}
+                                        className="w-14 h-14 rounded-lg bg-cover bg-center shrink-0 border border-gray-100"
+                                      />
+                                      <div className="text-xs leading-tight min-w-0 flex-1">
+                                        <span className="font-bold text-[#1D1D1F] block truncate">
+                                          {imm.nome_immobile}
+                                        </span>
+                                        <span className="block text-[10px] text-[#86868B] mt-0.5">
+                                          {imm.comune} • {imm.codice_immobile}
+                                        </span>
+                                        <span className="block text-[10px] text-[#0071E3] font-semibold mt-0.5">
+                                          {Number(imm.prezzo_di_vendita) > 0
+                                            ? `CHF ${Number(imm.prezzo_di_vendita).toLocaleString('it-CH')}`
+                                            : `CHF ${Number(imm.prezzo_di_affitto).toLocaleString('it-CH')}/mese`
+                                          }
+                                        </span>
+                                      </div>
+                                      <button
+                                        type="button"
+                                        onClick={() => setSelectedPosseduti(selectedPosseduti.filter(pid => pid !== imm.id))}
+                                        className="w-6 h-6 rounded-full hover:bg-red-50 flex items-center justify-center text-[#86868B] hover:text-red-500 transition-all text-xs shrink-0"
+                                        title="Rimuovi"
+                                      >
+                                        ✕
+                                      </button>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
 
-                                         <div className="absolute top-2 left-2 flex gap-1 z-10 flex-wrap">
-                                           <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold tracking-wide uppercase shadow-sm ${imm.stato === 'Disponibile' ? 'bg-[#34C759] text-white' :
-                                             imm.stato === 'In Trattativa' ? 'bg-[#FF9500] text-white' :
-                                               imm.stato === 'Venduto' ? 'bg-[#8E8E93] text-white' :
-                                                 imm.stato === 'Lead' ? 'bg-[#AF52DE] text-white' : 'bg-[#0071E3] text-white'
-                                             }`}>
-                                             {imm.stato}
-                                           </span>
-                                           <span className="bg-black/40 backdrop-blur-md text-white px-1.5 py-0.5 rounded text-[8px] font-semibold tracking-wide shadow-sm">
-                                             {imm.categoria}
-                                           </span>
-                                         </div>
+                            <div className="space-y-2">
+                              <input
+                                type="text"
+                                placeholder="🔍 Cerca immobile per nome, codice o comune..."
+                                value={searchPossedutiQuery}
+                                onChange={(e) => setSearchPossedutiQuery(e.target.value)}
+                                onFocus={() => setIsPossedutiSearchFocused(true)}
+                                onBlur={() => setTimeout(() => setIsPossedutiSearchFocused(false), 200)}
+                                className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none"
+                              />
 
-                                         {!imm.immagine_di_riferimento && (
-                                           <div className="absolute inset-0 flex flex-col items-center justify-center text-[#86868B]/60 select-none z-10 p-2">
-                                             <svg className="w-8 h-8 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1">
-                                               <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                                             </svg>
-                                           </div>
-                                         )}
+                              {isPossedutiSearchFocused && (
+                                <div className="max-h-60 overflow-y-auto border border-black/5 rounded-2xl p-2 bg-[#F5F5F7]/50 flex flex-col gap-2 mt-2">
+                                  {(() => {
+                                    const filtered = immobili.filter(imm =>
+                                      !selectedPosseduti.includes(imm.id) && (
+                                        (imm.nome_immobile || '').toLowerCase().includes(searchPossedutiQuery.toLowerCase()) ||
+                                        (imm.comune || '').toLowerCase().includes(searchPossedutiQuery.toLowerCase()) ||
+                                        (imm.codice_immobile || '').toLowerCase().includes(searchPossedutiQuery.toLowerCase())
+                                      )
+                                    );
+                                    if (filtered.length === 0) {
+                                      return (
+                                        <div className="p-3 text-center text-xs text-[#86868B] italic">
+                                          Nessun immobile disponibile
+                                        </div>
+                                      );
+                                    }
+                                    return filtered.map(imm => (
+                                      <div
+                                        key={imm.id}
+                                        onMouseDown={() => {
+                                          setSelectedPosseduti([...selectedPosseduti, imm.id]);
+                                          setSearchPossedutiQuery('');
+                                        }}
+                                        className="bg-white p-2 rounded-xl border border-gray-200 flex items-center gap-3 cursor-pointer hover:border-[#0071E3] hover:shadow-md transition-all group"
+                                      >
+                                        <SecureImageBackground
+                                          url={imm.immagine_di_riferimento}
+                                          className="w-14 h-14 rounded-lg bg-cover bg-center shrink-0 border border-gray-100"
+                                        />
+                                        <div className="text-xs leading-tight min-w-0 flex-1">
+                                          <span className="font-bold text-[#1D1D1F] block truncate group-hover:text-[#0071E3] transition-colors">
+                                            {imm.nome_immobile}
+                                          </span>
+                                          <span className="block text-[10px] text-[#86868B] mt-0.5">
+                                            {imm.comune} • {imm.codice_immobile}
+                                          </span>
+                                          <span className="block text-[10px] text-[#0071E3] font-semibold mt-0.5">
+                                            {Number(imm.prezzo_di_vendita) > 0
+                                              ? `CHF ${Number(imm.prezzo_di_vendita).toLocaleString('it-CH')}`
+                                              : `CHF ${Number(imm.prezzo_di_affitto).toLocaleString('it-CH')}/mese`
+                                            }
+                                            {Number(imm.numero_di_locali) > 0 && ` • ${imm.numero_di_locali} Locali`}
+                                            {Number(imm.superficie_abitabile) > 0 && ` • ${imm.superficie_abitabile} m²`}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    ));
+                                  })()}
+                                </div>
+                              )}
+                            </div>
+                          </div>
 
-                                         <div className="absolute bottom-2 left-2 text-white text-[9px] font-bold drop-shadow-md z-10">
-                                           {imm.comune}{imm.nazione ? `, ${imm.nazione}` : ''}
-                                         </div>
+                          {/* Immobili Gestiti */}
+                          <div className={`glass-panel p-5 rounded-2xl space-y-4 relative ${isGestitiSearchFocused ? 'z-30' : 'z-10'}`}>
+                            <div className="flex justify-between items-center pb-1 border-b border-black/5">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm">💼</span>
+                                <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Immobili Gestiti (Agente)</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setAddingPropertyForContact({ contactId: currentContatto?.id || 'new', type: 'gestiti' });
+                                  setIsImmobileModalOpen(true);
+                                  setCurrentImmobile(null);
+                                  setSelectedImmobileProprietarioId(null);
+                                }}
+                                className="text-[10px] text-[#0071E3] hover:underline font-semibold"
+                              >
+                                + Aggiungi Immobile
+                              </button>
+                            </div>
 
-                                         <span className="absolute bottom-2 right-2 bg-[#0071E3] text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full shadow-sm z-10">
-                                           {imm.immobile_in ? imm.immobile_in.join(' / ') : ''}
-                                         </span>
-                                       </SecureImageBackground>
+                            {/* Selected Properties */}
+                            {selectedGestiti.length > 0 && (
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-2">
+                                {selectedGestiti.map(id => {
+                                  const imm = immobili.find(i => i.id === id);
+                                  if (!imm) return null;
+                                  return (
+                                    <div key={imm.id} className="relative border border-[#0071E3]/25 bg-white p-2 rounded-xl flex items-center gap-3 shadow-sm group">
+                                      <SecureImageBackground
+                                        url={imm.immagine_di_riferimento}
+                                        className="w-14 h-14 rounded-lg bg-cover bg-center shrink-0 border border-gray-100"
+                                      />
+                                      <div className="text-xs leading-tight min-w-0 flex-1">
+                                        <span className="font-bold text-[#1D1D1F] block truncate">
+                                          {imm.nome_immobile}
+                                        </span>
+                                        <span className="block text-[10px] text-[#86868B] mt-0.5">
+                                          {imm.comune} • {imm.codice_immobile}
+                                        </span>
+                                        <span className="block text-[10px] text-[#0071E3] font-semibold mt-0.5">
+                                          {Number(imm.prezzo_di_vendita) > 0
+                                            ? `CHF ${Number(imm.prezzo_di_vendita).toLocaleString('it-CH')}`
+                                            : `CHF ${Number(imm.prezzo_di_affitto).toLocaleString('it-CH')}/mese`
+                                          }
+                                        </span>
+                                      </div>
+                                      <button
+                                        type="button"
+                                        onClick={() => setSelectedGestiti(selectedGestiti.filter(pid => pid !== imm.id))}
+                                        className="w-6 h-6 rounded-full hover:bg-red-50 flex items-center justify-center text-[#86868B] hover:text-red-500 transition-all text-xs shrink-0"
+                                        title="Rimuovi"
+                                      >
+                                        ✕
+                                      </button>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
 
-                                       {/* Details */}
-                                       <div className="p-3 flex-1 flex flex-col justify-between space-y-2">
-                                         <div>
-                                           <h4 className="font-bold text-xs text-[#1D1D1F] line-clamp-1 leading-tight group-hover:text-[#0071E3] transition-colors">
-                                             {imm.nome_immobile}
-                                           </h4>
-                                           <p className="text-[10px] text-[#86868B] leading-snug line-clamp-2 mt-0.5">
-                                             {imm.descrizione_immobile}
-                                           </p>
-                                         </div>
+                            <div className="space-y-2">
+                              <input
+                                type="text"
+                                placeholder="🔍 Cerca immobile per nome, codice o comune..."
+                                value={searchGestitiQuery}
+                                onChange={(e) => setSearchGestitiQuery(e.target.value)}
+                                onFocus={() => setIsGestitiSearchFocused(true)}
+                                onBlur={() => setTimeout(() => setIsGestitiSearchFocused(false), 200)}
+                                className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none"
+                              />
 
-                                         {/* Tech Metrics Grid */}
-                                         <div className="grid grid-cols-3 gap-1 border-t border-b border-[#F5F5F7] py-1.5 text-center">
-                                           <div>
-                                             <span className="block text-[8px] font-medium text-[#86868B] uppercase tracking-wider">Codice</span>
-                                             <span className="text-[9px] font-semibold text-[#1D1D1F]">{imm.codice_immobile || 'N/D'}</span>
-                                           </div>
-                                           <div>
-                                             <span className="block text-[8px] font-medium text-[#86868B] uppercase tracking-wider">Locali</span>
-                                             <span className="text-[9px] font-semibold text-[#1D1D1F]">{imm.numero_di_locali}</span>
-                                           </div>
-                                           <div>
-                                             <span className="block text-[8px] font-medium text-[#86868B] uppercase tracking-wider">Superficie</span>
-                                             <span className="text-[9px] font-semibold text-[#1D1D1F]">
-                                               {imm.superficie_abitabile ? `${imm.superficie_abitabile} m²` : '—'}
-                                             </span>
-                                           </div>
-                                         </div>
-
-                                         <div className="space-y-0.5 pt-0.5">
-                                           {Number(imm.prezzo_di_vendita) > 0 && (
-                                             <div className="text-[10px] font-extrabold text-[#1D1D1F]">
-                                               <span className="text-[8px] text-[#86868B] font-semibold uppercase mr-1">Vendita:</span>
-                                               CHF {Number(imm.prezzo_di_vendita).toLocaleString('it-CH')}
-                                             </div>
-                                           )}
-                                           {Number(imm.prezzo_di_affitto) > 0 && (
-                                             <div className="text-[10px] font-extrabold text-[#1D1D1F]">
-                                               <span className="text-[8px] text-[#86868B] font-semibold uppercase mr-1">Affitto:</span>
-                                               CHF {Number(imm.prezzo_di_affitto).toLocaleString('it-CH')}/mese
-                                             </div>
-                                           )}
-                                           {!(Number(imm.prezzo_di_vendita) > 0) && !(Number(imm.prezzo_di_affitto) > 0) && (
-                                             <span className="text-[9px] font-semibold text-gray-400 italic">Trattativa Riservata</span>
-                                           )}
-                                         </div>
-                                       </div>
-                                     </label>
-                                   );
-                                 });
-                               })()
-                             )}
-                           </div>
-                         </div>
-
-                         {/* Immobili Gestiti */}
-                         <div className="glass-panel p-5 rounded-2xl space-y-4">
-                           <div className="flex justify-between items-center pb-1 border-b border-black/5">
-                             <div className="flex items-center gap-2">
-                               <span className="text-sm">💼</span>
-                               <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Immobili Gestiti (Agente)</span>
-                             </div>
-                             <button
-                               type="button"
-                               onClick={() => {
-                                 setAddingPropertyForContact({ contactId: currentContatto?.id || 'new', type: 'gestiti' });
-                                 setIsImmobileModalOpen(true);
-                                 setCurrentImmobile(null);
-                                 setSelectedImmobileProprietarioId(null);
-                               }}
-                               className="text-[10px] text-[#0071E3] hover:underline font-semibold"
-                             >
-                               + Aggiungi Immobile
-                             </button>
-                           </div>
-
-                           <input
-                             type="text"
-                             placeholder="🔍 Cerca per nome, codice o comune..."
-                             value={searchGestitiQuery}
-                             onChange={(e) => setSearchGestitiQuery(e.target.value)}
-                             className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none"
-                           />
-
-                           <div className="max-h-72 overflow-y-auto border border-black/5 rounded-2xl p-2.5 bg-white/20 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                             {immobili.length === 0 ? (
-                               <p className="text-xs text-gray-400 italic col-span-2 text-center py-4">Nessun immobile a catalogo</p>
-                             ) : (
-                               (() => {
-                                 const filtered = immobili.filter(imm =>
-                                   (imm.nome_immobile || '').toLowerCase().includes(searchGestitiQuery.toLowerCase()) ||
-                                   (imm.comune || '').toLowerCase().includes(searchGestitiQuery.toLowerCase()) ||
-                                   (imm.codice_immobile || '').toLowerCase().includes(searchGestitiQuery.toLowerCase())
-                                 );
-                                 if (filtered.length === 0) return <p className="text-[10px] text-gray-400 italic col-span-2 text-center py-4">Nessun risultato</p>;
-                                 return filtered.map(imm => {
-                                   const isSelected = selectedGestiti.includes(imm.id);
-                                   return (
-                                     <label key={imm.id} className={`relative border rounded-2xl overflow-hidden bg-white flex flex-col cursor-pointer transition-all hover:shadow-md ${isSelected ? 'border-[#0071E3] ring-1 ring-[#0071E3]/25 shadow-sm' : 'border-gray-200 hover:border-gray-300'}`}>
-                                       {/* Floating checkbox */}
-                                       <div className="absolute top-2 right-2 z-20">
-                                         <input
-                                           type="checkbox"
-                                           checked={isSelected}
-                                           onChange={(e) => {
-                                             if (e.target.checked) {
-                                               setSelectedGestiti([...selectedGestiti, imm.id]);
-                                             } else {
-                                               setSelectedGestiti(selectedGestiti.filter(id => id !== imm.id));
-                                             }
-                                           }}
-                                           className="rounded-full text-[#0071E3] focus:ring-[#0071E3] w-4.5 h-4.5 cursor-pointer shadow-sm bg-white border-gray-300"
-                                         />
-                                       </div>
-
-                                       {/* Thumbnail header */}
-                                       <SecureImageBackground
-                                         url={imm.immagine_di_riferimento}
-                                         className="h-32 bg-cover bg-center relative flex items-end"
-                                       >
-                                         <div className="absolute inset-0 bg-black/10"></div>
-
-                                         <div className="absolute top-2 left-2 flex gap-1 z-10 flex-wrap">
-                                           <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold tracking-wide uppercase shadow-sm ${imm.stato === 'Disponibile' ? 'bg-[#34C759] text-white' :
-                                             imm.stato === 'In Trattativa' ? 'bg-[#FF9500] text-white' :
-                                               imm.stato === 'Venduto' ? 'bg-[#8E8E93] text-white' :
-                                                 imm.stato === 'Lead' ? 'bg-[#AF52DE] text-white' : 'bg-[#0071E3] text-white'
-                                             }`}>
-                                             {imm.stato}
-                                           </span>
-                                           <span className="bg-black/40 backdrop-blur-md text-white px-1.5 py-0.5 rounded text-[8px] font-semibold tracking-wide shadow-sm">
-                                             {imm.categoria}
-                                           </span>
-                                         </div>
-
-                                         {!imm.immagine_di_riferimento && (
-                                           <div className="absolute inset-0 flex flex-col items-center justify-center text-[#86868B]/60 select-none z-10 p-2">
-                                             <svg className="w-8 h-8 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1">
-                                               <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                                             </svg>
-                                           </div>
-                                         )}
-
-                                         <div className="absolute bottom-2 left-2 text-white text-[9px] font-bold drop-shadow-md z-10">
-                                           {imm.comune}{imm.nazione ? `, ${imm.nazione}` : ''}
-                                         </div>
-
-                                         <span className="absolute bottom-2 right-2 bg-[#0071E3] text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full shadow-sm z-10">
-                                           {imm.immobile_in ? imm.immobile_in.join(' / ') : ''}
-                                         </span>
-                                       </SecureImageBackground>
-
-                                       {/* Details */}
-                                       <div className="p-3 flex-1 flex flex-col justify-between space-y-2">
-                                         <div>
-                                           <h4 className="font-bold text-xs text-[#1D1D1F] line-clamp-1 leading-tight group-hover:text-[#0071E3] transition-colors">
-                                             {imm.nome_immobile}
-                                           </h4>
-                                           <p className="text-[10px] text-[#86868B] leading-snug line-clamp-2 mt-0.5">
-                                             {imm.descrizione_immobile}
-                                           </p>
-                                         </div>
-
-                                         {/* Tech Metrics Grid */}
-                                         <div className="grid grid-cols-3 gap-1 border-t border-b border-[#F5F5F7] py-1.5 text-center">
-                                           <div>
-                                             <span className="block text-[8px] font-medium text-[#86868B] uppercase tracking-wider">Codice</span>
-                                             <span className="text-[9px] font-semibold text-[#1D1D1F]">{imm.codice_immobile || 'N/D'}</span>
-                                           </div>
-                                           <div>
-                                             <span className="block text-[8px] font-medium text-[#86868B] uppercase tracking-wider">Locali</span>
-                                             <span className="text-[9px] font-semibold text-[#1D1D1F]">{imm.numero_di_locali}</span>
-                                           </div>
-                                           <div>
-                                             <span className="block text-[8px] font-medium text-[#86868B] uppercase tracking-wider">Superficie</span>
-                                             <span className="text-[9px] font-semibold text-[#1D1D1F]">
-                                               {imm.superficie_abitabile ? `${imm.superficie_abitabile} m²` : '—'}
-                                             </span>
-                                           </div>
-                                         </div>
-
-                                         <div className="space-y-0.5 pt-0.5">
-                                           {Number(imm.prezzo_di_vendita) > 0 && (
-                                             <div className="text-[10px] font-extrabold text-[#1D1D1F]">
-                                               <span className="text-[8px] text-[#86868B] font-semibold uppercase mr-1">Vendita:</span>
-                                               CHF {Number(imm.prezzo_di_vendita).toLocaleString('it-CH')}
-                                             </div>
-                                           )}
-                                           {Number(imm.prezzo_di_affitto) > 0 && (
-                                             <div className="text-[10px] font-extrabold text-[#1D1D1F]">
-                                               <span className="text-[8px] text-[#86868B] font-semibold uppercase mr-1">Affitto:</span>
-                                               CHF {Number(imm.prezzo_di_affitto).toLocaleString('it-CH')}/mese
-                                             </div>
-                                           )}
-                                           {!(Number(imm.prezzo_di_vendita) > 0) && !(Number(imm.prezzo_di_affitto) > 0) && (
-                                             <span className="text-[9px] font-semibold text-gray-400 italic">Trattativa Riservata</span>
-                                           )}
-                                         </div>
-                                       </div>
-                                     </label>
-                                   );
-                                 });
-                               })()
-                             )}
-                           </div>
-                         </div>
-                       </>
-                     )}
+                              {isGestitiSearchFocused && (
+                                <div className="max-h-60 overflow-y-auto border border-black/5 rounded-2xl p-2 bg-[#F5F5F7]/50 flex flex-col gap-2 mt-2">
+                                  {(() => {
+                                    const filtered = immobili.filter(imm =>
+                                      !selectedGestiti.includes(imm.id) && (
+                                        (imm.nome_immobile || '').toLowerCase().includes(searchGestitiQuery.toLowerCase()) ||
+                                        (imm.comune || '').toLowerCase().includes(searchGestitiQuery.toLowerCase()) ||
+                                        (imm.codice_immobile || '').toLowerCase().includes(searchGestitiQuery.toLowerCase())
+                                      )
+                                    );
+                                    if (filtered.length === 0) {
+                                      return (
+                                        <div className="p-3 text-center text-xs text-[#86868B] italic">
+                                          Nessun immobile disponibile
+                                        </div>
+                                      );
+                                    }
+                                    return filtered.map(imm => (
+                                      <div
+                                        key={imm.id}
+                                        onMouseDown={() => {
+                                          setSelectedGestiti([...selectedGestiti, imm.id]);
+                                          setSearchGestitiQuery('');
+                                        }}
+                                        className="bg-white p-2 rounded-xl border border-gray-200 flex items-center gap-3 cursor-pointer hover:border-[#0071E3] hover:shadow-md transition-all group"
+                                      >
+                                        <SecureImageBackground
+                                          url={imm.immagine_di_riferimento}
+                                          className="w-14 h-14 rounded-lg bg-cover bg-center shrink-0 border border-gray-100"
+                                        />
+                                        <div className="text-xs leading-tight min-w-0 flex-1">
+                                          <span className="font-bold text-[#1D1D1F] block truncate group-hover:text-[#0071E3] transition-colors">
+                                            {imm.nome_immobile}
+                                          </span>
+                                          <span className="block text-[10px] text-[#86868B] mt-0.5">
+                                            {imm.comune} • {imm.codice_immobile}
+                                          </span>
+                                          <span className="block text-[10px] text-[#0071E3] font-semibold mt-0.5">
+                                            {Number(imm.prezzo_di_vendita) > 0
+                                              ? `CHF ${Number(imm.prezzo_di_vendita).toLocaleString('it-CH')}`
+                                              : `CHF ${Number(imm.prezzo_di_affitto).toLocaleString('it-CH')}/mese`
+                                            }
+                                            {Number(imm.numero_di_locali) > 0 && ` • ${imm.numero_di_locali} Locali`}
+                                            {Number(imm.superficie_abitabile) > 0 && ` • ${imm.superficie_abitabile} m²`}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    ));
+                                  })()}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                      </div>
                    </div>
 
                   <div className="p-4 sm:p-6 border-t border-white/20 bg-[#F5F5F7]/80 backdrop-blur-md flex flex-col sm:flex-row gap-3 sm:justify-between items-stretch sm:items-center">

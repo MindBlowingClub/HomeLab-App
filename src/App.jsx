@@ -3960,7 +3960,7 @@ export default function App() {
 
 
   return (
-    <div className="relative min-h-screen liquid-bg text-slate-100 font-sans antialiased overflow-hidden selection:bg-[#0071E3] selection:text-white">
+    <div className="relative w-full h-full liquid-bg text-slate-100 font-sans antialiased overflow-hidden selection:bg-[#0071E3] selection:text-white">
 
       {/* Background Decorative Glows for overall premium style */}
       <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[50%] rounded-full bg-indigo-900/10 blur-[130px] pointer-events-none" />

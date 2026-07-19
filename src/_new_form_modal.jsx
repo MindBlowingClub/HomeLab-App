@@ -480,6 +480,7 @@
                         >
                           <option value="Non in Esclusiva">Non in Esclusiva</option>
                           <option value="In Esclusiva">In Esclusiva</option>
+                          <option value="Misto">Misto</option>
                         </select>
                       </div>
 

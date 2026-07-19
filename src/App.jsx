@@ -529,6 +529,11 @@ export default function App() {
   const [contattoLogs, setContattoLogs] = useState([]);
   const [activeContactDetailTab, setActiveContactDetailTab] = useState('generale');
   const [activeContactFormTab, setActiveContactFormTab] = useState('generale');
+  const [contactRoles, setContactRoles] = useState([]);
+  const [ricercaCategoria, setRicercaCategoria] = useState('');
+  const [ricercaTipo, setRicercaTipo] = useState([]);
+  const [ricercaCaratteristiche, setRicercaCaratteristiche] = useState([]);
+  const [ricercaResidenza, setRicercaResidenza] = useState([]);
 
   // PWA Install states and detection
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
@@ -796,6 +801,10 @@ export default function App() {
   // Modals for Contatti and Visite
   const [currentContatto, setCurrentContatto] = useState(null);
   const [isContattoModalOpen, setIsContattoModalOpen] = useState(false);
+  const [provenienzaTipo, setProvenienzaTipo] = useState('');
+  const [provenienzaSegnalatore, setProvenienzaSegnalatore] = useState(null);
+  const [searchProvenienzaQuery, setSearchProvenienzaQuery] = useState('');
+  const [isProvenienzaSearchFocused, setIsProvenienzaSearchFocused] = useState(false);
   const [selectedPosseduti, setSelectedPosseduti] = useState([]);
   const [selectedGestiti, setSelectedGestiti] = useState([]);
   const [selectedVisite, setSelectedVisite] = useState([]);
@@ -1390,6 +1399,8 @@ export default function App() {
         setSelectedImmobileCollabId(finalId);
       } else if (addingContactForVisit === 'segnalatore') {
         setSelectedImmobileSegnalatoreId(finalId);
+      } else if (addingContactForVisit === 'provenienza_segnalatore') {
+        setProvenienzaSegnalatore(prev => contatti.find(c => c.id === finalId) || { id: finalId, nome: fields?.nome || '', cognome: fields?.cognome || '', societa: fields?.societa || '', ruolo: fields?.ruolo || [] });
       }
       setAddingContactForVisit(null);
     }
@@ -2971,6 +2982,12 @@ export default function App() {
       cognome: formData.get('cognome'),
       nome: formData.get('nome'),
       societa: formData.get('societa'),
+      indirizzo: formData.get('indirizzo'),
+      npa: formData.get('npa'),
+      comune: formData.get('comune'),
+      nazione: formData.get('nazione'),
+      provenienza_tipo: formData.get('provenienza_tipo') || null,
+      provenienza_contatto_id: provenienzaSegnalatore ? provenienzaSegnalatore.id : null,
       ruolo,
       telefono: formData.get('telefono'),
       mail: formData.get('mail'),
@@ -2978,7 +2995,21 @@ export default function App() {
       note_contatto: formData.get('note_contatto'),
       immobili_posseduti: selectedPosseduti,
       immobili_gestiti: selectedGestiti,
-      immobili_visite: selectedVisite
+      immobili_visite: selectedVisite,
+      ricerca_categoria: ricercaCategoria || null,
+      ricerca_tipo: ricercaTipo,
+      ricerca_prezzo_max: formData.get('ricerca_prezzo_max') ? Number(formData.get('ricerca_prezzo_max')) : 0,
+      ricerca_spese_max: formData.get('ricerca_spese_max') ? Number(formData.get('ricerca_spese_max')) : 0,
+      ricerca_superficie_min: formData.get('ricerca_superficie_min') ? Number(formData.get('ricerca_superficie_min')) : 0,
+      ricerca_terreno_min: formData.get('ricerca_terreno_min') ? Number(formData.get('ricerca_terreno_min')) : 0,
+      ricerca_locali_min: formData.get('ricerca_locali_min') ? Number(formData.get('ricerca_locali_min')) : 0,
+      ricerca_bagni_min: formData.get('ricerca_bagni_min') ? Number(formData.get('ricerca_bagni_min')) : 0,
+      ricerca_garage_min: formData.get('ricerca_garage_min') ? Number(formData.get('ricerca_garage_min')) : 0,
+      ricerca_parcheggio_min: formData.get('ricerca_parcheggio_min') ? Number(formData.get('ricerca_parcheggio_min')) : 0,
+      ricerca_residenza: ricercaResidenza,
+      ricerca_stranieri: formData.get('ricerca_stranieri') || 'Indifferente',
+      ricerca_comune: formData.get('ricerca_comune') || null,
+      ricerca_caratteristiche: ricercaCaratteristiche
     };
 
     const isActuallyOffline = isOffline || !navigator.onLine;
@@ -2994,13 +3025,33 @@ export default function App() {
         { key: 'nome', label: 'Nome' },
         { key: 'cognome', label: 'Cognome' },
         { key: 'societa', label: 'Società' },
+        { key: 'indirizzo', label: 'Indirizzo' },
+        { key: 'npa', label: 'NPA' },
+        { key: 'comune', label: 'Comune' },
+        { key: 'nazione', label: 'Nazione' },
+        { key: 'provenienza_tipo', label: 'Provenienza' },
+        { key: 'provenienza_contatto_id', label: 'Contatto Segnalatore' },
         { key: 'ruolo', label: 'Ruolo', type: 'array' },
         { key: 'telefono', label: 'Telefono' },
         { key: 'mail', label: 'Email' },
         { key: 'note_contatto', label: 'Note' },
         { key: 'immobili_posseduti', label: 'Immobili Posseduti', type: 'properties' },
         { key: 'immobili_gestiti', label: 'Immobili Gestiti', type: 'properties' },
-        { key: 'immobili_visite', label: 'Contatto per Visite', type: 'properties' }
+        { key: 'immobili_visite', label: 'Contatto per Visite', type: 'properties' },
+        { key: 'ricerca_categoria', label: 'Ricerca Categoria' },
+        { key: 'ricerca_tipo', label: 'Ricerca Tipo', type: 'array' },
+        { key: 'ricerca_prezzo_max', label: 'Ricerca Prezzo Massimo' },
+        { key: 'ricerca_spese_max', label: 'Ricerca Spese Massime' },
+        { key: 'ricerca_superficie_min', label: 'Ricerca Superficie Minima' },
+        { key: 'ricerca_terreno_min', label: 'Ricerca Superficie Terreno Minima' },
+        { key: 'ricerca_locali_min', label: 'Ricerca Locali Minimi' },
+        { key: 'ricerca_bagni_min', label: 'Ricerca Bagni Minimi' },
+        { key: 'ricerca_garage_min', label: 'Ricerca Garage Minimi' },
+        { key: 'ricerca_parcheggio_min', label: 'Ricerca Parcheggio Minimo' },
+        { key: 'ricerca_residenza', label: 'Ricerca Residenza', type: 'array' },
+        { key: 'ricerca_stranieri', label: 'Ricerca Vendibile a Stranieri' },
+        { key: 'ricerca_comune', label: 'Ricerca Comune/Località' },
+        { key: 'ricerca_caratteristiche', label: 'Ricerca Caratteristiche', type: 'array' }
       ];
 
       const formatContattoVal = (val, type) => {
@@ -3036,13 +3087,33 @@ export default function App() {
         { key: 'nome', label: 'Nome' },
         { key: 'cognome', label: 'Cognome' },
         { key: 'societa', label: 'Società' },
+        { key: 'indirizzo', label: 'Indirizzo' },
+        { key: 'npa', label: 'NPA' },
+        { key: 'comune', label: 'Comune' },
+        { key: 'nazione', label: 'Nazione' },
+        { key: 'provenienza_tipo', label: 'Provenienza' },
+        { key: 'provenienza_contatto_id', label: 'Contatto Segnalatore' },
         { key: 'ruolo', label: 'Ruolo', type: 'array' },
         { key: 'telefono', label: 'Telefono' },
         { key: 'mail', label: 'Email' },
         { key: 'note_contatto', label: 'Note' },
         { key: 'immobili_posseduti', label: 'Immobili Posseduti', type: 'properties' },
         { key: 'immobili_gestiti', label: 'Immobili Gestiti', type: 'properties' },
-        { key: 'immobili_visite', label: 'Contatto per Visite', type: 'properties' }
+        { key: 'immobili_visite', label: 'Contatto per Visite', type: 'properties' },
+        { key: 'ricerca_categoria', label: 'Ricerca Categoria' },
+        { key: 'ricerca_tipo', label: 'Ricerca Tipo', type: 'array' },
+        { key: 'ricerca_prezzo_max', label: 'Ricerca Prezzo Massimo' },
+        { key: 'ricerca_spese_max', label: 'Ricerca Spese Massime' },
+        { key: 'ricerca_superficie_min', label: 'Ricerca Superficie Minima' },
+        { key: 'ricerca_terreno_min', label: 'Ricerca Superficie Terreno Minima' },
+        { key: 'ricerca_locali_min', label: 'Ricerca Locali Minimi' },
+        { key: 'ricerca_bagni_min', label: 'Ricerca Bagni Minimi' },
+        { key: 'ricerca_garage_min', label: 'Ricerca Garage Minimi' },
+        { key: 'ricerca_parcheggio_min', label: 'Ricerca Parcheggio Minimo' },
+        { key: 'ricerca_residenza', label: 'Ricerca Residenza', type: 'array' },
+        { key: 'ricerca_stranieri', label: 'Ricerca Vendibile a Stranieri' },
+        { key: 'ricerca_comune', label: 'Ricerca Comune/Località' },
+        { key: 'ricerca_caratteristiche', label: 'Ricerca Caratteristiche', type: 'array' }
       ];
 
       const formatContattoVal = (val, type) => {
@@ -3270,6 +3341,9 @@ export default function App() {
               setSelectedImmobileCollabId(newId);
             } else if (addingContactForVisit === 'segnalatore') {
               setSelectedImmobileSegnalatoreId(newId);
+            } else if (addingContactForVisit === 'provenienza_segnalatore') {
+              const newContact = data?.[0] || { id: newId, ...fields };
+              setProvenienzaSegnalatore(newContact);
             }
             setAddingContactForVisit(null);
           }
@@ -3288,6 +3362,14 @@ export default function App() {
 
   const handleEditContatto = (item) => {
     setCurrentContatto(item);
+    setProvenienzaTipo(item.provenienza_tipo || '');
+    setProvenienzaSegnalatore(item.provenienza_contatto_id ? (contatti.find(c => Number(c.id) === Number(item.provenienza_contatto_id)) || null) : null);
+    setSearchProvenienzaQuery('');
+    setContactRoles(Array.isArray(item.ruolo) ? item.ruolo : (item.ruolo ? String(item.ruolo).split(',').map(r => r.trim()) : []));
+    setRicercaCategoria(item.ricerca_categoria || '');
+    setRicercaTipo(item.ricerca_tipo || []);
+    setRicercaCaratteristiche(item.ricerca_caratteristiche || []);
+    setRicercaResidenza(item.ricerca_residenza || []);
     const ownedIds = immobili.filter(imm => imm.proprietario_id !== null && imm.proprietario_id !== undefined && String(imm.proprietario_id) === String(item.id)).map(imm => imm.id);
     setSelectedPosseduti(Array.from(new Set([...(item.immobili_posseduti || []), ...ownedIds])));
     const managedIds = immobili.filter(imm => {
@@ -3309,6 +3391,14 @@ export default function App() {
 
   const handleCreateContatto = () => {
     setCurrentContatto(null);
+    setProvenienzaTipo('');
+    setProvenienzaSegnalatore(null);
+    setSearchProvenienzaQuery('');
+    setContactRoles([]);
+    setRicercaCategoria('');
+    setRicercaTipo([]);
+    setRicercaCaratteristiche([]);
+    setRicercaResidenza([]);
     setSelectedPosseduti([]);
     setSelectedGestiti([]);
     setSelectedVisite([]);
@@ -5139,7 +5229,8 @@ export default function App() {
                                             ) : null}
                                           </div>
 
-                                          {/* Note */}
+                
+                          {/* Note */}
                                           {item.esito_e_note && (
                                             <p className="text-[10px] text-[#86868B] leading-relaxed line-clamp-1 border-t border-black/5 pt-1.5">
                                               <span className="font-semibold text-[#6B7280]">Note: </span>
@@ -5315,6 +5406,20 @@ export default function App() {
                     >
                       Immobili
                     </button>
+                    {(() => {
+                      const roles = Array.isArray(viewingContatto.ruolo) ? viewingContatto.ruolo : String(viewingContatto.ruolo || '').split(',').map(x => x.trim());
+                      const isAcquirenteOrAffittuario = roles.includes('Acquirente') || roles.includes('Affittuario');
+                      return isAcquirenteOrAffittuario && (
+                        <button
+                          onClick={() => setActiveContactDetailTab('ricerca')}
+                          className={`py-3 text-xs font-bold border-b-2 tracking-wide uppercase mr-5 transition-all ${
+                            activeContactDetailTab === 'ricerca' ? 'border-[#0071E3] text-[#0071E3]' : 'border-transparent text-gray-400 hover:text-gray-600'
+                          }`}
+                        >
+                          Immobile Ricercato
+                        </button>
+                      );
+                    })()}
                     <button
                       onClick={() => setActiveContactDetailTab('attivita')}
                       className={`py-3 text-xs font-bold border-b-2 tracking-wide uppercase mr-5 transition-all ${
@@ -5368,6 +5473,62 @@ export default function App() {
                           </div>
                         </div>
 
+                        {(viewingContatto.indirizzo || viewingContatto.comune || viewingContatto.npa || viewingContatto.nazione) && (
+                          <div className="bg-[#F5F5F7] p-5 rounded-2xl border border-[#E5E5EA] space-y-3">
+                            <h4 className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Indirizzo</h4>
+                            {viewingContatto.indirizzo && (
+                              <div className="text-sm">
+                                <span className="block text-xs text-[#86868B]">Via / Strada:</span>
+                                <span className="font-semibold">{viewingContatto.indirizzo}</span>
+                              </div>
+                            )}
+                            {(viewingContatto.npa || viewingContatto.comune) && (
+                              <div className="text-sm border-t border-gray-200/60 pt-2">
+                                <span className="block text-xs text-[#86868B]">Località:</span>
+                                <span className="font-semibold">{[viewingContatto.npa, viewingContatto.comune].filter(Boolean).join(' ')}</span>
+                              </div>
+                            )}
+                            {viewingContatto.nazione && (
+                              <div className="text-sm border-t border-gray-200/60 pt-2">
+                                <span className="block text-xs text-[#86868B]">Nazione:</span>
+                                <span className="font-semibold">{viewingContatto.nazione}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {viewingContatto.provenienza_tipo && (
+                          <div className="bg-[#F5F5F7] p-5 rounded-2xl border border-[#E5E5EA] space-y-3">
+                            <h4 className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Provenienza</h4>
+                            <div className="text-sm flex items-center gap-2">
+                              <span className="text-base">
+                                {viewingContatto.provenienza_tipo === 'Contatto' && '👤'}
+                                {viewingContatto.provenienza_tipo === 'Sito Web' && '🌐'}
+                                {viewingContatto.provenienza_tipo === 'Portale Immobiliare' && '🏠'}
+                                {viewingContatto.provenienza_tipo === 'Social Media' && '📱'}
+                                {viewingContatto.provenienza_tipo === 'Altro' && '✏️'}
+                              </span>
+                              <span className="font-semibold">{viewingContatto.provenienza_tipo}</span>
+                            </div>
+                            {viewingContatto.provenienza_tipo === 'Contatto' && viewingContatto.provenienza_contatto_id && (() => {
+                              const segnalatore = contatti.find(c => Number(c.id) === Number(viewingContatto.provenienza_contatto_id));
+                              return segnalatore ? (
+                                <div className="border-t border-gray-200/60 pt-2 text-sm">
+                                  <span className="block text-xs text-[#86868B]">Segnalato da:</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => { setIsContactDetailModalOpen(false); setTimeout(() => handleViewContatto(segnalatore), 200); }}
+                                    className="font-semibold text-[#0071E3] hover:underline"
+                                  >
+                                    {segnalatore.cognome} {segnalatore.nome}
+                                    {segnalatore.societa ? ` — ${segnalatore.societa}` : ''}
+                                  </button>
+                                </div>
+                              ) : null;
+                            })()}
+                          </div>
+                        )}
+
                         <div className="space-y-1">
                           <h4 className="text-xs font-bold text-[#86868B] uppercase tracking-wider border-b pb-1">Note operative</h4>
                           <p className="text-sm leading-relaxed whitespace-pre-wrap">
@@ -5376,6 +5537,7 @@ export default function App() {
                         </div>
                       </>
                     )}
+
 
                     {activeContactDetailTab === 'immobili' && (
                       <div className="space-y-5">
@@ -5474,6 +5636,116 @@ export default function App() {
                               ));
                             })()}
                           </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {activeContactDetailTab === 'ricerca' && (
+                      <div className="space-y-5 animate-fade-in">
+                        <h4 className="text-xs font-bold text-[#86868B] uppercase tracking-wider border-b pb-1">Immobile Ricercato</h4>
+
+                        {/* Località e Tipologia */}
+                        <div className="bg-[#F5F5F7] p-5 rounded-2xl border border-[#E5E5EA] space-y-4">
+                          <h5 className="text-[10px] font-extrabold text-[#86868B] uppercase tracking-wider">Criteri Principali</h5>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                              <span className="block text-xs text-[#86868B]">Comune / Località:</span>
+                              <span className="font-semibold text-sm text-[#1D1D1F]">{viewingContatto.ricerca_comune || 'Qualsiasi'}</span>
+                            </div>
+                            <div>
+                              <span className="block text-xs text-[#86868B]">Categoria:</span>
+                              <span className="font-semibold text-sm text-[#1D1D1F]">{viewingContatto.ricerca_categoria || 'Qualsiasi'}</span>
+                            </div>
+                            {viewingContatto.ricerca_tipo && viewingContatto.ricerca_tipo.length > 0 && (
+                              <div className="sm:col-span-2">
+                                <span className="block text-xs text-[#86868B] mb-1">Tipologie:</span>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {viewingContatto.ricerca_tipo.map(t => (
+                                    <span key={t} className="bg-white border border-[#E5E5EA] text-[#1D1D1F] text-[10px] px-2 py-0.5 rounded-full font-medium">
+                                      {t}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Budget */}
+                        <div className="bg-[#F5F5F7] p-5 rounded-2xl border border-[#E5E5EA] space-y-4">
+                          <h5 className="text-[10px] font-extrabold text-[#86868B] uppercase tracking-wider">Budget massimo</h5>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                              <span className="block text-xs text-[#86868B]">Prezzo / Budget Max:</span>
+                              <span className="font-semibold text-sm text-[#1D1D1F]">
+                                {Number(viewingContatto.ricerca_prezzo_max) > 0 ? `CHF ${Number(viewingContatto.ricerca_prezzo_max).toLocaleString('it-CH')}` : 'Nessun limite'}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="block text-xs text-[#86868B]">Spese Condominiali Max:</span>
+                              <span className="font-semibold text-sm text-[#1D1D1F]">
+                                {Number(viewingContatto.ricerca_spese_max) > 0 ? `CHF ${Number(viewingContatto.ricerca_spese_max).toLocaleString('it-CH')}/mese` : 'Nessun limite'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Caratteristiche Tecniche */}
+                        <div className="bg-[#F5F5F7] p-5 rounded-2xl border border-[#E5E5EA] space-y-4">
+                          <h5 className="text-[10px] font-extrabold text-[#86868B] uppercase tracking-wider">Requisiti Minimi</h5>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                            <div>
+                              <span className="block text-xs text-[#86868B]">Locali:</span>
+                              <span className="font-semibold text-sm text-[#1D1D1F]">{Number(viewingContatto.ricerca_locali_min) > 0 ? `${viewingContatto.ricerca_locali_min}+` : 'Qualsiasi'}</span>
+                            </div>
+                            <div>
+                              <span className="block text-xs text-[#86868B]">Sup. Abitabile:</span>
+                              <span className="font-semibold text-sm text-[#1D1D1F]">{Number(viewingContatto.ricerca_superficie_min) > 0 ? `${viewingContatto.ricerca_superficie_min} m²+` : 'Qualsiasi'}</span>
+                            </div>
+                            <div>
+                              <span className="block text-xs text-[#86868B]">Sup. Terreno:</span>
+                              <span className="font-semibold text-sm text-[#1D1D1F]">{Number(viewingContatto.ricerca_terreno_min) > 0 ? `${viewingContatto.ricerca_terreno_min} m²+` : 'Qualsiasi'}</span>
+                            </div>
+                            <div>
+                              <span className="block text-xs text-[#86868B]">Bagni:</span>
+                              <span className="font-semibold text-sm text-[#1D1D1F]">{Number(viewingContatto.ricerca_bagni_min) > 0 ? `${viewingContatto.ricerca_bagni_min}+` : 'Qualsiasi'}</span>
+                            </div>
+                            <div>
+                              <span className="block text-xs text-[#86868B]">Garage:</span>
+                              <span className="font-semibold text-sm text-[#1D1D1F]">{Number(viewingContatto.ricerca_garage_min) > 0 ? `${viewingContatto.ricerca_garage_min}+` : 'Qualsiasi'}</span>
+                            </div>
+                            <div>
+                              <span className="block text-xs text-[#86868B]">Parcheggi:</span>
+                              <span className="font-semibold text-sm text-[#1D1D1F]">{Number(viewingContatto.ricerca_parcheggio_min) > 0 ? `${viewingContatto.ricerca_parcheggio_min}+` : 'Qualsiasi'}</span>
+                            </div>
+                            <div>
+                              <span className="block text-xs text-[#86868B]">Vendibile a Stranieri:</span>
+                              <span className="font-semibold text-sm text-[#1D1D1F]">{viewingContatto.ricerca_stranieri || 'Indifferente'}</span>
+                            </div>
+                            {viewingContatto.ricerca_residenza && viewingContatto.ricerca_residenza.length > 0 && (
+                              <div className="col-span-2">
+                                <span className="block text-xs text-[#86868B] mb-0.5">Residenza desiderata:</span>
+                                <span className="font-semibold text-sm text-[#1D1D1F]">{viewingContatto.ricerca_residenza.join(' / ')}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Caratteristiche Desiderate Checklist */}
+                        <div className="bg-[#F5F5F7] p-5 rounded-2xl border border-[#E5E5EA] space-y-4">
+                          <h5 className="text-[10px] font-extrabold text-[#86868B] uppercase tracking-wider">Accessori & Caratteristiche</h5>
+                          {viewingContatto.ricerca_caratteristiche && viewingContatto.ricerca_caratteristiche.length > 0 ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              {viewingContatto.ricerca_caratteristiche.map(feat => (
+                                <div key={feat} className="flex items-center space-x-2 text-xs font-semibold text-green-700 bg-green-50 border border-green-200/50 px-3 py-1.5 rounded-xl">
+                                  <span>✨</span>
+                                  <span>{feat}</span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-gray-400 italic">Nessuna caratteristica accessoria inserita.</p>
+                          )}
                         </div>
                       </div>
                     )}
@@ -7059,6 +7331,8 @@ export default function App() {
                         </div>
                       </div>
 
+
+
                       {/* ========= SEZIONE 4: ACCORDI ========= */}
                       <div className={activeFormTab === 'accordi' ? 'space-y-5 animate-fade-in' : 'hidden'}>
                         {/* Mandato Box */}
@@ -7089,6 +7363,7 @@ export default function App() {
                               >
                                 <option value="Non in Esclusiva">Non in Esclusiva</option>
                                 <option value="In Esclusiva">In Esclusiva</option>
+                                <option value="Misto">Misto</option>
                               </select>
                             </div>
                             <div className="md:col-span-2">
@@ -7763,28 +8038,39 @@ export default function App() {
                   </button>
                 </div>
 
-                 <form onSubmit={handleSaveContatto} className="flex-1 flex flex-col overflow-hidden">
-                   {/* Form Tabs */}
-                   <div className="flex border-b border-black/5 bg-[#F5F5F7] px-6 shrink-0">
-                     <button
-                       type="button"
-                       onClick={() => setActiveContactFormTab('generale')}
-                       className={`py-3 text-xs font-bold border-b-2 tracking-wide uppercase mr-6 transition-all ${
-                         activeContactFormTab === 'generale' ? 'border-[#0071E3] text-[#0071E3]' : 'border-transparent text-gray-400 hover:text-gray-600'
-                       }`}
-                     >
-                       Generale
-                     </button>
-                     <button
-                       type="button"
-                       onClick={() => setActiveContactFormTab('immobili')}
-                       className={`py-3 text-xs font-bold border-b-2 tracking-wide uppercase transition-all ${
-                         activeContactFormTab === 'immobili' ? 'border-[#0071E3] text-[#0071E3]' : 'border-transparent text-gray-400 hover:text-gray-600'
-                       }`}
-                     >
-                       Immobili Collegati
-                     </button>
-                   </div>
+                 <form key={currentContatto?.id ?? 'new'} onSubmit={handleSaveContatto} className="flex-1 flex flex-col overflow-hidden">
+                                       {/* Form Tabs */}
+                    <div className="flex border-b border-black/5 bg-[#F5F5F7] px-6 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setActiveContactFormTab('generale')}
+                        className={`py-3 text-xs font-bold border-b-2 tracking-wide uppercase mr-6 transition-all ${
+                          activeContactFormTab === 'generale' ? 'border-[#0071E3] text-[#0071E3]' : 'border-transparent text-gray-400 hover:text-gray-600'
+                        }`}
+                      >
+                        Generale
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setActiveContactFormTab('immobili')}
+                        className={`py-3 text-xs font-bold border-b-2 tracking-wide uppercase transition-all ${
+                          activeContactFormTab === 'immobili' ? 'border-[#0071E3] text-[#0071E3]' : 'border-transparent text-gray-400 hover:text-gray-600'
+                        }`}
+                      >
+                        Immobili Collegati
+                      </button>
+                      {(contactRoles.includes('Acquirente') || contactRoles.includes('Affittuario')) && (
+                        <button
+                          type="button"
+                          onClick={() => setActiveContactFormTab('ricerca')}
+                          className={`py-3 text-xs font-bold border-b-2 tracking-wide uppercase ml-6 transition-all ${
+                            activeContactFormTab === 'ricerca' ? 'border-[#0071E3] text-[#0071E3]' : 'border-transparent text-gray-400 hover:text-gray-600'
+                          }`}
+                        >
+                          Immobile Ricercato
+                        </button>
+                      )}
+                    </div>
 
                    <div className="flex-1 overflow-y-auto p-6 space-y-5">
                      {currentContatto && <input type="hidden" name="id" value={currentContatto.id} />}
@@ -7830,6 +8116,50 @@ export default function App() {
                                className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none"
                              />
                            </div>
+
+                            <div>
+                              <label className="block text-xs font-semibold text-[#86868B] mb-1">Indirizzo</label>
+                              <input
+                                type="text"
+                                name="indirizzo"
+                                placeholder="es. Via Roma 1"
+                                defaultValue={currentContatto ? currentContatto.indirizzo : ''}
+                                className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none"
+                              />
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-4">
+                              <div>
+                                <label className="block text-xs font-semibold text-[#86868B] mb-1">NPA</label>
+                                <input
+                                  type="text"
+                                  name="npa"
+                                  placeholder="es. 6900"
+                                  defaultValue={currentContatto ? currentContatto.npa : ''}
+                                  className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-semibold text-[#86868B] mb-1">Comune</label>
+                                <input
+                                  type="text"
+                                  name="comune"
+                                  placeholder="es. Lugano"
+                                  defaultValue={currentContatto ? currentContatto.comune : ''}
+                                  className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-semibold text-[#86868B] mb-1">Nazione</label>
+                                <input
+                                  type="text"
+                                  name="nazione"
+                                  placeholder="es. Svizzera"
+                                  defaultValue={currentContatto ? currentContatto.nazione : ''}
+                                  className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none"
+                                />
+                              </div>
+                            </div>
                          </div>
 
                          {/* Ruoli del Contatto */}
@@ -7856,14 +8186,20 @@ export default function App() {
                                "Notaio / Avvocato",
                                "Altro"
                              ].map(r => {
-                               const currentRoles = currentContatto ? (Array.isArray(currentContatto.ruolo) ? currentContatto.ruolo : String(currentContatto.ruolo || '').split(',').map(x => x.trim())) : [];
-                               const isChecked = currentRoles.includes(r);
+                               const isChecked = contactRoles.includes(r);
                                return (
                                  <label key={r} className="flex items-center space-x-2 text-xs font-semibold text-[#1D1D1F] cursor-pointer">
                                    <input
                                      type="checkbox"
                                      name={`ruolo_${r}`}
-                                     defaultChecked={isChecked}
+                                     checked={isChecked}
+                                     onChange={(e) => {
+                                       if (e.target.checked) {
+                                         setContactRoles(prev => [...prev, r]);
+                                       } else {
+                                         setContactRoles(prev => prev.filter(x => x !== r));
+                                       }
+                                     }}
                                      className="rounded text-[#0071E3] focus:ring-[#0071E3] w-4 h-4"
                                    />
                                    <span>{r}</span>
@@ -7904,6 +8240,155 @@ export default function App() {
                          </div>
 
                          {/* Note */}
+                          {/* Provenienza */}
+                          <div className="glass-panel p-5 rounded-2xl space-y-4 relative z-20">
+                            <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                              <span className="text-sm">📡</span>
+                              <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Provenienza del Contatto</span>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-semibold text-[#86868B] mb-1">Canale di acquisizione</label>
+                              <select
+                                name="provenienza_tipo"
+                                value={provenienzaTipo}
+                                onChange={e => { setProvenienzaTipo(e.target.value); if (e.target.value !== 'Contatto') { setProvenienzaSegnalatore(null); setSearchProvenienzaQuery(''); } }}
+                                className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none text-[#1D1D1F]"
+                              >
+                                <option value="">— Non specificato —</option>
+                                <option value="Contatto">👤 Contatto (referral)</option>
+                                <option value="Sito Web">🌐 Sito Web</option>
+                                <option value="Portale Immobiliare">🏠 Portale Immobiliare</option>
+                                <option value="Social Media">📱 Social Media</option>
+                                <option value="Altro">✏️ Altro</option>
+                              </select>
+                            </div>
+
+                            {provenienzaTipo === 'Contatto' && (
+                              <div>
+                                <label className="block text-xs font-semibold text-[#86868B] mb-1">Contatto Segnalatore</label>
+
+                                {provenienzaSegnalatore ? (
+                                  <div className="flex items-center justify-between p-3 bg-white/40 border border-black/5 rounded-xl hover:border-black/10 transition-all">
+                                    <div className="flex items-center gap-2.5">
+                                      <div className="w-8 h-8 rounded-full bg-[#0071E3]/10 text-[#0071E3] flex items-center justify-center font-bold text-xs uppercase">
+                                        {(provenienzaSegnalatore.nome || 'C')[0]}{(provenienzaSegnalatore.cognome || 'L')[0]}
+                                      </div>
+                                      <div>
+                                        <div className="text-xs font-bold text-[#1D1D1F]">
+                                          {provenienzaSegnalatore.cognome} {provenienzaSegnalatore.nome}
+                                        </div>
+                                        {provenienzaSegnalatore.societa && (
+                                          <div className="text-[10px] text-[#86868B]">{provenienzaSegnalatore.societa}</div>
+                                        )}
+                                        {(() => {
+                                          const rolesStr = Array.isArray(provenienzaSegnalatore.ruolo) ? provenienzaSegnalatore.ruolo.join(', ') : (provenienzaSegnalatore.ruolo || '');
+                                          return rolesStr ? (
+                                            <div className="text-[9px] text-[#86868B] bg-white border border-black/5 px-1.5 py-0.5 rounded-full inline-block mt-0.5 font-medium">
+                                              {rolesStr}
+                                            </div>
+                                          ) : null;
+                                        })()}
+                                      </div>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => { setProvenienzaSegnalatore(null); setSearchProvenienzaQuery(''); }}
+                                      className="w-6 h-6 rounded-full hover:bg-white border border-[#D2D2D7] flex items-center justify-center text-[#86868B] hover:text-red-500 transition-all text-xs"
+                                      title="Rimuovi segnalatore"
+                                    >
+                                      ✕
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <div className="relative">
+                                    <input
+                                      type="text"
+                                      placeholder="🔍 Cerca per nome, cognome o società..."
+                                      value={searchProvenienzaQuery}
+                                      onChange={e => setSearchProvenienzaQuery(e.target.value)}
+                                      onFocus={() => setIsProvenienzaSearchFocused(true)}
+                                      onBlur={() => setTimeout(() => setIsProvenienzaSearchFocused(false), 200)}
+                                      className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none"
+                                    />
+                                    {isProvenienzaSearchFocused && (
+                                      <div className="absolute left-0 right-0 mt-1 bg-white border border-[#E5E5EA] rounded-2xl shadow-xl max-h-60 overflow-y-auto z-[60] p-1.5 space-y-1">
+                                        {(() => {
+                                          const filtered = contatti
+                                            .filter(c => !currentContatto || c.id !== currentContatto.id)
+                                            .filter(c => {
+                                              const q = searchProvenienzaQuery.toLowerCase().trim();
+                                              if (!q) return true;
+                                              const parts = q.split(/\s+/).filter(Boolean);
+                                              const nome = (c.nome || '').toLowerCase();
+                                              const cognome = (c.cognome || '').toLowerCase();
+                                              const societa = (c.societa || '').toLowerCase();
+                                              return parts.every(p => nome.includes(p) || cognome.includes(p) || societa.includes(p));
+                                            });
+
+                                          if (filtered.length === 0) {
+                                            return (
+                                              <div className="p-3 text-center text-xs text-[#86868B]">
+                                                Nessun contatto trovato
+                                                <button
+                                                  type="button"
+                                                  onMouseDown={() => {
+                                                    setAddingContactForVisit('provenienza_segnalatore');
+                                                    handleCreateContatto();
+                                                  }}
+                                                  className="block mx-auto mt-2 text-xs font-bold text-[#0071E3] hover:underline"
+                                                >
+                                                  + Crea come nuovo contatto
+                                                </button>
+                                              </div>
+                                            );
+                                          }
+
+                                          return (
+                                            <>
+                                              {filtered
+                                                .sort((a, b) => `${a.cognome} ${a.nome}`.localeCompare(`${b.cognome} ${b.nome}`))
+                                                .map(c => {
+                                                  const rolesStr = Array.isArray(c.ruolo) ? c.ruolo.join(', ') : (c.ruolo || '');
+                                                  return (
+                                                    <button
+                                                      key={c.id}
+                                                      type="button"
+                                                      onMouseDown={() => { setProvenienzaSegnalatore(c); setSearchProvenienzaQuery(''); }}
+                                                      className="w-full text-left px-3 py-2 rounded-xl text-xs hover:bg-[#F5F5F7] transition-all flex flex-col gap-0.5"
+                                                    >
+                                                      <span className="font-bold text-[#1D1D1F]">{c.cognome} {c.nome}</span>
+                                                      {(c.societa || rolesStr) && (
+                                                        <span className="text-[10px] text-[#86868B]">
+                                                          {c.societa}{c.societa && rolesStr ? ' - ' : ''}{rolesStr}
+                                                        </span>
+                                                      )}
+                                                    </button>
+                                                  );
+                                                })}
+                                              <div className="border-t border-gray-100 pt-1 mt-1">
+                                                <button
+                                                  type="button"
+                                                  onMouseDown={() => {
+                                                    setAddingContactForVisit('provenienza_segnalatore');
+                                                    handleCreateContatto();
+                                                  }}
+                                                  className="w-full text-left px-3 py-2 rounded-xl text-xs font-semibold text-[#0071E3] hover:bg-[#0071E3]/5 transition-all"
+                                                >
+                                                  + Aggiungi Nuovo Contatto...
+                                                </button>
+                                              </div>
+                                            </>
+                                          );
+                                        })()}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+
                          <div className="glass-panel p-5 rounded-2xl space-y-3">
                            <div className="flex items-center gap-2 pb-1 border-b border-black/5">
                              <span className="text-sm">📝</span>
@@ -8307,6 +8792,268 @@ export default function App() {
                                 </div>
                               )}
                             </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Tab panel for Immobile Ricercato */}
+                      <div className={activeContactFormTab === 'ricerca' ? 'space-y-6 animate-fade-in' : 'hidden'}>
+                        {/* Sezione: Criteri di Ricerca */}
+                        <div className="glass-panel p-5 rounded-2xl space-y-4">
+                          <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                            <span className="text-sm">🔍</span>
+                            <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Criteri dell'immobile desiderato</span>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-xs font-semibold text-[#86868B] mb-1">Località / Comune Ricercato</label>
+                              <input
+                                type="text"
+                                name="ricerca_comune"
+                                defaultValue={currentContatto ? currentContatto.ricerca_comune : ''}
+                                placeholder="es. Lugano, Paradiso"
+                                className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F]"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-semibold text-[#86868B] mb-1">Categoria Immobile</label>
+                              <select
+                                value={ricercaCategoria}
+                                onChange={(e) => {
+                                  setRicercaCategoria(e.target.value);
+                                  setRicercaTipo([]);
+                                }}
+                                className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F]"
+                              >
+                                <option value="">Qualsiasi Categoria</option>
+                                <option value="Appartamento">Appartamento</option>
+                                <option value="Casa">Casa</option>
+                                <option value="Locali di servizio">Locali di servizio</option>
+                                <option value="Terreno">Terreno</option>
+                                <option value="Agricoltura">Agricoltura</option>
+                                <option value="Gastronomia">Gastronomia</option>
+                                <option value="Industria / Commercio">Industria / Commercio</option>
+                                <option value="Parcheggi">Parcheggi</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          {ricercaCategoria && (CATEGORY_TIPO_MAP[ricercaCategoria] || []).length > 0 && (
+                            <div className="space-y-2 border-t border-black/5 pt-3">
+                              <span className="block text-xs font-semibold text-[#86868B] mb-1">Tipi di {ricercaCategoria} ricercati</span>
+                              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                {(CATEGORY_TIPO_MAP[ricercaCategoria] || []).map(t => {
+                                  const isChecked = ricercaTipo.includes(t);
+                                  return (
+                                    <label key={t} className="flex items-center space-x-2 text-xs text-[#1D1D1F] cursor-pointer">
+                                      <input
+                                        type="checkbox"
+                                        checked={isChecked}
+                                        onChange={(e) => {
+                                          if (e.target.checked) {
+                                            setRicercaTipo(prev => [...prev, t]);
+                                          } else {
+                                            setRicercaTipo(prev => prev.filter(x => x !== t));
+                                          }
+                                        }}
+                                        className="rounded text-[#0071E3] focus:ring-[#0071E3] w-4 h-4"
+                                      />
+                                      <span>{t}</span>
+                                    </label>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Sezione: Budget & Costi */}
+                        <div className="glass-panel p-5 rounded-2xl space-y-4">
+                          <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                            <span className="text-sm">💰</span>
+                            <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Budget massimo</span>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-xs font-semibold text-[#86868B] mb-1">Prezzo / Budget Max</label>
+                              <div className="relative">
+                                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-[#86868B] font-semibold">CHF</span>
+                                <input
+                                  type="number"
+                                  name="ricerca_prezzo_max"
+                                  placeholder="es. 1'500'000"
+                                  defaultValue={currentContatto ? currentContatto.ricerca_prezzo_max : ''}
+                                  className="glass-input w-full pl-12 pr-4 py-2.5 rounded-xl text-sm text-[#1D1D1F]"
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-semibold text-[#86868B] mb-1">Spese Condominiali Max</label>
+                              <div className="relative">
+                                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-[#86868B] font-semibold">CHF</span>
+                                <input
+                                  type="number"
+                                  name="ricerca_spese_max"
+                                  placeholder="es. 500"
+                                  defaultValue={currentContatto ? currentContatto.ricerca_spese_max : ''}
+                                  className="glass-input w-full pl-12 pr-20 py-2.5 rounded-xl text-sm text-[#1D1D1F]"
+                                />
+                                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-[#86868B] font-medium">/ al mese</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Sezione: Dimensioni & Spazi */}
+                        <div className="glass-panel p-5 rounded-2xl space-y-4">
+                          <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                            <span className="text-sm">📐</span>
+                            <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Dimensioni e Locali Minimi</span>
+                          </div>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div>
+                              <label className="block text-xs font-semibold text-[#86868B] mb-1">Superficie Abitabile Min</label>
+                              <div className="relative">
+                                <input
+                                  type="number"
+                                  name="ricerca_superficie_min"
+                                  placeholder="m²"
+                                  defaultValue={currentContatto ? currentContatto.ricerca_superficie_min : ''}
+                                  className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F]"
+                                />
+                                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-[#86868B]">m²</span>
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-semibold text-[#86868B] mb-1">Superficie Terreno Min</label>
+                              <div className="relative">
+                                <input
+                                  type="number"
+                                  name="ricerca_terreno_min"
+                                  placeholder="m²"
+                                  defaultValue={currentContatto ? currentContatto.ricerca_terreno_min : ''}
+                                  className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F]"
+                                />
+                                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-[#86868B]">m²</span>
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-semibold text-[#86868B] mb-1">Locali Minimi</label>
+                              <input
+                                type="number"
+                                step="0.5"
+                                name="ricerca_locali_min"
+                                placeholder="es. 3.5"
+                                defaultValue={currentContatto ? currentContatto.ricerca_locali_min : ''}
+                                className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F]"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-semibold text-[#86868B] mb-1">Bagni Minimi</label>
+                              <input
+                                type="number"
+                                name="ricerca_bagni_min"
+                                placeholder="es. 1"
+                                defaultValue={currentContatto ? currentContatto.ricerca_bagni_min : ''}
+                                className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F]"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-semibold text-[#86868B] mb-1">Garage Minimi</label>
+                              <input
+                                type="number"
+                                name="ricerca_garage_min"
+                                placeholder="es. 1"
+                                defaultValue={currentContatto ? currentContatto.ricerca_garage_min : ''}
+                                className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F]"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-semibold text-[#86868B] mb-1">Parcheggi Minimi</label>
+                              <input
+                                type="number"
+                                name="ricerca_parcheggio_min"
+                                placeholder="es. 1"
+                                defaultValue={currentContatto ? currentContatto.ricerca_parcheggio_min : ''}
+                                className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F]"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-semibold text-[#86868B] mb-1">Vendibile a Stranieri</label>
+                              <select
+                                name="ricerca_stranieri"
+                                defaultValue={currentContatto ? currentContatto.ricerca_stranieri : 'Indifferente'}
+                                className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F]"
+                              >
+                                <option value="Indifferente">Indifferente</option>
+                                <option value="Si">Sì</option>
+                                <option value="No">No</option>
+                              </select>
+                            </div>
+                            <div className="col-span-2 md:col-span-2">
+                              <label className="block text-xs font-semibold text-[#86868B] mb-1">Residenza Desiderata</label>
+                              <div className="flex gap-2">
+                                {['Primaria', 'Secondaria'].map(res => {
+                                  const isChecked = ricercaResidenza.includes(res);
+                                  return (
+                                    <label key={res} className="relative flex-1 cursor-pointer">
+                                      <input
+                                        type="checkbox"
+                                        checked={isChecked}
+                                        onChange={(e) => {
+                                          if (e.target.checked) {
+                                            setRicercaResidenza(prev => [...prev, res]);
+                                          } else {
+                                            setRicercaResidenza(prev => prev.filter(x => x !== res));
+                                          }
+                                        }}
+                                        className="peer sr-only"
+                                      />
+                                      <div className="px-3 py-2 rounded-full border border-[#D2D2D7] bg-white/50 text-[#86868B] font-semibold text-xs transition-all duration-300 peer-checked:border-[#0071E3] peer-checked:bg-[#0071E3]/10 peer-checked:text-[#0071E3] peer-checked:shadow-sm hover:border-[#0071E3]/40 flex items-center justify-center gap-1 active:scale-[0.98]">
+                                        <span>{res === 'Primaria' ? '🏠' : '🏖️'}</span>
+                                        <span>{res}</span>
+                                      </div>
+                                    </label>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Sezione: Caratteristiche Desiderate */}
+                        <div className="glass-panel p-5 rounded-2xl space-y-4">
+                          <div className="flex items-center gap-2 pb-1 border-b border-black/5">
+                            <span className="text-sm">✨</span>
+                            <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Caratteristiche ricercate dell'immobile</span>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                            {[
+                              "Accessibile con sedia a rotelle", "Adatto ai bambini", "Animali domestici ammessi", "Permesso fumare",
+                              "Balcone / Terrazza", "Piano rialzato", "Garage", "Parcheggio", "Piscina", "Camino",
+                              "Lavatrice privata", "Lavastoviglie", "Vista", "Quartiere tranquillo", "Costruzione Minergie",
+                              "TV via cavo", "Nuova costruzione"
+                            ].map(feature => {
+                              const isChecked = ricercaCaratteristiche.includes(feature);
+                              return (
+                                <label key={feature} className="flex items-center space-x-2.5 text-xs text-[#1D1D1F] cursor-pointer group py-1.5 px-2 hover:bg-black/5 rounded-xl transition-all">
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setRicercaCaratteristiche(prev => [...prev, feature]);
+                                      } else {
+                                        setRicercaCaratteristiche(prev => prev.filter(x => x !== feature));
+                                      }
+                                    }}
+                                    className="w-4 h-4 rounded text-[#0071E3] focus:ring-[#0071E3] focus:ring-offset-0 border-[#D2D2D7] transition-all"
+                                  />
+                                  <span className="group-hover:text-[#0071E3] transition-colors font-medium">{feature}</span>
+                                </label>
+                              );
+                            })}
                           </div>
                         </div>
                       </div>

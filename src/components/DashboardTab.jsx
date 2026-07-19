@@ -123,7 +123,7 @@ export const DashboardTab = React.memo(({
         {/* Prima riga: Immobili Attivi e Portafoglio */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Immobili in Vendita */}
-          <div className="glass-panel p-6 rounded-3xl flex flex-col justify-between h-36 hover:scale-[1.01] hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300">
+          <div className="glass-card p-6 rounded-3xl flex flex-col justify-between h-36 hover:scale-[1.01] hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300">
             <div className="flex justify-between items-start">
               <span className="text-xs font-semibold text-[#86868B] uppercase tracking-wider">Immobili in Vendita</span>
             </div>
@@ -143,7 +143,7 @@ export const DashboardTab = React.memo(({
           </div>
 
           {/* Immobili in Affitto */}
-          <div className="glass-panel p-6 rounded-3xl flex flex-col justify-between h-36 hover:scale-[1.01] hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300">
+          <div className="glass-card p-6 rounded-3xl flex flex-col justify-between h-36 hover:scale-[1.01] hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300">
             <div className="flex justify-between items-start">
               <span className="text-xs font-semibold text-[#86868B] uppercase tracking-wider">Immobili in Affitto</span>
             </div>
@@ -163,7 +163,7 @@ export const DashboardTab = React.memo(({
           </div>
 
           {/* Portafoglio Stimato */}
-          <div className="glass-panel p-6 rounded-3xl flex flex-col justify-between h-36 hover:scale-[1.01] hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300 border border-blue-500/10 bg-gradient-to-br from-white to-blue-50/20">
+          <div className="glass-card p-6 rounded-3xl flex flex-col justify-between h-36 hover:scale-[1.01] hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300 border border-blue-500/10 bg-gradient-to-br from-white to-blue-50/20">
             <div className="flex justify-between items-start">
               <span className="text-xs font-semibold text-blue-800 uppercase tracking-wider">Portafoglio Stimato</span>
             </div>
@@ -183,7 +183,7 @@ export const DashboardTab = React.memo(({
         {/* Seconda riga: Pipeline e Chiusure */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Immobili in Trattativa */}
-          <div className="glass-panel p-6 rounded-3xl flex flex-col justify-between h-36 hover:scale-[1.01] hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300">
+          <div className="glass-card p-6 rounded-3xl flex flex-col justify-between h-36 hover:scale-[1.01] hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300">
             <div className="flex justify-between items-start">
               <span className="text-xs font-semibold text-[#86868B] uppercase tracking-wider">Immobili in Trattativa</span>
             </div>
@@ -203,7 +203,7 @@ export const DashboardTab = React.memo(({
           </div>
 
           {/* Immobili Venduti */}
-          <div className="glass-panel p-6 rounded-3xl flex flex-col justify-between h-36 hover:scale-[1.01] hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300">
+          <div className="glass-card p-6 rounded-3xl flex flex-col justify-between h-36 hover:scale-[1.01] hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300">
             <div className="flex justify-between items-start">
               <span className="text-xs font-semibold text-[#86868B] uppercase tracking-wider">Immobili Venduti</span>
             </div>
@@ -223,7 +223,7 @@ export const DashboardTab = React.memo(({
           </div>
 
           {/* Immobili Affittati */}
-          <div className="glass-panel p-6 rounded-3xl flex flex-col justify-between h-36 hover:scale-[1.01] hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300">
+          <div className="glass-card p-6 rounded-3xl flex flex-col justify-between h-36 hover:scale-[1.01] hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300">
             <div className="flex justify-between items-start">
               <span className="text-xs font-semibold text-[#86868B] uppercase tracking-wider">Immobili Affittati</span>
             </div>
@@ -246,7 +246,7 @@ export const DashboardTab = React.memo(({
 
       {/* Quick Actions Panel */}
       {!isViewer && (
-        <div className="glass-panel p-6 rounded-3xl">
+        <div className="glass-card p-6 rounded-3xl">
           <h3 className="text-lg font-semibold tracking-tight text-[#1D1D1F] mb-4">Azioni Rapide</h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <button
@@ -351,13 +351,13 @@ export const DashboardTab = React.memo(({
                           {/* Date column */}
                           <div className="w-[72px] shrink-0 flex flex-col items-center justify-center bg-[#F5F5F7] border-r border-[#E5E5EA] py-4 gap-0.5">
                             <span className="text-[11px] font-bold uppercase text-[#86868B] tracking-wider leading-none">
-                              {startObj.toLocaleDateString('it-IT', { month: 'short' })}
+                              {startObj.toLocaleDateString('it-CH', { month: 'short' })}
                             </span>
                             <span className="text-[32px] font-black text-[#1D1D1F] leading-none">
-                              {startObj.toLocaleDateString('it-IT', { day: 'numeric' })}
+                              {startObj.toLocaleDateString('it-CH', { day: 'numeric' })}
                             </span>
                             <span className="text-[10px] font-semibold text-[#86868B] capitalize leading-none">
-                              {startObj.toLocaleDateString('it-IT', { weekday: 'short' })}
+                              {startObj.toLocaleDateString('it-CH', { weekday: 'short' })}
                             </span>
                           </div>
 

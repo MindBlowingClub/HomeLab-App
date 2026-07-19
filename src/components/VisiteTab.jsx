@@ -270,12 +270,12 @@ export const VisiteTab = React.memo(({
 
       {/* CRM Stats Widgets */}
       <div className="grid grid-cols-2 gap-4">
-        <div className="glass-panel p-4 rounded-2xl border border-[#E5E5EA] bg-white flex flex-col justify-between shadow-sm">
+        <div className="glass-card p-4 rounded-2xl border border-[#E5E5EA] bg-white flex flex-col justify-between shadow-sm">
           <span className="text-[10px] uppercase font-bold tracking-wider text-[#86868B]">Attività Totali</span>
           <span className="text-2xl font-black text-[#1D1D1F] mt-1">{totalActivities}</span>
           <span className="text-[10px] text-gray-400 mt-0.5">Nel periodo selezionato</span>
         </div>
-        <div className="glass-panel p-4 rounded-2xl border border-[#E5E5EA] bg-white flex flex-col justify-between shadow-sm">
+        <div className="glass-card p-4 rounded-2xl border border-[#E5E5EA] bg-white flex flex-col justify-between shadow-sm">
           <span className="text-[10px] uppercase font-bold tracking-wider text-[#86868B]">Visite Clienti</span>
           <span className="text-2xl font-black text-[#0071E3] mt-1">{customerVisits}</span>
           <span className="text-[10px] text-gray-400 mt-0.5">Sopralluoghi di vendita/affitto</span>
@@ -942,13 +942,13 @@ export const VisiteTab = React.memo(({
                     {/* Date column */}
                     <div className="w-[72px] shrink-0 flex flex-col items-center justify-center bg-[#F5F5F7] border-r border-[#E5E5EA] py-4 gap-0.5">
                       <span className="text-[11px] font-bold uppercase text-[#86868B] tracking-wider leading-none">
-                        {startObj.toLocaleDateString('it-IT', { month: 'short' })}
+                        {startObj.toLocaleDateString('it-CH', { month: 'short' })}
                       </span>
                       <span className="text-[32px] font-black text-[#1D1D1F] leading-none">
-                        {startObj.toLocaleDateString('it-IT', { day: 'numeric' })}
+                        {startObj.toLocaleDateString('it-CH', { day: 'numeric' })}
                       </span>
                       <span className="text-[10px] font-semibold text-[#86868B] capitalize leading-none">
-                        {startObj.toLocaleDateString('it-IT', { weekday: 'short' })}
+                        {startObj.toLocaleDateString('it-CH', { weekday: 'short' })}
                       </span>
                     </div>
 

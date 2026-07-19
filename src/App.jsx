@@ -818,6 +818,80 @@ export default function App() {
 
   const [currentVisita, setCurrentVisita] = useState(null);
   const [isVisitaModalOpen, setIsVisitaModalOpen] = useState(false);
+  const [visitFormStart, setVisitFormStart] = useState('');
+  const [visitFormEnd, setVisitFormEnd] = useState('');
+
+  useEffect(() => {
+    if (isVisitaModalOpen) {
+      let startVal = '';
+      let endVal = '';
+
+      if (currentVisita) {
+        const localStart = new Date(new Date(currentVisita.inizio_evento) - new Date().getTimezoneOffset() * 60000);
+        startVal = localStart.toISOString().slice(0, isCalendarAllDay ? 10 : 16);
+
+        if (currentVisita.fine_evento) {
+          const localEnd = new Date(new Date(currentVisita.fine_evento) - new Date().getTimezoneOffset() * 60000);
+          endVal = localEnd.toISOString().slice(0, isCalendarAllDay ? 10 : 16);
+        } else {
+          const localEnd = new Date(localStart.getTime() + (isCalendarAllDay ? 0 : 60 * 60 * 1000));
+          endVal = localEnd.toISOString().slice(0, isCalendarAllDay ? 10 : 16);
+        }
+      } else {
+        const rounded = new Date();
+        const minutes = rounded.getMinutes();
+        if (minutes < 30) {
+          rounded.setMinutes(0, 0, 0);
+        } else {
+          rounded.setHours(rounded.getHours() + 1);
+          rounded.setMinutes(0, 0, 0);
+        }
+        const localStart = new Date(rounded.getTime() - new Date().getTimezoneOffset() * 60000);
+        startVal = localStart.toISOString().slice(0, isCalendarAllDay ? 10 : 16);
+
+        const nextDate = new Date(rounded.getTime() + (isCalendarAllDay ? 0 : 60 * 60 * 1000));
+        const localEnd = new Date(nextDate.getTime() - new Date().getTimezoneOffset() * 60000);
+        endVal = localEnd.toISOString().slice(0, isCalendarAllDay ? 10 : 16);
+      }
+
+      setVisitFormStart(startVal);
+      setVisitFormEnd(endVal);
+    }
+  }, [isVisitaModalOpen, currentVisita, isCalendarAllDay]);
+
+  const handleStartChange = (e) => {
+    const newStart = e.target.value;
+    if (!newStart) {
+      setVisitFormStart(newStart);
+      return;
+    }
+
+    const prevStart = new Date(visitFormStart);
+    const prevEnd = new Date(visitFormEnd);
+    let duration = 60 * 60 * 1000;
+
+    if (!isNaN(prevStart.getTime()) && !isNaN(prevEnd.getTime())) {
+      duration = prevEnd.getTime() - prevStart.getTime();
+      if (duration < 0) {
+        duration = 60 * 60 * 1000;
+      }
+    }
+
+    const newStartDate = new Date(newStart);
+    if (!isNaN(newStartDate.getTime())) {
+      const newEndDate = new Date(newStartDate.getTime() + duration);
+      const localEnd = new Date(newEndDate.getTime() - newEndDate.getTimezoneOffset() * 60000);
+      const endVal = localEnd.toISOString().slice(0, isCalendarAllDay ? 10 : 16);
+      setVisitFormStart(newStart);
+      setVisitFormEnd(endVal);
+    } else {
+      setVisitFormStart(newStart);
+    }
+  };
+
+  const handleEndChange = (e) => {
+    setVisitFormEnd(e.target.value);
+  };
 
   useEffect(() => {
     if (isVisitaModalOpen) {
@@ -5173,13 +5247,13 @@ export default function App() {
                                         {/* Date column */}
                                         <div className="w-[68px] shrink-0 flex flex-col items-center justify-center bg-white/40 border-r border-black/5 py-3 gap-0.5">
                                           <span className="text-[9px] font-bold uppercase text-[#86868B] tracking-wider leading-none">
-                                            {startObj.toLocaleDateString('it-IT', { month: 'short' })}
+                                            {startObj.toLocaleDateString('it-CH', { month: 'short' })}
                                           </span>
                                           <span className="text-[24px] font-black text-[#1D1D1F] leading-none">
-                                            {startObj.toLocaleDateString('it-IT', { day: 'numeric' })}
+                                            {startObj.toLocaleDateString('it-CH', { day: 'numeric' })}
                                           </span>
                                           <span className="text-[9px] font-semibold text-[#86868B] capitalize leading-none">
-                                            {startObj.toLocaleDateString('it-IT', { weekday: 'short' })}
+                                            {startObj.toLocaleDateString('it-CH', { weekday: 'short' })}
                                           </span>
                                         </div>
 
@@ -5358,11 +5432,12 @@ export default function App() {
             <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/20 backdrop-blur-sm transition-all">
               <div className="absolute inset-0 -z-10" onClick={() => setIsContactDetailModalOpen(false)}></div>
 
-              <div className="w-full max-w-xl h-full bg-white shadow-2xl border-l border-[#E5E5EA] flex flex-col animate-slide-left overflow-hidden">
+              <div className="glass-modal w-full max-w-xl h-full shadow-2xl border-l border-white/20 flex flex-col animate-slide-left overflow-hidden">
 
-                <div className="bg-[#F5F5F7] p-6 border-b border-[#E5E5EA] flex justify-between items-start">
+                <div className="relative p-6 border-b border-white/20 flex justify-between items-start" style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.85) 0%, rgba(245,245,247,0.9) 100%)' }}>
+                  <div className="absolute bottom-0 left-0 right-0 h-[2px]" style={{ background: 'linear-gradient(90deg, #0071E3 0%, #00C7FF 50%, #7B61FF 100%)', opacity: 0.6 }} />
                   <div className="flex items-center space-x-4">
-                    <div className="w-16 h-16 rounded-full bg-[#E5E5EA] text-[#1D1D1F] flex items-center justify-center font-bold text-xl border border-white shadow-inner shrink-0">
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#0071E3] to-[#5AC8FA] text-white flex items-center justify-center font-bold text-xl border border-white shadow-md shrink-0">
                       {(viewingContatto.nome || 'U').charAt(0)}{(viewingContatto.cognome || '').charAt(0)}
                     </div>
                     <div className="space-y-1 min-w-0">
@@ -5389,7 +5464,7 @@ export default function App() {
                   </button>
                 </div>
 
-                 <div className="flex border-b border-black/5 bg-[#F5F5F7] px-6 shrink-0">
+                 <div className="flex border-b border-black/5 bg-[#F5F5F7]/80 px-6 shrink-0">
                     <button
                       onClick={() => setActiveContactDetailTab('generale')}
                       className={`py-3 text-xs font-bold border-b-2 tracking-wide uppercase mr-5 transition-all ${
@@ -5782,13 +5857,13 @@ export default function App() {
                                       {/* Date column */}
                                       <div className="w-[68px] shrink-0 flex flex-col items-center justify-center bg-[#F5F5F7] border-r border-[#E5E5EA] py-3 gap-0.5">
                                         <span className="text-[9px] font-bold uppercase text-[#86868B] tracking-wider leading-none">
-                                          {startObj.toLocaleDateString('it-IT', { month: 'short' })}
+                                          {startObj.toLocaleDateString('it-CH', { month: 'short' })}
                                         </span>
                                         <span className="text-[24px] font-black text-[#1D1D1F] leading-none">
-                                          {startObj.toLocaleDateString('it-IT', { day: 'numeric' })}
+                                          {startObj.toLocaleDateString('it-CH', { day: 'numeric' })}
                                         </span>
                                         <span className="text-[9px] font-semibold text-[#86868B] capitalize leading-none">
-                                          {startObj.toLocaleDateString('it-IT', { weekday: 'short' })}
+                                          {startObj.toLocaleDateString('it-CH', { weekday: 'short' })}
                                         </span>
                                       </div>
 
@@ -5888,7 +5963,7 @@ export default function App() {
                     )}
                   </div>
 
-                <div className="p-6 border-t border-[#E5E5EA] bg-[#F5F5F7] flex space-x-2">
+                <div className="p-6 border-t border-white/20 bg-[#F5F5F7]/80 flex space-x-2">
                   {!isViewer() && (
                     <button
                       onClick={() => {
@@ -5902,7 +5977,7 @@ export default function App() {
                   )}
                   <button
                     onClick={() => setIsContactDetailModalOpen(false)}
-                    className="flex-1 bg-white hover:bg-gray-100 border border-[#D2D2D7] text-[#1D1D1F] py-3 rounded-full font-semibold text-sm transition-all text-center"
+                    className="flex-1 bg-white/80 hover:bg-white border border-[#D2D2D7] text-[#1D1D1F] py-3 rounded-full font-semibold text-sm transition-all text-center shadow-sm"
                   >
                     Chiudi Inspector
                   </button>
@@ -9112,10 +9187,11 @@ export default function App() {
               <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/20 backdrop-blur-sm transition-all">
                 <div className="absolute inset-0 -z-10" onClick={handleCloseVisitaDetail}></div>
 
-                <div className="w-full md:max-w-lg h-full bg-white shadow-2xl border-l border-[#E5E5EA] flex flex-col animate-slide-left overflow-hidden text-[#1D1D1F]">
+                <div className="glass-modal w-full md:max-w-lg h-full shadow-2xl border-l border-white/20 flex flex-col animate-slide-left overflow-hidden text-[#1D1D1F]">
 
                   {/* Header */}
-                  <div className="px-6 py-5 border-b border-[#E5E5EA] flex justify-between items-center bg-[#F5F5F7]">
+                  <div className="relative px-6 py-5 border-b border-white/20 flex justify-between items-center" style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.85) 0%, rgba(245,245,247,0.9) 100%)' }}>
+                    <div className="absolute bottom-0 left-0 right-0 h-[2px]" style={{ background: 'linear-gradient(90deg, #0071E3 0%, #00C7FF 50%, #7B61FF 100%)', opacity: 0.6 }} />
                     <div>
                       <span className="text-[10px] uppercase font-bold tracking-wider text-[#86868B]">Dettaglio Evento</span>
                       <h3 className="text-xl font-bold tracking-tight text-[#1D1D1F] mt-0.5">
@@ -9124,7 +9200,7 @@ export default function App() {
                     </div>
                     <button
                       onClick={handleCloseVisitaDetail}
-                      className="w-7 h-7 bg-white rounded-full border border-[#D2D2D7] flex items-center justify-center font-bold text-sm text-[#86868B] hover:text-[#1D1D1F] transition-all"
+                      className="w-7 h-7 bg-white/80 hover:bg-white rounded-full border border-[#D2D2D7] flex items-center justify-center font-bold text-sm text-[#86868B] transition-colors shadow-sm shrink-0"
                     >
                       ✕
                     </button>
@@ -9268,7 +9344,7 @@ export default function App() {
                   </div>
 
                   {/* Footer */}
-                  <div className="p-6 border-t border-[#E5E5EA] bg-[#F5F5F7] flex space-x-2">
+                  <div className="p-6 border-t border-white/20 bg-[#F5F5F7]/80 flex space-x-2">
                     {canModifyEvent(viewingVisita) && (
                       <>
                         <button
@@ -9296,7 +9372,7 @@ export default function App() {
                     <button
                       type="button"
                       onClick={handleCloseVisitaDetail}
-                      className="flex-1 bg-white hover:bg-gray-100 border border-[#D2D2D7] text-[#1D1D1F] py-3 rounded-full font-semibold text-sm transition-all text-center"
+                      className="flex-1 bg-white/80 hover:bg-white border border-[#D2D2D7] text-[#1D1D1F] py-3 rounded-full font-semibold text-sm transition-all text-center shadow-sm"
                     >
                       Chiudi
                     </button>
@@ -9372,17 +9448,8 @@ export default function App() {
                                 type={isCalendarAllDay ? "date" : "datetime-local"}
                                 name="inizio_evento"
                                 required
-                                defaultValue={currentVisita ? new Date(new Date(currentVisita.inizio_evento) - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, isCalendarAllDay ? 10 : 16) : (() => {
-                                  const rounded = new Date();
-                                  const minutes = rounded.getMinutes();
-                                  if (minutes < 30) {
-                                    rounded.setMinutes(0, 0, 0);
-                                  } else {
-                                    rounded.setHours(rounded.getHours() + 1);
-                                    rounded.setMinutes(0, 0, 0);
-                                  }
-                                  return new Date(rounded.getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, isCalendarAllDay ? 10 : 16);
-                                })()}
+                                value={visitFormStart}
+                                onChange={handleStartChange}
                                 className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none"
                               />
                             </div>
@@ -9393,22 +9460,8 @@ export default function App() {
                                 type={isCalendarAllDay ? "date" : "datetime-local"}
                                 name="fine_evento"
                                 required
-                                defaultValue={currentVisita && currentVisita.fine_evento ? new Date(new Date(currentVisita.fine_evento) - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, isCalendarAllDay ? 10 : 16) : (() => {
-                                  const baseDate = currentVisita ? new Date(currentVisita.inizio_evento) : (() => {
-                                    const rounded = new Date();
-                                    const minutes = rounded.getMinutes();
-                                    if (minutes < 30) {
-                                      rounded.setMinutes(0, 0, 0);
-                                    } else {
-                                      rounded.setHours(rounded.getHours() + 1);
-                                      rounded.setMinutes(0, 0, 0);
-                                    }
-                                    return rounded;
-                                  })();
-                                  const offsetMultiplier = isCalendarAllDay ? 0 : 60 * 60 * 1000;
-                                  const nextDate = new Date(baseDate.getTime() + offsetMultiplier);
-                                  return new Date(nextDate.getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, isCalendarAllDay ? 10 : 16);
-                                })()}
+                                value={visitFormEnd}
+                                onChange={handleEndChange}
                                 className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none"
                               />
                             </div>

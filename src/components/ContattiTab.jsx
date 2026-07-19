@@ -232,7 +232,7 @@ export const ContattiTab = React.memo(({
       <div className="block sm:hidden space-y-4">
         {isCRMLoading ? (
           [1, 2, 3].map((n) => (
-            <div key={n} className="glass-panel p-4 rounded-3xl border border-[#E5E5EA] bg-white flex flex-col space-y-3 animate-pulse">
+            <div key={n} className="glass-card p-4 rounded-3xl border border-[#E5E5EA] bg-white flex flex-col space-y-3 animate-pulse">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 rounded-full bg-[#E5E5EA]" />
                 <div className="space-y-2 flex-1">
@@ -253,7 +253,7 @@ export const ContattiTab = React.memo(({
             <div 
               key={item.id} 
               onClick={() => handleViewContatto(item)}
-              className="glass-panel p-4 rounded-3xl border border-[#E5E5EA] bg-white flex flex-col space-y-3 cursor-pointer hover:shadow-md transition-all active:scale-[0.99] duration-200"
+              className="glass-card p-4 rounded-3xl border border-[#E5E5EA] bg-white flex flex-col space-y-3 cursor-pointer hover:shadow-md transition-all active:scale-[0.99] duration-200"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">

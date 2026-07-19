@@ -1275,8 +1275,27 @@ export default function App() {
         setOfflineQueue([...updatedQueue]);
       } catch (err) {
         console.error(`Errore sincronizzazione elemento offline all'indice ${i}:`, err);
-        triggerToast("Errore durante la sincronizzazione offline: " + err.message, "error");
-        break;
+        
+        // Se è un errore di rete temporaneo (es. fallimento fetch, offline), manteniamo l'elemento in coda e interrompiamo
+        const isNetworkError = !err.code && (
+          err.message?.toLowerCase().includes('fetch') || 
+          err.message?.toLowerCase().includes('network') || 
+          err.message?.toLowerCase().includes('failed to fetch') || 
+          err.message?.toLowerCase().includes('timeout') ||
+          err.message?.toLowerCase().includes('offline')
+        );
+
+        if (isNetworkError) {
+          triggerToast("Sincronizzazione interrotta: errore di rete temporaneo. Riproverò più tardi.", "info");
+          break;
+        } else {
+          // Errore fatale del database (es. vincoli di non null, formato errato). Discard dell'elemento per sbloccare la coda.
+          triggerToast(`Sincronizzazione fallita: ${err.message || err}. Elemento rimosso per sbloccare la coda.`, "error");
+          
+          updatedQueue.shift();
+          localStorage.setItem('homelab_offline_queue', JSON.stringify(updatedQueue));
+          setOfflineQueue([...updatedQueue]);
+        }
       }
     }
 
@@ -3025,6 +3044,13 @@ export default function App() {
   const handleSaveContatto = async (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
+
+    const cognome = formData.get('cognome');
+    if (!cognome || !cognome.trim()) {
+      triggerToast("Il cognome è obbligatorio", "error");
+      return;
+    }
+
     const idVal = formData.get('id');
     const id = idVal ? parseInt(idVal) : null;
 
@@ -8160,10 +8186,11 @@ export default function App() {
                            </div>
                            <div className="grid grid-cols-2 gap-4">
                              <div>
-                               <label className="block text-xs font-semibold text-[#86868B] mb-1">Cognome</label>
+                               <label className="block text-xs font-semibold text-[#86868B] mb-1">Cognome *</label>
                                <input
                                  type="text"
                                  name="cognome"
+                                 required
                                  placeholder="es. Boldi"
                                  defaultValue={currentContatto ? currentContatto.cognome : ''}
                                  className="w-full px-3.5 py-2 glass-input rounded-xl text-sm focus:outline-none"

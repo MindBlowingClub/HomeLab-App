@@ -1239,13 +1239,25 @@ export default function App() {
 
         if (item.action === 'insert') {
           const { id, ...insertFields } = item.fields;
+          if (item.type === 'immobile') {
+            insertFields.codice_immobile = null;
+          }
           const { data, error } = await supabase.from(item.table).insert([insertFields]).select();
           if (error) throw error;
-          const realRecord = data[0];
+          let realRecord = data[0];
 
           tempIdMap[item.id] = realRecord.id;
 
           if (item.type === 'immobile') {
+            const autoCode = `#${realRecord.id}`;
+            const { data: updateData, error: updateError } = await supabase
+              .from('immobili')
+              .update({ codice_immobile: autoCode })
+              .eq('id', realRecord.id)
+              .select();
+            if (!updateError && updateData && updateData[0]) {
+              realRecord = updateData[0];
+            }
             setImmobili(prev => prev.map(imm => Number(imm.id) === Number(item.id) ? realRecord : imm));
           } else if (item.type === 'contatto') {
             setContatti(prev => prev.map(con => Number(con.id) === Number(item.id) ? realRecord : con));
@@ -1338,7 +1350,11 @@ export default function App() {
 
   const saveImmobileOffline = (id, fields, changes, logDesc, userEmail) => {
     const finalId = id || Date.now();
-    const localFields = { id: finalId, ...fields };
+    const updatedFields = { ...fields };
+    if (!id || !updatedFields.codice_immobile) {
+      updatedFields.codice_immobile = `#${finalId}`;
+    }
+    const localFields = { id: finalId, ...updatedFields };
     if (id) {
       setImmobili(immobili.map(item => item.id === id ? localFields : item));
       triggerToast("Immobile aggiornato localmente");
@@ -2238,22 +2254,7 @@ export default function App() {
     const selectedTipo = formData.get('tipo');
     const tipo = selectedTipo ? [selectedTipo] : [];
 
-    let codice_immobile = formData.get('codice_immobile') || (id ? String(id).slice(-3) : String(Date.now()).slice(-3));
-    if (codice_immobile && !codice_immobile.startsWith('#')) {
-      codice_immobile = '#' + codice_immobile;
-    }
-
-    // Verifica univocità codice_immobile
-    const duplicato = immobili.find(imm =>
-      imm.codice_immobile &&
-      imm.codice_immobile.toLowerCase() === codice_immobile.toLowerCase() &&
-      imm.id !== id
-    );
-    if (duplicato) {
-      triggerToast("Codice immobile \"" + codice_immobile + "\" già utilizzato! Inserisci un codice diverso.", "error");
-      setIsSavingImmobile(false);
-      return;
-    }
+    let codice_immobile = existing ? existing.codice_immobile : null;
 
     const rinnovoVal = formData.get('ultimo_rinnovo');
     let ultimo_rinnovo = 0;
@@ -2624,7 +2625,19 @@ export default function App() {
             .insert([fields])
             .select();
           if (error) throw error;
-          const record = data[0];
+          let record = data[0];
+
+          // Auto-assign codice_immobile based on the generated ID
+          const autoCode = `#${record.id}`;
+          const { data: updateData, error: updateError } = await supabase
+            .from('immobili')
+            .update({ codice_immobile: autoCode })
+            .eq('id', record.id)
+            .select();
+          if (!updateError && updateData && updateData[0]) {
+            record = updateData[0];
+          }
+
           setImmobili([...immobili, record]);
           triggerToast("Immobile salvato nel database");
 
@@ -6434,14 +6447,25 @@ export default function App() {
                               />
                             </div>
                             <div>
-                              <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Codice Immobile <span className="text-[#FF3B30]">*</span></label>
+                              <label className="block text-[11px] font-semibold text-[#86868B] mb-1.5 uppercase tracking-wider">Codice Immobile</label>
                               <input
                                 type="text"
                                 name="codice_immobile"
-                                required
-                                placeholder="es. #0001"
-                                defaultValue={currentImmobile ? currentImmobile.codice_immobile : ''}
-                                className="glass-input w-full px-4 py-2.5 rounded-xl text-sm text-[#1D1D1F] placeholder:text-[#C7C7CC] font-mono"
+                                disabled
+                                value={(() => {
+                                  if (currentImmobile) {
+                                    return currentImmobile.codice_immobile || `#${currentImmobile.id}`;
+                                  }
+                                  const maxId = immobili.reduce((max, imm) => {
+                                    const idNum = Number(imm.id);
+                                    if (!isNaN(idNum) && idNum > 0 && idNum < 1000000000) {
+                                      return idNum > max ? idNum : max;
+                                    }
+                                    return max;
+                                  }, 0);
+                                  return `#${maxId + 1}`;
+                                })()}
+                                className="w-full px-4 py-2.5 bg-gray-100/50 text-gray-500 rounded-xl text-sm cursor-not-allowed border border-transparent shadow-none font-mono"
                               />
                             </div>
                           </div>

@@ -1240,7 +1240,7 @@ export default function App() {
         if (item.action === 'insert') {
           const { id, ...insertFields } = item.fields;
           if (item.type === 'immobile') {
-            insertFields.codice_immobile = null;
+            insertFields.codice_immobile = `TEMP-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
           }
           const { data, error } = await supabase.from(item.table).insert([insertFields]).select();
           if (error) throw error;
@@ -2620,9 +2620,11 @@ export default function App() {
             setViewingImmobile(record);
           }
         } else {
+          const tempCode = `TEMP-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+          const fieldsWithTemp = { ...fields, codice_immobile: tempCode };
           const { data, error } = await supabase
             .from('immobili')
-            .insert([fields])
+            .insert([fieldsWithTemp])
             .select();
           if (error) throw error;
           let record = data[0];

@@ -5203,17 +5203,17 @@ export default function App() {
                         <span className="block text-[10px] font-bold text-[#86868B] uppercase tracking-wider">conformità & documenti</span>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {[
-                            { key: 'estratto_registro_fondiario', label: 'estratto registro fondiario', desc: 'estratto registro fondiario doc' },
-                            { key: 'descrittivo_tecnico', label: 'descrittivo tecnico', desc: 'descrittivo tecnico doc' },
-                            { key: 'regolamento_condominiale', label: 'regolamento condominiale', desc: 'regolamento condominiale doc' },
-                            { key: 'spese_condominiali_doc', label: 'spese condominiali doc', desc: 'spese condominiali doc', isFileOnly: true },
-                            { key: 'assicurazione_stabile', label: 'assicurazione stabile', desc: 'assicurazione stabile doc' },
-                            { key: 'verbale_ultima_assemblea', label: 'verbale ultima assemblea', desc: 'verbale ultima assemblea doc' },
-                            { key: 'fondo_rinnovamento', label: 'fondo rinnovamento', desc: 'fondo rinnovamento doc' },
-                            { key: 'valore_di_stima', label: 'valore di stima', desc: 'valore di stima doc' },
+                            { key: 'estratto_registro_fondiario', label: 'Estratto del Registro Fondiario', desc: 'estratto registro fondiario doc' },
+                            { key: 'descrittivo_tecnico', label: 'Descrittivo Tecnico e Planimetrie', desc: 'descrittivo tecnico doc' },
+                            { key: 'regolamento_condominiale', label: 'Regolamento Condominiale e Tabelle Millesimali', desc: 'regolamento condominiale doc' },
+                            { key: 'spese_condominiali_doc', label: 'Consuntivi e Preventivi delle spese condominiali', desc: 'spese condominiali doc', isFileOnly: true },
+                            { key: 'assicurazione_stabile', label: 'Polizza di Assicurazione dello Stabile', desc: 'assicurazione stabile doc' },
+                            { key: 'verbale_ultima_assemblea', label: 'Verbali delle ultime assemblee condominiali', desc: 'verbale ultima assemblea doc' },
+                            { key: 'fondo_rinnovamento', label: 'Stato del Fondo di Rinnovamento Condominiale', desc: 'fondo rinnovamento doc' },
+                            { key: 'valore_di_stima', label: 'Valore di Stima Ufficiale ed Eventuale Stima Immobiliare Commerciale', desc: 'valore di stima doc' },
                             { key: 'piano_assegnazioni_parti_comuni', label: 'piano assegnazioni parti comuni', desc: 'piano assegnazioni parti comuni doc' },
-                            { key: 'rasi', label: 'rasi', desc: 'rasi doc' },
-                            { key: 'certificato_radon', label: 'certificato radon', desc: 'certificato radon doc' }
+                            { key: 'rasi', label: "Certificato di Sicurezza dell'Impianto Elettrico (RaSi)", desc: 'rasi doc' },
+                            { key: 'certificato_radon', label: 'Certificato Energetico (CECE / RASI)', desc: 'certificato radon doc' }
                           ].map(doc => {
                             const status = viewingImmobile[doc.key];
                             const fileUrl = doc.isFileOnly ? status : viewingImmobile[`${doc.key}_doc`];
@@ -7973,17 +7973,17 @@ export default function App() {
 
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                             {[
-                              { key: 'estratto_registro_fondiario', label: 'Estratto Registro Fondiario', desc: 'estratto_registro_fondiario_doc' },
-                              { key: 'descrittivo_tecnico', label: 'Descrittivo Tecnico', desc: 'descrittivo_tecnico_doc' },
-                              { key: 'regolamento_condominiale', label: 'Regolamento Condominiale', desc: 'regolamento_condominiale_doc' },
-                              { key: 'spese_condominiali_doc', label: 'Spese Condominiali', desc: 'spese_condominiali_doc', isFileOnly: true },
-                              { key: 'assicurazione_stabile', label: 'Assicurazione Stabile', desc: 'assicurazione_stabile_doc' },
-                              { key: 'verbale_ultima_assemblea', label: 'Verbale Ultima Assemblea', desc: 'verbale_ultima_assemblea_doc' },
-                              { key: 'fondo_rinnovamento', label: 'Fondo Rinnovamento', desc: 'fondo_rinnovamento_doc' },
-                              { key: 'valore_di_stima', label: 'Valore di Stima', desc: 'valore_di_stima_doc' },
+                              { key: 'estratto_registro_fondiario', label: 'Estratto del Registro Fondiario', desc: 'estratto_registro_fondiario_doc' },
+                              { key: 'descrittivo_tecnico', label: 'Descrittivo Tecnico e Planimetrie', desc: 'descrittivo_tecnico_doc' },
+                              { key: 'regolamento_condominiale', label: 'Regolamento Condominiale e Tabelle Millesimali', desc: 'regolamento_condominiale_doc' },
+                              { key: 'spese_condominiali_doc', label: 'Consuntivi e Preventivi delle spese condominiali', desc: 'spese_condominiali_doc', isFileOnly: true },
+                              { key: 'assicurazione_stabile', label: 'Polizza di Assicurazione dello Stabile', desc: 'assicurazione_stabile_doc' },
+                              { key: 'verbale_ultima_assemblea', label: 'Verbali delle ultime assemblee condominiali', desc: 'verbale_ultima_assemblea_doc' },
+                              { key: 'fondo_rinnovamento', label: 'Stato del Fondo di Rinnovamento Condominiale', desc: 'fondo_rinnovamento_doc' },
+                              { key: 'valore_di_stima', label: 'Valore di Stima Ufficiale ed Eventuale Stima Immobiliare Commerciale', desc: 'valore_di_stima_doc' },
                               { key: 'piano_assegnazioni_parti_comuni', label: 'Piano Assegnazioni Parti Comuni', desc: 'piano_assegnazioni_parti_comuni_doc' },
-                              { key: 'rasi', label: 'RASI', desc: 'rasi_doc' },
-                              { key: 'certificato_radon', label: 'Certificato Radon', desc: 'certificato_radon_doc' }
+                              { key: 'rasi', label: "Certificato di Sicurezza dell'Impianto Elettrico (RaSi)", desc: 'rasi_doc' },
+                              { key: 'certificato_radon', label: 'Certificato Energetico (CECE / RASI)', desc: 'certificato_radon_doc' }
                             ].map(doc => {
                               const dbField = doc.key;
                               return (
